@@ -393,8 +393,8 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   precio potencial. Los precios de Cardmarket que tenemos son de cartas sin gradear, y no hay
   una fuente gratuita de precios de gradeadas.
 - **Decisión:**
-  - En "Editar", una sección **«Está gradeada»** con la empresa (PSA, BGS, CGC, SGC, TAG, Ace u
-    otra), la nota (medios puntos) y el nº de certificado.
+  - En "Editar", una sección **«Está gradeada»** con la empresa (PSA, BGS, CGC, SGC, TAG, Ace,
+    Cardmarket Grading u otra), la nota (medios puntos) y el nº de certificado.
   - **Una copia gradeada es su propia fila**, con cantidad 1: cada funda es una carta
     distinta. Marcar una copia de un montón de varias la separa, y las demás quedan igual.
     Revisa D10, que ya preveía este caso.
