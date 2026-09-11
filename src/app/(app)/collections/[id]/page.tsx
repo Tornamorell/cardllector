@@ -39,7 +39,7 @@ export default async function CollectionPage({
 
   const [{ rows, hasMore }, byLocation, locations] = await Promise.all([
     listItems({ ownerId: user.id, collectionId: id, locationId }, { q, sort, page }),
-    collectionByLocation(id),
+    collectionByLocation(user.id, id),
     locationOptions(user.id),
   ]);
 

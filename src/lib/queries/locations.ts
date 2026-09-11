@@ -73,13 +73,14 @@ export async function locationByCollection(ownerId: string, locationId: string |
 }
 
 /** Where a collection's copies are, per location (id null = without location). */
-export async function collectionByLocation(collectionId: string) {
+export async function collectionByLocation(ownerId: string, collectionId: string) {
   return db
     .select({ id: locations.id, name: locations.name, ...stackAggregates })
     .from(items)
+    .innerJoin(collections, eq(collections.id, items.collectionId))
     .leftJoin(locations, eq(locations.id, items.locationId))
     .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
-    .where(eq(items.collectionId, collectionId))
+    .where(and(eq(collections.ownerId, ownerId), eq(items.collectionId, collectionId)))
     .groupBy(locations.id)
     .orderBy(sql`${locations.name} nulls last`);
 }

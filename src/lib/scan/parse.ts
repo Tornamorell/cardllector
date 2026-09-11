@@ -1,12 +1,13 @@
 /**
- * Parsing of the OCR'd info strip in a card's bottom-left corner. Pure functions; the
- * catalog lookup that validates the result lives in src/lib/queries/scan.ts.
+ * Parsing of what the scanner OCRs on a card. Pure functions; the catalog lookups that
+ * validate the result live in src/lib/queries/scan.ts.
  *
- * What the strip looks like (see docs/scanner.md):
+ * The info strip in the bottom-left corner (see docs/scanner.md):
  *   Magic 2023+    "U 0001"     / "MKM • EN  ✎ Artist"
  *   Magic 2014-22  "001/280 C"  / "M20 • EN  ✎ Artist"
  *   Pokémon SV+    "G [PAL EN] 001/193 ●"
  *   Pokémon older  "F 001/195 ●"            (no set code: resolved via the printed total)
+ * When it can't be read, the title is the fallback (parseTitle).
  */
 
 const LANGS: Record<string, string> = {
@@ -41,12 +42,25 @@ export interface CollectorLine {
 
 const isCode = (t: string) => /^[A-Z0-9]{3,5}$/.test(t) && /[A-Z]/.test(t);
 
+// Letters OCR mistakes for digits.
+const DIGIT_FIX: Record<string, string> = { O: "0", D: "0", Q: "0", I: "1", L: "1", S: "5", B: "8", Z: "2" };
+
+/** "0O1" → "001", "I93" → "193"; a 4-char "L001" is a stray glyph + "001". */
+function fixDigits(s: string): string {
+  const trimmed = s.length === 4 && /^[A-Z]/.test(s) ? s.slice(1) : s;
+  return trimmed.replace(/[ODQILSBZ]/g, (c) => DIGIT_FIX[c]);
+}
+
 export function parseCollectorLine(raw: string): CollectorLine | null {
   const text = raw
     .toUpperCase()
     .replace(/[•·∙●*]/g, " ")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim()
+    // Repair number/total shapes with letters in them, if they're mostly digits already.
+    .replace(/\b([0-9ODQILSBZ]{1,4}) ?\/ ?([0-9ODQILSBZ]{2,4})\b/g, (match, a: string, b: string) =>
+      (a + b).replace(/\D/g, "").length >= 2 ? `${fixDigits(a)}/${fixDigits(b)}` : match,
+    );
   const tokens = text.split(" ");
 
   const codes: string[] = [];
@@ -75,8 +89,15 @@ export function parseCollectorLine(raw: string): CollectorLine | null {
   }
   if (!number) return null;
 
-  // OCR often glues a stray glyph in front of a code ("BPAL" for "PAL"): try its tails too.
-  const setCodes = [...new Set(codes.flatMap((c) => [c, c.slice(-4), c.slice(-3)]))].filter(isCode);
+  // OCR glues stray glyphs in front of codes ("BPAL" for "PAL") and swaps O/0 ("M2O"):
+  // try the tails and both spellings. The catalog decides which one exists.
+  const setCodes = [
+    ...new Set(
+      codes
+        .flatMap((c) => [c, c.slice(-4), c.slice(-3)])
+        .flatMap((c) => [c, c.replace(/O/g, "0"), c.replace(/0/g, "O")]),
+    ),
+  ].filter(isCode);
 
   return { number, total, setCodes, lang };
 }
@@ -87,7 +108,7 @@ export function numberVariants(number: string): string[] {
   return [...new Set([number, stripped, stripped.padStart(3, "0")])];
 }
 
-/** Two reads describe the same card (used to require consecutive agreement). */
+/** Two reads describe the same card. */
 export function sameLine(a: CollectorLine | null, b: CollectorLine | null): boolean {
   return (
     !!a &&
@@ -96,4 +117,36 @@ export function sameLine(a: CollectorLine | null, b: CollectorLine | null): bool
     a.total === b.total &&
     a.setCodes[0] === b.setCodes[0]
   );
+}
+
+// Words printed around a card's name that aren't part of it (Pokémon stage badges, HP).
+const TITLE_NOISE = new Set([
+  "BASIC",
+  "STAGE",
+  "STAGE1",
+  "STAGE2",
+  "EVOLVES",
+  "FROM",
+  "HP",
+  "PS",
+  "PV",
+  "BASICO",
+  "FASE",
+  "TRAINER",
+  "ENERGY",
+]);
+
+/**
+ * Cleans an OCR'd title line into a searchable name, or null if there's too little of it.
+ * The catalog lookup is fuzzy (trigrams), so small OCR errors are fine.
+ */
+export function parseTitle(raw: string): string | null {
+  const words = raw
+    .split(/\s+/)
+    // Trailing commas are part of Magic names ("Sheoldred, the Apocalypse"); stray leading
+    // punctuation isn't.
+    .map((w) => w.replace(/[^A-Za-zÀ-ÿ'’,-]/g, "").replace(/^[,'’-]+|['’-]+$/g, ""))
+    .filter((w) => w.length >= 2 && !TITLE_NOISE.has(w.toUpperCase()));
+  const name = words.join(" ");
+  return name.replace(/[^A-Za-zÀ-ÿ]/g, "").length >= 4 ? name : null;
 }

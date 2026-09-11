@@ -163,8 +163,14 @@ En el repo, *Settings → Secrets and variables → Actions*, crea `DATABASE_URL
 - `sync-pokemon.yml`: precios de lo que tienes a diario a las 11:15 UTC, y catálogo completo los
   miércoles.
 
+### SSL
+
+`pg` avisa de que en su próxima versión mayor `sslmode=require` pasará a la semántica de libpq,
+que comprueba menos el certificado. Neon admite `sslmode=verify-full`: conviene usarlo en las
+cadenas de conexión antes de actualizar a `pg` 9.
+
 ### Tamaño
 
-En local, los dos catálogos ocupan ~111 MB (2026-09-11). Los snapshots solo se guardan para las
+Los dos catálogos ocupan ~109 MB en Neon (2026-09-11). Los snapshots solo se guardan para las
 ediciones que tienes, así que crecen poco. Hay que vigilar el límite de 0,5 GB del plan gratuito
 de Neon.

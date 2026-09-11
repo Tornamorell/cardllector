@@ -260,3 +260,64 @@ export async function deleteItem(itemId: string) {
   await db.delete(items).where(eq(items.id, itemId));
   refresh(item.collectionId);
 }
+
+/**
+ * Moves `count` copies of a stack to another finish ("that one was a reverse holo"), merging
+ * into an identical stack with that finish if there is one. Returns the stack now holding them.
+ */
+export async function changeFinish(
+  itemId: string,
+  count: number,
+  finish: "nonfoil" | "foil" | "etched",
+): Promise<{ itemId: string }> {
+  const user = await requireUser();
+  const item = await ownedItem(user.id, itemId);
+  const target = z.enum(["nonfoil", "foil", "etched"]).parse(finish);
+  const n = z.number().int().min(1).max(item.quantity).parse(count);
+  if (item.finish === target) return { itemId };
+
+  const targetId = await db.transaction(async (tx) => {
+    if (item.quantity === n) await tx.delete(items).where(eq(items.id, itemId));
+    else await tx.update(items).set({ quantity: item.quantity - n }).where(eq(items.id, itemId));
+
+    const [same] = await tx
+      .select({ id: items.id })
+      .from(items)
+      .where(
+        and(
+          eq(items.collectionId, item.collectionId),
+          item.catalogCardId ? eq(items.catalogCardId, item.catalogCardId) : isNull(items.catalogCardId),
+          eq(items.finish, target),
+          eq(items.condition, item.condition),
+          eq(items.language, item.language),
+          item.locationId ? eq(items.locationId, item.locationId) : isNull(items.locationId),
+          isNull(items.gradingCompany),
+        ),
+      )
+      .limit(1);
+    if (same) {
+      await tx
+        .update(items)
+        .set({ quantity: sql`${items.quantity} + ${n}` })
+        .where(eq(items.id, same.id));
+      return same.id;
+    }
+    const [inserted] = await tx
+      .insert(items)
+      .values({
+        collectionId: item.collectionId,
+        catalogCardId: item.catalogCardId,
+        quantity: n,
+        finish: target,
+        condition: item.condition,
+        language: item.language,
+        locationId: item.locationId,
+        source: item.source,
+      })
+      .returning({ id: items.id });
+    return inserted.id;
+  });
+
+  refresh(item.collectionId);
+  return { itemId: targetId };
+}

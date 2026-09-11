@@ -79,6 +79,13 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     manual dentro de la propia pantalla del escáner, y la elección entre candidatos cuando la
     lectura es ambigua. La cola queda pendiente, por si hace falta.
   - Detalles y mediciones en `docs/scanner.md`.
+- **Actualización (tras la primera prueba real, «bastante regular»):**
+  - Votación en vez de exigir lecturas consecutivas.
+  - **El título como segunda vía**, que cubre Magic antiguo y parte de las full art.
+  - Corrección de confusiones del OCR.
+  - Pantalla completa con panel de acabado y cantidad.
+  - Sigue siendo gratis y en el dispositivo. Si aun así no basta, las opciones siguientes son
+    reconocimiento por imagen o IA como respaldo, y las dos requieren decisión del usuario.
 
 ## D07 · Idioma por copia; precio de la edición inglesa — 2026-09-11 · provisional
 
@@ -143,6 +150,16 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   de `owner_id`, y las acciones comprueban la propiedad.
 - **Revisar cuando:** se abra a otros. Hará falta un registro con límites y revisar las
   condiciones de Scryfall (no se puede cobrar por sus datos).
+- **Aislamiento entre usuarios (revisado el 2026-09-11):**
+  - Cada consulta de datos de usuario filtra por `owner_id`: colecciones, montones,
+    ubicaciones, resumen, progreso por expansión y "en tus colecciones".
+  - Cada acción comprueba que la colección, el montón o la ubicación son del usuario.
+  - El catálogo (cartas, expansiones, precios, búsqueda y lecturas del escáner) es común y de
+    solo lectura.
+  - Un segundo usuario se crea con otra ejecución de `npm run seed:user`.
+  - Los valores recordados (`useStickyDefaults`) se guardan por dispositivo, no por usuario. Si
+    dos personas comparten navegador, los ids ajenos se descartan porque no aparecen entre sus
+    opciones.
 
 ## D15 · Se excluye todo lo digital — 2026-09-11 · provisional
 

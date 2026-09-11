@@ -36,12 +36,20 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
 Verificado por HTTP y SQL. **Falta probar en el navegador con la sesión iniciada** el alta rápida,
 los diálogos y el botón +.
 
+## Despliegue (2026-09-11)
+
+- En producción en **https://cardllector.vercel.app**. El repo es `Tornamorell/cardllector` y
+  la base de datos es Neon (Postgres 17, Frankfurt).
+- Neon cargado: 129 564 cartas (Magic y Pokémon), 56 886 nombres en español y 1 191
+  expansiones, en 109 MB. Las cadenas de conexión están en `.env.neon.local` (no se commitea).
+
 ## Pendiente del usuario
 
-- Crear el repo en GitHub y hacer el primer commit.
-- Crear los proyectos de Neon y Vercel y definir las variables de entorno y secretos (ver
-  "Despliegue" en `docs/architecture.md`).
-- Revisar la app.
+- Crear su usuario en producción (`npm run seed:user` contra Neon).
+- Añadir el secreto `DATABASE_URL` (conexión directa) en GitHub Actions para las
+  sincronizaciones diarias.
+- Probar el escáner en el móvil con cartas reales.
+- Opcional: cambiar la contraseña de Neon, que ha pasado por el chat de la sesión.
 
 ## Siguiente
 

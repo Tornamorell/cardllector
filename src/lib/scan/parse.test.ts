@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { numberVariants, parseCollectorLine, sameLine } from "./parse";
+import { numberVariants, parseCollectorLine, parseTitle, sameLine } from "./parse";
 
 // Inputs are real Tesseract outputs on card scans (2026-09-11, see docs/scanner.md),
 // with "⏎" where Tesseract returned a line break.
@@ -13,7 +13,7 @@ describe("parseCollectorLine", () => {
       setCodes: ["DMU"],
       lang: "en",
     });
-    expect(parseCollectorLine(ocr("A ⏎ 001/280 C ⏎ M20 EN DAN SCOTT ⏎"))?.setCodes).toEqual(["M20"]);
+    expect(parseCollectorLine(ocr("A ⏎ 001/280 C ⏎ M20 EN DAN SCOTT ⏎"))?.setCodes[0]).toBe("M20");
   });
 
   it("reads a 2023+ Magic frame: 4-digit number without total", () => {
@@ -47,6 +47,16 @@ describe("parseCollectorLine", () => {
     });
   });
 
+  it("repairs letters OCR reads instead of digits", () => {
+    expect(parseCollectorLine("F 0O1/I93")).toMatchObject({ number: "001", total: "193" });
+    expect(parseCollectorLine("L001/195")).toMatchObject({ number: "001", total: "195" });
+    expect(parseCollectorLine("107/281 M DMU EN")).toMatchObject({ number: "107", total: "281" });
+  });
+
+  it("tries both O and 0 spellings of a code", () => {
+    expect(parseCollectorLine("001/280 C M2O EN")?.setCodes).toEqual(["M2O", "M20"]);
+  });
+
   it("rejects noise: no number/total and no set code", () => {
     expect(parseCollectorLine(ocr("OR T ⏎ C A C SCP TE RAN ⏎ 4 TN ES 5 ⏎ 7. 2009 X HT 2"))).toBeNull();
     expect(parseCollectorLine(ocr("11/NK J2 ⏎ B MW ⏎ 119971658203 ⏎"))).toBeNull();
@@ -70,5 +80,22 @@ describe("sameLine", () => {
     expect(sameLine(a, b)).toBe(true);
     expect(sameLine(a, parseCollectorLine("U 0002 MKM EN"))).toBe(false);
     expect(sameLine(a, null)).toBe(false);
+  });
+});
+
+describe("parseTitle", () => {
+  it("keeps the name and drops Pokémon badges and HP", () => {
+    expect(parseTitle("BASIC Hoppip HP50")).toBe("Hoppip");
+    expect(parseTitle("STAGE2 Charizard ex HP330")).toBe("Charizard ex");
+  });
+
+  it("keeps punctuation that belongs to Magic names", () => {
+    expect(parseTitle("Sheoldred, the Apocalypse")).toBe("Sheoldred, the Apocalypse");
+    expect(parseTitle("Lightning Bolt }")).toBe("Lightning Bolt");
+  });
+
+  it("returns null for too little text", () => {
+    expect(parseTitle("a - ; 2")).toBeNull();
+    expect(parseTitle("")).toBeNull();
   });
 });
