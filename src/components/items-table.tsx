@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { formatEur } from "@/lib/format";
 import { finishLabel } from "@/lib/games";
+import { gradeLabel } from "@/lib/grading";
 import { ITEM_SORTS, type InventoryItem, type ItemSort } from "@/lib/queries/items";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +74,15 @@ export function ItemsTable({
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap items-center gap-1 text-xs">
+                  {item.gradingCompany && (
+                    // A slab label: light on dark, unlike every other badge.
+                    <Badge
+                      className="bg-foreground text-background font-semibold"
+                      title={item.certNumber ? `Certificado ${item.certNumber}` : undefined}
+                    >
+                      {gradeLabel(item.gradingCompany, item.grade)}
+                    </Badge>
+                  )}
                   {item.finish !== "nonfoil" && (
                     <Badge className="foil-badge">{finishLabel(item.card?.game, item.finish)}</Badge>
                   )}
@@ -93,7 +103,12 @@ export function ItemsTable({
               <TableCell>
                 <QuantityControl itemId={item.id} quantity={item.quantity} />
               </TableCell>
-              <TableCell className="text-right tabular-nums">{formatEur(item.unitPriceEur)}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {formatEur(item.unitPriceEur)}
+                {item.estimatedValueEur != null && (
+                  <span className="text-muted-foreground block text-[11px]">estimado</span>
+                )}
+              </TableCell>
               <TableCell className="text-primary text-right font-semibold tabular-nums">
                 {item.unitPriceEur == null ? "—" : formatEur(item.unitPriceEur * item.quantity)}
               </TableCell>
@@ -113,6 +128,10 @@ export function ItemsTable({
                     locationId: item.locationId,
                     notes: item.notes,
                     purchasePriceEur: item.purchasePriceEur,
+                    estimatedValueEur: item.estimatedValueEur,
+                    gradingCompany: item.gradingCompany,
+                    grade: item.grade,
+                    certNumber: item.certNumber,
                     finishes: item.card?.finishes ?? [],
                   }}
                 />

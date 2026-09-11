@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { LANGUAGES, formatEur } from "@/lib/format";
 import { finishLabel, gameById, rarityLabel } from "@/lib/games";
+import { gradeLabel } from "@/lib/grading";
 import { getOwnedStacks, getPrinting, getPrintingsOf, getSpanishName } from "@/lib/queries/cards";
 import { collectionOptions, collectionsOfCard } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
@@ -162,6 +163,18 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
                     <span className="font-medium tabular-nums">{s.quantity}×</span>{" "}
                     {s.setCode.toUpperCase()} #{s.collectorNumber}, {finishLabel(printing.game, s.finish)},{" "}
                     {s.condition}, {LANGUAGES[s.language] ?? s.language}
+                    {s.gradingCompany && (
+                      <>
+                        , <strong>{gradeLabel(s.gradingCompany, s.grade)}</strong>
+                        {s.certNumber && ` (certificado ${s.certNumber})`}
+                      </>
+                    )}
+                    {s.estimatedValueEur != null && (
+                      <>
+                        , valor estimado{" "}
+                        <span className="text-primary font-medium">{formatEur(s.estimatedValueEur)}</span>
+                      </>
+                    )}
                     {s.locationId && (
                       <>
                         {" en "}

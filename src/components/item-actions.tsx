@@ -12,7 +12,12 @@ import {
 } from "@/app/(app)/inventory/actions";
 import { CollectionPicker, type CollectionOption } from "@/components/collection-picker";
 import { LocationPicker, type LocationOption } from "@/components/location-picker";
-import { ConditionSelect, FinishSelect, LanguageSelect } from "@/components/stack-fields";
+import {
+  ConditionSelect,
+  FinishSelect,
+  LanguageSelect,
+  selectClass,
+} from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +38,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { CONDITIONS } from "@/lib/format";
 import { gameById } from "@/lib/games";
+import { GRADING_COMPANIES, GRADING_LABELS } from "@/lib/grading";
 
 export function QuantityControl({ itemId, quantity }: { itemId: string; quantity: number }) {
   const [pending, startTransition] = useTransition();
@@ -83,6 +89,10 @@ export interface ActionItem {
   locationId: string | null;
   notes: string | null;
   purchasePriceEur: number | null;
+  estimatedValueEur: number | null;
+  gradingCompany: string | null;
+  grade: number | null;
+  certNumber: string | null;
   finishes: string[];
 }
 
@@ -107,7 +117,9 @@ export function ItemActions({
           <MoreHorizontalIcon />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuItem onClick={() => setDialog("edit")}>Editar</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setDialog("edit")}>
+            {item.gradingCompany ? "Editar" : "Editar o marcar gradeada"}
+          </DropdownMenuItem>
           {item.catalogCardId && (
             <DropdownMenuItem onClick={() => setDialog("collection")}>
               Añadir a una colección
@@ -133,6 +145,14 @@ export function ItemActions({
   );
 }
 
+const OTHER_COMPANY = "__other__";
+const asText = (v: number | null) => (v == null ? "" : String(v));
+/** "12,50" → 12.5; empty → null. */
+const parseNumber = (s: string) => {
+  const t = s.trim().replace(",", ".");
+  return t === "" ? null : Number(t);
+};
+
 function EditDialog({
   item,
   locations,
@@ -142,33 +162,46 @@ function EditDialog({
   locations: LocationOption[];
   onClose: () => void;
 }) {
+  const knownCompany = (GRADING_COMPANIES as readonly string[]).includes(item.gradingCompany ?? "");
   const [form, setForm] = useState({
     quantity: String(item.quantity),
     finish: item.finish,
     condition: item.condition,
     language: item.language,
     locationId: item.locationId,
-    purchasePriceEur: item.purchasePriceEur == null ? "" : String(item.purchasePriceEur),
+    purchasePriceEur: asText(item.purchasePriceEur),
+    estimatedValueEur: asText(item.estimatedValueEur),
     notes: item.notes ?? "",
+    graded: !!item.gradingCompany,
+    company: knownCompany ? item.gradingCompany! : item.gradingCompany ? OTHER_COMPANY : "PSA",
+    otherCompany: knownCompany ? "" : (item.gradingCompany ?? ""),
+    grade: asText(item.grade),
+    certNumber: item.certNumber ?? "",
   });
   const [pending, startTransition] = useTransition();
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
+  // Grading one copy of several splits it off into its own row (see updateItem).
+  const splitting = form.graded && !item.gradingCompany && item.quantity > 1;
 
   function save(event: React.FormEvent) {
     event.preventDefault();
-    const price = form.purchasePriceEur.trim().replace(",", ".");
+    const company = form.company === OTHER_COMPANY ? form.otherCompany.trim() : form.company;
     startTransition(async () => {
       try {
         await updateItem(item.id, {
-          quantity: Number(form.quantity),
+          quantity: form.graded ? 1 : Number(form.quantity),
           finish: form.finish,
           condition: form.condition,
           language: form.language,
           locationId: form.locationId,
-          purchasePriceEur: price === "" ? null : Number(price),
+          purchasePriceEur: parseNumber(form.purchasePriceEur),
+          estimatedValueEur: parseNumber(form.estimatedValueEur),
           notes: form.notes,
+          grading: form.graded
+            ? { company, grade: parseNumber(form.grade), certNumber: form.certNumber }
+            : null,
         });
-        toast.success("Cambios guardados");
+        toast.success(splitting ? "Una copia separada y marcada como gradeada" : "Cambios guardados");
         onClose();
       } catch {
         toast.error("Revisa los datos: no se han podido guardar.");
@@ -178,23 +211,25 @@ function EditDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
         <form onSubmit={save} className="grid gap-4">
           <DialogHeader>
             <DialogTitle>Editar {item.name}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Cantidad" htmlFor="edit-qty">
-              <Input
-                id="edit-qty"
-                type="number"
-                min={1}
-                max={999}
-                value={form.quantity}
-                onChange={(e) => set({ quantity: e.target.value })}
-                required
-              />
-            </Field>
+            {!form.graded && (
+              <Field label="Cantidad" htmlFor="edit-qty">
+                <Input
+                  id="edit-qty"
+                  type="number"
+                  min={1}
+                  max={999}
+                  value={form.quantity}
+                  onChange={(e) => set({ quantity: e.target.value })}
+                  required
+                />
+              </Field>
+            )}
             <Field label="Acabado" htmlFor="edit-finish">
               <FinishSelect
                 id="edit-finish"
@@ -235,7 +270,86 @@ function EditDialog({
                 placeholder="0,00"
               />
             </Field>
+            <Field label="Valor estimado (€/u)" htmlFor="edit-value">
+              <Input
+                id="edit-value"
+                inputMode="decimal"
+                value={form.estimatedValueEur}
+                onChange={(e) => set({ estimatedValueEur: e.target.value })}
+                placeholder="Cardmarket"
+              />
+            </Field>
           </div>
+          <p className="text-muted-foreground -mt-2 text-xs">
+            Si pones un valor estimado, cuenta en lugar del precio de Cardmarket: para gradeadas,
+            firmadas o cartas especiales.
+          </p>
+
+          <fieldset className="grid gap-3 rounded-lg border p-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                className="accent-primary size-4"
+                checked={form.graded}
+                onChange={(e) => set({ graded: e.target.checked })}
+              />
+              Está gradeada
+            </label>
+            {form.graded && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Empresa" htmlFor="edit-company">
+                    <select
+                      id="edit-company"
+                      className={selectClass}
+                      value={form.company}
+                      onChange={(e) => set({ company: e.target.value })}
+                    >
+                      {GRADING_COMPANIES.map((c) => (
+                        <option key={c} value={c}>
+                          {GRADING_LABELS[c] ?? c}
+                        </option>
+                      ))}
+                      <option value={OTHER_COMPANY}>Otra…</option>
+                    </select>
+                  </Field>
+                  <Field label="Nota" htmlFor="edit-grade">
+                    <Input
+                      id="edit-grade"
+                      inputMode="decimal"
+                      value={form.grade}
+                      onChange={(e) => set({ grade: e.target.value })}
+                      placeholder="10"
+                    />
+                  </Field>
+                  {form.company === OTHER_COMPANY && (
+                    <Field label="¿Qué empresa?" htmlFor="edit-other-company">
+                      <Input
+                        id="edit-other-company"
+                        value={form.otherCompany}
+                        onChange={(e) => set({ otherCompany: e.target.value })}
+                        required
+                      />
+                    </Field>
+                  )}
+                  <Field label="Nº de certificado" htmlFor="edit-cert">
+                    <Input
+                      id="edit-cert"
+                      value={form.certNumber}
+                      onChange={(e) => set({ certNumber: e.target.value })}
+                    />
+                  </Field>
+                </div>
+                {splitting && (
+                  <p className="text-muted-foreground text-xs">
+                    Tienes {item.quantity}: se separará una copia como gradeada y las otras{" "}
+                    {item.quantity - 1} quedarán como están.
+                  </p>
+                )}
+              </>
+            )}
+          </fieldset>
+
           <Field label="Notas" htmlFor="edit-notes">
             <Textarea
               id="edit-notes"

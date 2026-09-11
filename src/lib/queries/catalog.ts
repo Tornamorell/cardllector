@@ -1,7 +1,7 @@
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "@/db/client";
 import { catalogCards, items, sets } from "@/db/schema";
-import { unitPriceEurSql } from "@/lib/collection/pricing";
+import { itemValueEurSql } from "@/lib/collection/pricing";
 import type { CatalogGameId, SetTypeFilter } from "@/lib/games";
 
 /** Every set with cards, newest first — for pickers such as the scanner's fixed-set mode. */
@@ -78,7 +78,7 @@ export async function listSets(
       select ${catalogCards.setCode} as set_code,
              count(distinct ${catalogCards.id})::int as distinct_cards,
              sum(${items.quantity})::int as copies,
-             coalesce(sum(${items.quantity} * ${unitPriceEurSql}), 0)::float8 as value
+             coalesce(sum(${items.quantity} * ${itemValueEurSql}), 0)::float8 as value
       from ${items}
       join ${catalogCards} on ${catalogCards.id} = ${items.catalogCardId}
       where ${items.ownerId} = ${ownerId} and ${catalogCards.game} = ${game}

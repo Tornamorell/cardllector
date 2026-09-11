@@ -48,6 +48,9 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Las cinco cartas que más han subido y bajado.
   - En la ficha de carta, el histórico de precio de cada acabado.
   - Aparecen cuando hay al menos dos días de precios guardados.
+- **Cartas gradeadas** (D27):
+  - Empresa, nota y certificado en «Editar». Se muestran como la etiqueta «PSA 10».
+  - Valor estimado por copia, que cuenta en lugar del precio de Cardmarket.
 - **Entrada manual mejorada** (D26):
   - Arreglado: las cartas de Pokémon no se podían añadir a mano.
   - Las ediciones se eligen viendo las cartas.

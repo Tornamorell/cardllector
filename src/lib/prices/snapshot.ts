@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { catalogCards, items, user } from "@/db/schema";
-import { unitPriceEurSql } from "@/lib/collection/pricing";
+import { itemValueEurSql } from "@/lib/collection/pricing";
 
 /**
  * Records the day's prices for every printing someone owns, and the value of each user's
@@ -25,9 +25,9 @@ export async function snapshotPrices(date: string) {
     select
       ${user.id},
       ${date}::date,
-      coalesce(sum(${items.quantity} * ${unitPriceEurSql}), 0),
+      coalesce(sum(${items.quantity} * ${itemValueEurSql}), 0),
       coalesce(sum(${items.quantity}), 0),
-      coalesce(sum(${items.quantity}) filter (where ${items.id} is not null and ${unitPriceEurSql} is null), 0)
+      coalesce(sum(${items.quantity}) filter (where ${items.id} is not null and ${itemValueEurSql} is null), 0)
     from ${user}
     left join ${items} on ${items.ownerId} = ${user.id}
     left join ${catalogCards} on ${catalogCards.id} = ${items.catalogCardId}

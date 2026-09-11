@@ -69,7 +69,8 @@ export type PriceMove = MoveRow & {
  * How prices moved the value of what you own now, per printing and finish: the latest saved
  * price against the one from `period` days earlier (the first saved one for "all"). Cards
  * without a price that old are left out, so the result only reflects price changes, never
- * cards added or removed.
+ * cards added or removed. Copies with an estimated value of their own (graded…) are left out
+ * too: they don't follow the market (D27).
  */
 export async function priceMoves(ownerId: string, period: ValuePeriod, limit = 5) {
   const days = periodDays(period);
@@ -80,6 +81,7 @@ export async function priceMoves(ownerId: string, period: ValuePeriod, limit = 5
       select catalog_card_id, finish, sum(quantity)::int as qty
       from items
       where owner_id = ${ownerId} and catalog_card_id is not null
+        and estimated_value_eur is null
       group by catalog_card_id, finish
     ),
     latest as (

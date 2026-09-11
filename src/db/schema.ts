@@ -165,8 +165,13 @@ export const items = pgTable(
     finish: finish("finish").notNull().default("nonfoil"),
     condition: cardCondition("condition").notNull().default("NM"),
     language: text("language").notNull().default("en"),
+    // A graded copy is one slab: its own row, quantity 1 (D27).
     gradingCompany: text("grading_company"),
     grade: numeric("grade", { precision: 3, scale: 1, mode: "number" }),
+    certNumber: text("cert_number"),
+    // The user's own value per copy (graded, signed…). When set, it counts instead of the
+    // market price everywhere (itemValueEurSql).
+    estimatedValueEur: money("estimated_value_eur"),
     purchasePriceEur: money("purchase_price_eur"),
     purchasedAt: date("purchased_at"),
     locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),

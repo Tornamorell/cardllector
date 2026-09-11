@@ -46,8 +46,10 @@ sources, decisions and roadmap.
 - Never call external catalog APIs (Scryfall, TCGdex…) from a user request path — search and
   scan hit our DB. Source clients live in `src/lib/<source>/`, sync jobs in `scripts/`.
 - Per-game specifics (URL slug, rarities, set grouping) live in `src/lib/games.ts`.
-- Unit price logic exists twice, `unitPriceEur()` and `unitPriceEurSql` in
-  `src/lib/collection/pricing.ts`. Change both together.
+- Price logic exists in TS/SQL twins in `src/lib/collection/pricing.ts`: `unitPriceEur()` /
+  `unitPriceEurSql` (market price per finish) and `itemValueEur()` / `itemValueEurSql` (a copy's
+  value: the user's estimate if set, else market — use this one for anything owned, D27).
+  Change twins together.
 - Reads live in `src/lib/queries/`, mutations in `actions.ts` next to their route.
 - shadcn/ui here is the Base UI flavour: use the `render` prop, not `asChild`; style links as
   buttons with `buttonVariants()`.

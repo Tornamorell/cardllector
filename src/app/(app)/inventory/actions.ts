@@ -44,7 +44,10 @@ const refresh = () => revalidatePath("/", "layout");
 type Finish = "nonfoil" | "foil" | "etched";
 type Condition = (typeof CONDITIONS)[number];
 
-/** Same printing, finish, condition, language and location, ungraded: the stack a copy joins. */
+/**
+ * Same printing, finish, condition, language and location, ungraded and without an estimated
+ * value of its own: the stack a new copy joins. Graded or specially valued copies stay apart.
+ */
 function sameStack(
   ownerId: string,
   s: {
@@ -63,6 +66,7 @@ function sameStack(
     eq(items.language, s.language),
     s.locationId ? eq(items.locationId, s.locationId) : isNull(items.locationId),
     isNull(items.gradingCompany),
+    isNull(items.estimatedValueEur),
   );
 }
 
@@ -170,27 +174,70 @@ export async function addItem(input: AddItemInput): Promise<AddItemResult> {
   };
 }
 
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullish()
+    .transform((v) => v || null);
+
+const gradingInput = z.object({
+  company: z.string().trim().min(1).max(40),
+  // Half points (BGS 9.5); null for slabs without a number ("Authentic").
+  grade: z.number().min(1).max(10).multipleOf(0.5).nullable(),
+  certNumber: optionalText(40),
+});
+
 const updateItemInput = stackFields.extend({
   quantity: z.number().int().min(1).max(999),
   purchasePriceEur: z.number().min(0).max(1_000_000).nullable(),
-  notes: z
-    .string()
-    .trim()
-    .max(500)
-    .nullish()
-    .transform((v) => v || null),
+  /** Per copy; counts instead of the market price when set (D27). */
+  estimatedValueEur: z.number().min(0).max(10_000_000).nullable(),
+  notes: optionalText(500),
+  /** Null for an ungraded copy. */
+  grading: gradingInput.nullable(),
 });
 
 export type UpdateItemInput = z.input<typeof updateItemInput>;
 
+/**
+ * Edits a stack. Grading one copy of a stack of several splits it off: a slab is one physical
+ * card, so it gets its own row with quantity 1 and the other copies stay as they were (D27).
+ */
 export async function updateItem(itemId: string, input: UpdateItemInput) {
   const user = await requireUser();
-  await ownedItem(user.id, itemId);
-  const data = updateItemInput.parse(input);
-  if (data.locationId && !(await ownedLocation(user.id, data.locationId))) {
+  const item = await ownedItem(user.id, itemId);
+  const { grading, ...fields } = updateItemInput.parse(input);
+  if (fields.locationId && !(await ownedLocation(user.id, fields.locationId))) {
     throw new Error("Ubicación no encontrada");
   }
-  await db.update(items).set(data).where(eq(items.id, itemId));
+  const gradingColumns = {
+    gradingCompany: grading?.company ?? null,
+    grade: grading?.grade ?? null,
+    certNumber: grading?.certNumber ?? null,
+  };
+
+  if (grading && item.quantity > 1) {
+    await db.transaction(async (tx) => {
+      await tx.update(items).set({ quantity: item.quantity - 1 }).where(eq(items.id, itemId));
+      await tx.insert(items).values({
+        ownerId: item.ownerId,
+        catalogCardId: item.catalogCardId,
+        purchasedAt: item.purchasedAt,
+        attributes: item.attributes,
+        source: item.source,
+        ...fields,
+        ...gradingColumns,
+        quantity: 1,
+      });
+    });
+  } else {
+    await db
+      .update(items)
+      .set({ ...fields, ...gradingColumns, ...(grading && { quantity: 1 }) })
+      .where(eq(items.id, itemId));
+  }
   refresh();
 }
 
@@ -222,6 +269,8 @@ export async function splitItem(itemId: string, count: number) {
       locationId: item.locationId,
       gradingCompany: item.gradingCompany,
       grade: item.grade,
+      certNumber: item.certNumber,
+      estimatedValueEur: item.estimatedValueEur,
       purchasePriceEur: item.purchasePriceEur,
       purchasedAt: item.purchasedAt,
       notes: item.notes,

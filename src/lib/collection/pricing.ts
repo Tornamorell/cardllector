@@ -32,12 +32,27 @@ export function unitPriceSql(
   return sql`(case ${finish} when 'nonfoil' then ${eur} when 'foil' then ${eurFoil} end)`;
 }
 
-/** Today's unit price of each stack, for queries over items joined to catalog_cards. */
+/** Today's market price of each stack, for queries over items joined to catalog_cards. */
 export const unitPriceEurSql = unitPriceSql(
   items.finish,
   catalogCards.priceEur,
   catalogCards.priceEurFoil,
 );
+
+/**
+ * What a copy is worth: the user's own estimate when set (graded, signed…), else the market
+ * price for its finish (D27). Keep in sync with itemValueEurSql.
+ */
+export function itemValueEur(
+  finish: Finish,
+  card: PricedCard | null,
+  estimatedValueEur: number | null | undefined,
+): number | null {
+  return estimatedValueEur ?? unitPriceEur(finish, card);
+}
+
+/** SQL twin of itemValueEur(): the per-copy value every total uses. */
+export const itemValueEurSql: SQL<number | null> = sql`coalesce(${items.estimatedValueEur}, ${unitPriceEurSql})`;
 
 export interface StackValue {
   valueEur: number;
@@ -47,14 +62,19 @@ export interface StackValue {
 }
 
 export function sumValue(
-  stacks: Array<{ quantity: number; finish: Finish; card: PricedCard | null }>,
+  stacks: Array<{
+    quantity: number;
+    finish: Finish;
+    card: PricedCard | null;
+    estimatedValueEur?: number | null;
+  }>,
 ): StackValue {
   let valueEur = 0;
   let cardCount = 0;
   let unpricedCount = 0;
   for (const s of stacks) {
     cardCount += s.quantity;
-    const unit = unitPriceEur(s.finish, s.card);
+    const unit = itemValueEur(s.finish, s.card, s.estimatedValueEur);
     if (unit == null) unpricedCount += s.quantity;
     else valueEur += unit * s.quantity;
   }

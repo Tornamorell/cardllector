@@ -60,6 +60,13 @@ Qué hace idénticas dos copias: mismo dueño, edición, `finish`, `condition`, 
   precio.
 - `purchase_price_eur` es el precio unitario de compra, para calcular más adelante el
   beneficio o la pérdida.
+- **Gradeadas** (D27): `grading_company`, `grade` (medios puntos, 1–10) y `cert_number`. Una
+  copia gradeada es su propio montón, siempre de 1. Marcar como gradeada una copia de un montón
+  de varias la separa.
+- `estimated_value_eur` es el valor por copia que pones tú: gradeadas, firmadas, cartas
+  especiales. Si existe, cuenta **en lugar del precio de mercado** en todos los totales
+  (`itemValueEur()` / `itemValueEurSql` en `src/lib/collection/pricing.ts`). Una copia con
+  valor propio no se mezcla con las nuevas iguales, y queda fuera de «lo que más sube y baja».
 
 ## Histórico
 

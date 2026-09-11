@@ -5,6 +5,7 @@ import { ProgressMeter } from "@/components/progress-meter";
 import { buttonVariants } from "@/components/ui/button";
 import { formatEur, formatInt } from "@/lib/format";
 import { finishLabel } from "@/lib/games";
+import { gradeLabel } from "@/lib/grading";
 import { listCollections } from "@/lib/queries/collections";
 import { topStacks } from "@/lib/queries/dashboard";
 import { inventorySummary } from "@/lib/queries/items";
@@ -129,6 +130,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
                       <p className="text-muted-foreground text-xs">
                         {s.card.setCode.toUpperCase()} #{s.card.collectorNumber}
                         {s.finish !== "nonfoil" && `, ${finishLabel(s.card.game, s.finish)}`}
+                        {s.gradingCompany && `, ${gradeLabel(s.gradingCompany, s.grade)}`}
                         {s.location?.name && ` en ${s.location.name}`}
                       </p>
                     </div>

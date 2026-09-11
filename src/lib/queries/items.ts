@@ -1,14 +1,14 @@
 import { and, asc, desc, eq, exists, isNull, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db/client";
 import { cardNames, catalogCards, items, locations, sets } from "@/db/schema";
-import { unitPriceEurSql } from "@/lib/collection/pricing";
+import { itemValueEurSql } from "@/lib/collection/pricing";
 import { normalizeForSearch } from "@/lib/search/normalize";
 
 /** Copies, value and unpriced copies, over `items` left-joined to `catalog_cards`. */
 export const stackAggregates = {
   cardCount: sql<number>`coalesce(sum(${items.quantity}), 0)::int`,
-  valueEur: sql<number>`coalesce(sum(${items.quantity} * ${unitPriceEurSql}), 0)::float8`,
-  unpricedCount: sql<number>`coalesce(sum(${items.quantity}) filter (where ${items.id} is not null and ${unitPriceEurSql} is null), 0)::int`,
+  valueEur: sql<number>`coalesce(sum(${items.quantity} * ${itemValueEurSql}), 0)::float8`,
+  unpricedCount: sql<number>`coalesce(sum(${items.quantity}) filter (where ${items.id} is not null and ${itemValueEurSql} is null), 0)::int`,
 };
 
 /** The whole inventory: what the user owns, whatever collections or locations say. */
@@ -72,7 +72,7 @@ export async function listItems(
   { q, sort = "value", page = 1 }: { q?: string; sort?: ItemSort; page?: number },
 ) {
   const orderBy = {
-    value: [sql`${unitPriceEurSql} * ${items.quantity} desc nulls last`, asc(catalogCards.name)],
+    value: [sql`${itemValueEurSql} * ${items.quantity} desc nulls last`, asc(catalogCards.name)],
     name: [asc(catalogCards.name), asc(catalogCards.setCode)],
     recent: [desc(items.createdAt)],
     set: [desc(catalogCards.releasedAt), asc(catalogCards.setCode), asc(catalogCards.collectorNumber)],
@@ -88,8 +88,13 @@ export async function listItems(
       locationId: items.locationId,
       notes: items.notes,
       purchasePriceEur: items.purchasePriceEur,
+      estimatedValueEur: items.estimatedValueEur,
+      gradingCompany: items.gradingCompany,
+      grade: items.grade,
+      certNumber: items.certNumber,
       createdAt: items.createdAt,
-      unitPriceEur: sql<number | null>`${unitPriceEurSql}::float8`,
+      /** Per copy: the estimate if set, else the market price (D27). */
+      unitPriceEur: sql<number | null>`${itemValueEurSql}::float8`,
       location: { id: locations.id, name: locations.name },
       card: {
         id: catalogCards.id,
@@ -122,7 +127,7 @@ export function ownedByPrinting(ownerId: string) {
   return sql`(
     select ${items.catalogCardId} as catalog_card_id,
            sum(${items.quantity})::int as qty,
-           coalesce(sum(${items.quantity} * ${unitPriceEurSql}), 0)::float8 as value
+           coalesce(sum(${items.quantity} * ${itemValueEurSql}), 0)::float8 as value
     from ${items}
     left join ${catalogCards} on ${catalogCards.id} = ${items.catalogCardId}
     where ${items.ownerId} = ${ownerId} and ${items.catalogCardId} is not null

@@ -96,8 +96,12 @@ hacia arriba se ven todos los enlaces en texto en la barra superior
 - Los foil *etched* no tienen precio en € en Scryfall, así que cuentan como "sin precio".
 - El valor de tus cartas, y el de lo que tienes de una colección, no cuenta las copias sin
   precio: se muestran aparte. "Te falta ~X €" suma el precio normal de las copias que faltan.
-- El precio unitario está implementado dos veces, en `unitPriceEur()` (TypeScript) y en
-  `unitPriceEurSql` (SQL), en `src/lib/collection/pricing.ts`. Si cambias uno, cambia el otro.
+- Si una copia tiene **valor estimado** (gradeadas, firmadas…), ese valor cuenta en todos los
+  totales en lugar del de Cardmarket (D27).
+- El precio unitario de mercado está implementado dos veces, en `unitPriceEur()` (TypeScript) y
+  en `unitPriceEurSql` (SQL). El valor de una copia, estimación incluida, también: en
+  `itemValueEur()` y en `itemValueEurSql`. Están en `src/lib/collection/pricing.ts`. Si cambias
+  uno, cambia su gemelo.
 
 ## Desarrollo local
 

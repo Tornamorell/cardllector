@@ -386,3 +386,28 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - Los resultados se eligen con `click`, que dispara igual el dedo. Antes era `mousedown`.
 - **Revisar cuando:** haya expansiones con cientos de ediciones de una misma carta (tokens,
   tierras básicas), por si la tira necesita agrupar por expansión.
+
+## D27 · Gradeadas: una fila por copia, y un valor estimado que manda sobre el mercado — 2026-09-12 · provisional
+
+- **Contexto:** el usuario tiene cartas gradeadas y quiere marcar la empresa, la nota y su
+  precio potencial. Los precios de Cardmarket que tenemos son de cartas sin gradear, y no hay
+  una fuente gratuita de precios de gradeadas.
+- **Decisión:**
+  - En "Editar", una sección **«Está gradeada»** con la empresa (PSA, BGS, CGC, SGC, TAG, Ace u
+    otra), la nota (medios puntos) y el nº de certificado.
+  - **Una copia gradeada es su propia fila**, con cantidad 1: cada funda es una carta
+    distinta. Marcar una copia de un montón de varias la separa, y las demás quedan igual.
+    Revisa D10, que ya preveía este caso.
+  - **Valor estimado por copia** (`estimated_value_eur`), puesto a mano. Si existe, cuenta en
+    lugar del precio de mercado en todos los totales: resumen, histórico diario, colecciones y
+    expansiones. No es solo para gradeadas: sirve también para firmadas o errores de impresión.
+  - Sin valor estimado, una gradeada cuenta con el precio de Cardmarket sin gradear, que es
+    más bajo pero no cero.
+  - Las copias con valor estimado no se juntan con copias nuevas iguales, y quedan fuera de
+    «lo que más sube y baja», porque no siguen al mercado.
+- **Descartado:**
+  - Precios automáticos de gradeadas (PriceCharting, eBay, 130point): son de pago o solo se
+    pueden sacar raspando webs.
+  - Subnotas de BGS (centrado, esquinas…) como campos propios: de momento van en las notas.
+- **Revisar cuando:** aparezca una fuente gratuita de precios de gradeadas, o haga falta ver
+  el histórico de valor de una copia concreta.
