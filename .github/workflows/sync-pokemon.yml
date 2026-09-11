@@ -1,0 +1,34 @@
+name: Sync Pokémon (TCGdex)
+
+# TCGdex has no bulk file: a full sync is ~21k requests (~20 min), so it runs weekly, and the
+# daily run only refreshes the prices of printings in a collection. See D17 in docs/decisions.md.
+on:
+  schedule:
+    - cron: "15 11 * * *" # daily: owned printings' prices
+    - cron: "0 12 * * 3" # Wednesdays: full catalog
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Full catalog sync instead of owned prices only"
+        type: boolean
+        default: false
+
+concurrency:
+  group: pokemon-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Sync
+        run: npm run sync:pokemon -- ${{ (github.event.schedule == '0 12 * * 3' || inputs.full) && '' || '--owned-only' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

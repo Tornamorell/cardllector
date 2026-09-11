@@ -1,0 +1,27 @@
+name: Sync translated card names
+
+# Printed names barely change; weekly is plenty. Runs after Monday's price sync.
+on:
+  schedule:
+    - cron: "30 10 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: scryfall-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Sync Spanish card names
+        run: npm run sync:names
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

@@ -1,0 +1,27 @@
+name: Sync Scryfall prices
+
+# Scryfall publishes its bulk files around 09:00 UTC and updates prices once a day.
+on:
+  schedule:
+    - cron: "0 10 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: scryfall-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Sync catalog, prices and today's snapshot
+        run: npm run sync:scryfall
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

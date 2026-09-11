@@ -1,0 +1,80 @@
+"use client";
+
+import { useCallback, useMemo, useSyncExternalStore } from "react";
+import type { CONDITIONS } from "./format";
+
+/**
+ * Remembered entry settings, so adding hundreds of cards doesn't mean re-picking the same
+ * collection, location, language, finish and condition every time — "from now on,
+ * everything goes to Caja 1". Per device (localStorage).
+ */
+export interface StickyDefaults {
+  finish: "nonfoil" | "foil" | "etched";
+  condition: (typeof CONDITIONS)[number];
+  language: string;
+  lastLocationId: string | null;
+  lastSetCode: string | null;
+  lastCollectionId: string | null;
+}
+
+const DEFAULTS: StickyDefaults = {
+  finish: "nonfoil",
+  condition: "NM",
+  language: "es",
+  lastLocationId: null,
+  lastSetCode: null,
+  lastCollectionId: null,
+};
+
+const KEY = "cardllector:defaults";
+const listeners = new Set<() => void>();
+// Fallback when storage is unavailable (private mode, blocked site data).
+let memory = "";
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
+function getSnapshot() {
+  try {
+    return localStorage.getItem(KEY) ?? memory;
+  } catch {
+    return memory;
+  }
+}
+
+function parse(raw: string): StickyDefaults {
+  if (!raw) return DEFAULTS;
+  try {
+    return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<StickyDefaults>) };
+  } catch {
+    return DEFAULTS;
+  }
+}
+
+export function useStickyDefaults() {
+  const raw = useSyncExternalStore(subscribe, getSnapshot, () => "");
+  const defaults = useMemo(() => parse(raw), [raw]);
+
+  const update = useCallback((patch: Partial<StickyDefaults>) => {
+    memory = JSON.stringify({ ...parse(getSnapshot()), ...patch });
+    try {
+      localStorage.setItem(KEY, memory);
+    } catch {
+      // Keep the in-memory copy.
+    }
+    listeners.forEach((l) => l());
+  }, []);
+
+  return [defaults, update] as const;
+}
+
+/** A remembered id, if it still exists among the options (it may have been deleted). */
+export function validId(id: string | null, options: Array<{ id: string }>): string | null {
+  return id && options.some((o) => o.id === id) ? id : null;
+}

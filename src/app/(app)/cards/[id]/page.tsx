@@ -1,0 +1,217 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { z } from "zod";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { CardThumb, SetIcon } from "@/components/card-thumb";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { LANGUAGES, formatEur } from "@/lib/format";
+import { finishLabel, gameById, rarityLabel } from "@/lib/games";
+import { getOwnedStacks, getPrinting, getPrintingsOf, getSpanishName } from "@/lib/queries/cards";
+import { listCollections } from "@/lib/queries/collections";
+import { locationOptions } from "@/lib/queries/locations";
+import { requireUser } from "@/lib/session";
+import { cn } from "@/lib/utils";
+import { AddToCollection } from "./add-to-collection";
+
+async function load(id: string) {
+  if (!z.uuid().safeParse(id).success) notFound();
+  const printing = await getPrinting(id);
+  if (!printing) notFound();
+  return printing;
+}
+
+export async function generateMetadata({ params }: PageProps<"/cards/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const printing = await load(id);
+  return { title: printing.name };
+}
+
+export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
+  const user = await requireUser();
+  const { id } = await params;
+  const printing = await load(id);
+  const oracleId = printing.oracleId;
+
+  const [printings, spanishName, owned, collections, locations] = await Promise.all([
+    oracleId ? getPrintingsOf(oracleId) : Promise.resolve([printing]),
+    oracleId ? getSpanishName(oracleId) : Promise.resolve(null),
+    oracleId ? getOwnedStacks(user.id, oracleId) : Promise.resolve([]),
+    listCollections(user.id),
+    locationOptions(user.id),
+  ]);
+
+  const updated = printing.pricesUpdatedAt
+    ? new Date(printing.pricesUpdatedAt).toLocaleDateString("es-ES")
+    : null;
+
+  const game = gameById(printing.game);
+  const setHref = game ? `/catalog/${game.slug}/${printing.setCode}` : null;
+  const setName = printing.setName ?? printing.setCode.toUpperCase();
+
+  return (
+    <div className="space-y-8">
+      {game && setHref && (
+        <Breadcrumbs
+          items={[
+            { label: "Catálogo", href: "/catalog" },
+            { label: game.name, href: `/catalog/${game.slug}` },
+            { label: setName, href: setHref },
+            { label: printing.name },
+          ]}
+        />
+      )}
+      <div className="grid gap-6 md:grid-cols-[300px_1fr]">
+        <CardThumb
+          src={printing.imageNormal}
+          alt={printing.name}
+          size="lg"
+          priority
+          className="mx-auto md:mx-0"
+        />
+
+        <div className="space-y-5">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">{printing.name}</h1>
+            {spanishName && <p className="text-muted-foreground">{spanishName}</p>}
+            {printing.typeLine && <p className="text-sm">{printing.typeLine}</p>}
+            <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+              <SetIcon src={printing.setIcon} alt="" />
+              {setHref ? (
+                <Link href={setHref} className="hover:text-foreground underline-offset-2 hover:underline">
+                  {setName}
+                </Link>
+              ) : (
+                setName
+              )}{" "}
+              · #{printing.collectorNumber}
+              {game && printing.rarity && ` · ${rarityLabel(game, printing.rarity)}`}
+            </p>
+          </div>
+
+          <dl className="grid max-w-md grid-cols-3 gap-3">
+            <Price label={finishLabel(printing.game, "nonfoil")} value={printing.priceEur} />
+            <Price label={finishLabel(printing.game, "foil")} value={printing.priceEurFoil} />
+            <Price
+              label="USD"
+              value={printing.priceUsd}
+              format={(v) => `$${v.toFixed(2)}`}
+            />
+          </dl>
+          <p className="text-muted-foreground text-xs">
+            Precios de Cardmarket vía {game?.sourceName ?? "Scryfall"}
+            {updated && `, actualizados el ${updated}`}.{" "}
+            {printing.cardmarketId && (
+              <a
+                className="underline"
+                href={`https://www.cardmarket.com/es/${game?.cardmarketCategory ?? "Magic"}/Products?idProduct=${printing.cardmarketId}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ver en Cardmarket
+              </a>
+            )}
+          </p>
+
+          <AddToCollection
+            printingId={printing.id}
+            finishes={printing.finishes}
+            finishLabels={game?.finishLabels}
+            collections={collections.map((c) => ({ id: c.id, name: c.name }))}
+            locations={locations}
+          />
+
+          {owned.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-sm font-medium">En tus colecciones</h2>
+              <ul className="space-y-1 text-sm">
+                {owned.map((s) => (
+                  <li key={s.id}>
+                    <span className="font-medium tabular-nums">{s.quantity}×</span>{" "}
+                    {s.setCode.toUpperCase()} #{s.collectorNumber} ·{" "}
+                    {finishLabel(printing.game, s.finish)} ·{" "}
+                    {s.condition} · {LANGUAGES[s.language] ?? s.language} —{" "}
+                    <Link href={`/collections/${s.collectionId}`} className="underline">
+                      {s.collectionName}
+                    </Link>
+                    {s.locationId && (
+                      <>
+                        {" · "}
+                        <Link href={`/locations/${s.locationId}`} className="underline">
+                          {s.locationName}
+                        </Link>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {printings.length > 1 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Ediciones ({printings.length})</h2>
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Edición</TableHead>
+                  <TableHead>Nº</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Normal</TableHead>
+                  <TableHead className="text-right">Foil</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {printings.map((p) => (
+                  <TableRow key={p.id} className={cn(p.id === printing.id && "bg-muted/60")}>
+                    <TableCell>
+                      <Link href={`/cards/${p.id}`} className="flex items-center gap-1.5 hover:underline">
+                        <SetIcon src={p.setIcon} alt="" />
+                        {p.setName ?? p.setCode.toUpperCase()}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="tabular-nums">{p.collectorNumber}</TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {p.releasedAt?.slice(0, 4)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{formatEur(p.priceEur)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatEur(p.priceEurFoil)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function Price({
+  label,
+  value,
+  format = formatEur,
+}: {
+  label: string;
+  value: number | null;
+  format?: (v: number) => string;
+}) {
+  return (
+    <div className="rounded-md border p-3">
+      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dd className="text-lg font-semibold">{value == null ? "—" : format(value)}</dd>
+    </div>
+  );
+}
