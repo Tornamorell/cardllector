@@ -14,6 +14,7 @@ import { formatEur, formatInt } from "@/lib/format";
 import { collectionOptions } from "@/lib/queries/collections";
 import { inventorySummary, listItems } from "@/lib/queries/items";
 import { listLocations, locationOptions, unlocatedSummary } from "@/lib/queries/locations";
+import { pendingScanCount } from "@/lib/queries/pending-scans";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -29,14 +30,16 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
   const locationId =
     loc === "none" ? null : loc && z.uuid().safeParse(loc).success ? loc : undefined;
 
-  const [summary, { rows, hasMore }, locations, byLocation, unlocated, collections] = await Promise.all([
-    inventorySummary(user.id),
-    listItems({ ownerId: user.id, locationId }, { q, sort, page }),
-    locationOptions(user.id),
-    listLocations(user.id),
-    unlocatedSummary(user.id),
-    collectionOptions(user.id),
-  ]);
+  const [summary, { rows, hasMore }, locations, byLocation, unlocated, collections, pending] =
+    await Promise.all([
+      inventorySummary(user.id),
+      listItems({ ownerId: user.id, locationId }, { q, sort, page }),
+      locationOptions(user.id),
+      listLocations(user.id),
+      unlocatedSummary(user.id),
+      collectionOptions(user.id),
+      pendingScanCount(user.id),
+    ]);
 
   const locParam = locationId === null ? "none" : (locationId ?? undefined);
   const href = hrefBuilder({ q, sort: sort === "value" ? undefined : sort, loc: locParam });
@@ -46,9 +49,16 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Mis cartas</h1>
-        <Link href="/locations" className="text-muted-foreground hover:text-foreground text-sm">
-          Gestionar ubicaciones
-        </Link>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          {pending > 0 && (
+            <Link href="/review" className="text-primary hover:underline">
+              {formatInt(pending)} por revisar
+            </Link>
+          )}
+          <Link href="/locations" className="text-muted-foreground hover:text-foreground">
+            Gestionar ubicaciones
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">

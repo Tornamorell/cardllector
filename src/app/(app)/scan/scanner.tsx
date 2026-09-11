@@ -1,6 +1,15 @@
 "use client";
 
-import { FlashlightIcon, ImageUpIcon, MinusIcon, PlusIcon, ScanLineIcon, XIcon } from "lucide-react";
+import {
+  ClockIcon,
+  FlashlightIcon,
+  ImageUpIcon,
+  MinusIcon,
+  PlusIcon,
+  ScanLineIcon,
+  XIcon,
+} from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AddFilteredToCollection } from "@/components/add-filtered-to-collection";
@@ -34,6 +43,7 @@ import { normalizeForSearch } from "@/lib/search/normalize";
 import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 import { cn } from "@/lib/utils";
 import { addItem, changeFinish, changeQuantity } from "../inventory/actions";
+import { savePendingScan } from "../review/actions";
 
 type OcrWorker = import("tesseract.js").Worker;
 type Psm = import("tesseract.js").PSM;
@@ -56,6 +66,7 @@ const TICK_MS = 250; // pause between reads
 const VOTES_NEEDED = 2; // a read must repeat this many times…
 const VOTE_WINDOW = 6; // …among the last reads (not necessarily consecutive)
 const EMPTY_READS_TO_RELEASE = 3; // reads without text before the same card can be added again
+const PHOTO_HEIGHT = 560; // px of the «Para luego» photo: enough to read the name and number
 
 const INFO_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/•. ";
 const TITLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',- ";
@@ -124,11 +135,14 @@ export function Scanner({
   locations,
   sets,
   initialFixedSet,
+  initialPending,
 }: {
   collections: CollectionOption[];
   locations: LocationOption[];
   sets: SetOption[];
   initialFixedSet: FixedSet | null;
+  /** Cards already waiting in /review. */
+  initialPending: number;
 }) {
   const [defaults, setDefaults] = useStickyDefaults();
   // Both optional: scanning just fills the inventory (D23).
@@ -152,6 +166,8 @@ export function Scanner({
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
   const [torch, setTorch] = useState({ supported: false, on: false });
+  const [pendingCount, setPendingCount] = useState(initialPending);
+  const [saving, setSaving] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -168,6 +184,8 @@ export function Scanner({
     tick: 0,
     choicesKey: "",
     mode: "",
+    /** The last name read from the title of the card in the guide: the hint for «Para luego». */
+    lastTitle: null as string | null,
     cache: new Map<string, ScanMatch[]>(),
   });
   // The read loop is async and long-lived: it reads the latest settings from here.
@@ -285,8 +303,11 @@ export function Scanner({
   function noRead() {
     const s = readState.current;
     vote(null);
-    // The card left the frame: the same card may be added again.
-    if (++s.empty >= EMPTY_READS_TO_RELEASE) s.holdId = null;
+    // The card left the frame: the same card may be added again, and its title no longer applies.
+    if (++s.empty >= EMPTY_READS_TO_RELEASE) {
+      s.holdId = null;
+      s.lastTitle = null;
+    }
   }
 
   async function resolve(matches: ScanMatch[], lang: string | null, label: string) {
@@ -338,6 +359,7 @@ export function Scanner({
           const titleText = await ocr(canvas, "title");
           setLastText(`${text.trim() || "—"}\ntítulo: ${titleText.trim() || "—"}`);
           const name = parseTitle(titleText);
+          if (name) s.lastTitle = name;
           const matches = name ? await lookupName(name) : [];
           if (name && matches.length) {
             s.empty = 0;
@@ -394,6 +416,7 @@ export function Scanner({
       navigator.vibrate?.(60);
       setChoices(null);
       readState.current.choicesKey = "";
+      readState.current.lastTitle = null;
       setEntries((list) => {
         const [top, ...rest] = list;
         if (top?.itemId === r.itemId) return [{ ...top, count: top.count + 1 }, ...rest];
@@ -463,6 +486,44 @@ export function Scanner({
     void add(match, lang);
   }
 
+  /** «Para luego»: a photo of what's in the guide goes to the review queue (/review, D25). */
+  async function saveForLater() {
+    const video = videoRef.current;
+    const card = cardInVideo();
+    if (!video || !card) return;
+    setSaving(true);
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.height = Math.min(PHOTO_HEIGHT, Math.round(card.h));
+      canvas.width = Math.round((card.w * canvas.height) / card.h);
+      canvas
+        .getContext("2d")
+        ?.drawImage(video, card.x, card.y, card.w, card.h, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, "image/jpeg", 0.8));
+      if (!blob) throw new Error("No photo");
+
+      const { defaults } = settings.current;
+      const form = new FormData();
+      form.set("image", blob, "carta.jpg");
+      form.set("readText", lastText);
+      form.set("guess", readState.current.lastTitle ?? "");
+      form.set("finish", defaults.finish);
+      form.set("condition", defaults.condition);
+      form.set("language", defaults.language);
+      form.set("locationId", defaults.lastLocationId ?? "");
+      form.set("collectionId", defaults.entryCollectionId ?? "");
+      const r = await savePendingScan(form);
+      setPendingCount(r.pending);
+      beep();
+      navigator.vibrate?.(60);
+      setStatus("Guardada para luego. Siguiente carta.");
+    } catch {
+      toast.error("No se ha podido guardar la foto.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // --- Camera ---------------------------------------------------------------
 
   async function start() {
@@ -496,7 +557,14 @@ export function Scanner({
       video.srcObject = stream;
       await video.play();
       await getWorker();
-      readState.current = { ...readState.current, votes: [], empty: 0, holdId: null, choicesKey: "" };
+      readState.current = {
+        ...readState.current,
+        votes: [],
+        empty: 0,
+        holdId: null,
+        choicesKey: "",
+        lastTitle: null,
+      };
       setStatus("Encaja la carta en el recuadro, con buena luz.");
       void tick();
     } catch (error) {
@@ -656,6 +724,11 @@ export function Scanner({
           <p className="text-muted-foreground text-sm" role="status">
             {status}
           </p>
+        )}
+        {pendingCount > 0 && (
+          <Link href="/review" className="text-sm underline underline-offset-2">
+            {pendingCount} por revisar
+          </Link>
         )}
       </div>
       <canvas ref={photoCanvasRef} className="hidden" />
@@ -834,6 +907,18 @@ export function Scanner({
               quedar dentro del marco amarillo.
             </p>
           )}
+
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full"
+            disabled={saving}
+            onClick={saveForLater}
+          >
+            <ClockIcon />
+            {saving ? "Guardando…" : "¿No la reconoce? Para luego"}
+            {pendingCount > 0 && <span className="text-muted-foreground tabular-nums">({pendingCount})</span>}
+          </Button>
 
           <button
             type="button"

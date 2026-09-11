@@ -79,6 +79,14 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
       Pokémon): `changeFinish()` mueve esas copias al montón con el acabado nuevo, fusionándolas
       si ya existe.
   - Si la lectura es ambigua, en su lugar aparece la tira de candidatas.
+  - **«¿No la reconoce? Para luego»** (D25) guarda en la cola de revisión, sin parar la sesión:
+    - una foto del recuadro (JPEG de 560 px de alto);
+    - lo último que ha leído y el nombre que ha sacado del título, si lo hay;
+    - los ajustes de la sesión.
+
+    La cola se resuelve en `/review`, a la que se llega con el enlace «N por revisar» del
+    escáner y de Mis cartas. Cada foto sale con la búsqueda rellenada con ese nombre, y la carta
+    se añade con los ajustes guardados.
   - «Ver lo que lee» muestra la última franja procesada y el texto de Tesseract.
 - **PWA:** manifest, iconos y `appleWebApp`. Añadida a la pantalla de inicio, se abre sin la barra
   del navegador. Aún no hay service worker.

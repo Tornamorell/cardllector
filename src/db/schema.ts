@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  customType,
   date,
   index,
   integer,
@@ -237,4 +238,35 @@ export const inventoryValueSnapshots = pgTable(
     unpricedCount: integer("unpriced_count").notNull(),
   },
   (t) => [primaryKey({ columns: [t.ownerId, t.date] })],
+);
+
+// ---------------------------------------------------------------------------
+// Scanner review queue (/review): cards the scanner didn't recognise, saved with a photo to
+// identify by hand later. A row is deleted once it's resolved or discarded (D25).
+// ---------------------------------------------------------------------------
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+
+export const pendingScans = pgTable(
+  "pending_scans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** The card as the camera saw it: a small JPEG. */
+    image: bytea("image").notNull(),
+    /** What the OCR read (info strip and title), as a hint. */
+    readText: text("read_text"),
+    /** A name read from the title, to prefill the search. */
+    guess: text("guess"),
+    // The session's settings when it was saved; the copy is added with them.
+    finish: finish("finish").notNull(),
+    condition: cardCondition("condition").notNull(),
+    language: text("language").notNull(),
+    locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
+    collectionId: uuid("collection_id").references(() => collections.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("pending_scans_owner_idx").on(t.ownerId, t.createdAt)],
 );

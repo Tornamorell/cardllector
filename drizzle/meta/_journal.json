@@ -64,6 +64,13 @@
       "when": 1789157225448,
       "tag": "0008_drop_collection_items",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789160827767,
+      "tag": "0009_pending_scans",
+      "breakpoints": true
     }
   ]
 }

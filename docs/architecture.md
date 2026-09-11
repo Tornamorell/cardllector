@@ -44,6 +44,7 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 | `/locations`, `/locations/[id]` | Ubicaciones físicas: qué hay en cada una y cuánto vale. `/locations/none` muestra las copias sin ubicación. |
 | `/search` | Búsqueda por nombre, en inglés o en español. |
 | `/scan` | Escáner con la cámara: lee el número y el código de expansión de la carta y la añade a tus cartas, en la ubicación y la colección de la sesión si las has elegido. `?set=mtg:m10` arranca en modo expansión fija. Detalles en `docs/scanner.md`. |
+| `/review` | **Por revisar:** las cartas que guardaste con «Para luego» en el escáner, con su foto (servida por `/api/pending-scans/[id]`, solo para su dueño) y una búsqueda para identificarlas y añadirlas (D25). |
 
 "Tienes X de Y" en una expansión cuenta las ediciones distintas de tus cartas.
 

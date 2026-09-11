@@ -338,3 +338,27 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   vacío. Con «Todo» se compara con el primer día guardado.
 - **Revisar cuando:** se apunten precios de compra (beneficio real) o se quiera separar en la
   gráfica lo que es precio de lo que son altas.
+
+## D25 · Cola de revisión con un botón «Para luego», con fotos en Postgres — 2026-09-11 · provisional
+
+- **Contexto:** el plan original guardaba sola cualquier carta que el escáner no reconociera en
+  unos 3 segundos. Pero el escáner no sabe si hay una carta en el recuadro o la mesa, así que
+  la cola se llenaría de fotos inútiles.
+- **Decisión:**
+  - Un botón **«¿No la reconoce? Para luego»** en el panel del escáner. Guarda una foto de lo que
+    hay en el recuadro, JPEG de 560 px de alto (50–100 KB).
+  - Con la foto se guardan lo último leído, el nombre sacado del título (para rellenar la
+    búsqueda) y los ajustes de la sesión: acabado, estado, idioma, ubicación y colección.
+  - La foto va en Postgres (`pending_scans.image`, `bytea`) y la sirve
+    `/api/pending-scans/[id]`, que comprueba el dueño.
+  - En `/review` se busca la carta y se añade con los ajustes guardados. Al añadirla o
+    descartarla, la fila y la foto se borran.
+  - Límites: 400 KB por foto y 500 fotos pendientes por usuario, para no llenar el medio GB de
+    Neon.
+- **Descartado:**
+  - Guardar solas las lecturas fallidas: llenan la cola de fotos de la mesa o de cartas
+    movidas.
+  - Vercel Blob u otro almacén de ficheros: otro servicio más, para unas pocas decenas de
+    fotos que viven poco.
+- **Revisar cuando:** la cola crezca mucho, o haga falta guardar fotos para siempre (por
+  ejemplo, del estado de cada copia).

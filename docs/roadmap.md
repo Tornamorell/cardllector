@@ -48,6 +48,10 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Las cinco cartas que más han subido y bajado.
   - En la ficha de carta, el histórico de precio de cada acabado.
   - Aparecen cuando hay al menos dos días de precios guardados.
+- **Cola de revisión del escáner** (D25):
+  - «Para luego» en el escáner guarda una foto de la carta que no reconoce y sigues escaneando.
+  - En `/review` («N por revisar» desde el escáner y Mis cartas) la buscas, con el nombre leído
+    ya escrito, y la añades con los ajustes de la sesión.
 
 Verificado por HTTP y SQL. **Falta probar en el navegador con la sesión iniciada** el alta rápida,
 los diálogos y el botón +.
@@ -94,8 +98,8 @@ cartas reales (necesita el despliegue con HTTPS). Estado real, mediciones y pend
    colección**, las dos opcionales (D23). Además se fijan foil, estado e idioma, reutilizando
    `useStickyDefaults`. Lo escaneado se puede deshacer o corregir desde la lista de la sesión, y
    la sesión entera se puede añadir a una colección al terminar.
-7. **Cola de revisión** (`/review`, tabla `pending_scans`, sin crear todavía): guarda una miniatura
-   y el texto leído de lo que no se reconoce. Luego se resuelve buscando a mano.
+7. **Cola de revisión** (`/review`, tabla `pending_scans`): hecha el 2026-09-11 con un botón
+   «Para luego» en lugar de guardar sola lo que no reconoce (D25).
 8. Manifest y service worker (Serwist) para instalar la app en el móvil.
 9. Medir la tasa de acierto con unas 20 cartas variadas y ajustar los recortes. Si falla mucho,
    revisar D06.

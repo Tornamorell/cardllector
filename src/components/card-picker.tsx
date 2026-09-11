@@ -15,8 +15,11 @@ import { cn } from "@/lib/utils";
  * Enter again submits. Shared by the inventory quick add and the collection card adder.
  * The printing defaults to `preferredSetCode` (the last set used) when the card has one.
  */
-export function useCardPicker(preferredSetCode: string | null) {
-  const [query, setQuery] = useState("");
+export function useCardPicker(preferredSetCode: string | null, initialQuery = "") {
+  const [query, setQuery] = useState(initialQuery);
+  // A prefilled query (a name the scanner read) waits until the box is focused or edited, so a
+  // page with several pickers doesn't open every result list at once.
+  const [armed, setArmed] = useState(!initialQuery);
   const [results, setResults] = useState<CardSearchResult[]>([]);
   const [active, setActive] = useState(0);
   const [selected, setSelected] = useState<CardSearchResult | null>(null);
@@ -31,7 +34,7 @@ export function useCardPicker(preferredSetCode: string | null) {
 
   useEffect(() => {
     const q = query.trim();
-    if (selected || q.length < 2) return;
+    if (!armed || selected || q.length < 2) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
@@ -47,7 +50,7 @@ export function useCardPicker(preferredSetCode: string | null) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, selected]);
+  }, [query, selected, armed]);
 
   function reset() {
     setSelected(null);
@@ -75,6 +78,7 @@ export function useCardPicker(preferredSetCode: string | null) {
 
   function onQueryChange(value: string) {
     setQuery(value);
+    setArmed(true);
     if (selected) {
       setSelected(null);
       setPrintings([]);
@@ -100,6 +104,7 @@ export function useCardPicker(preferredSetCode: string | null) {
     choose,
     reset,
     onQueryChange,
+    arm: () => setArmed(true),
   };
 }
 
@@ -116,7 +121,8 @@ export function CardSearchBox({
   placeholder: string;
   label: string;
 }) {
-  const { query, results, active, setActive, selected, choose, reset, onQueryChange, inputId } = picker;
+  const { query, results, active, setActive, selected, choose, reset, onQueryChange, arm, inputId } =
+    picker;
   const listId = `${inputId}-results`;
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -142,6 +148,7 @@ export function CardSearchBox({
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         onKeyDown={onKeyDown}
+        onFocus={arm}
         placeholder={placeholder}
         autoComplete="off"
         role="combobox"
