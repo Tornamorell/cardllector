@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { toast } from "sonner";
 import { CardThumb } from "@/components/card-thumb";
-import { selectClass } from "@/components/stack-fields";
 import { Input } from "@/components/ui/input";
-import { formatEur } from "@/lib/format";
 import { gameById } from "@/lib/games";
 import type { Printing } from "@/lib/queries/cards";
 import type { CardSearchResult } from "@/lib/queries/search";
@@ -65,14 +64,27 @@ export function useCardPicker(preferredSetCode: string | null, initialQuery = ""
     setSelected(result);
     setQuery(result.name);
     setResults([]);
-    const res = await fetch(`/api/printings?oracleId=${encodeURIComponent(result.oracleId)}`);
-    const list: Printing[] = res.ok ? await res.json() : [];
+    let list: Printing[] = [];
+    try {
+      const res = await fetch(`/api/printings?oracleId=${encodeURIComponent(result.oracleId)}`);
+      if (res.ok) list = await res.json();
+    } catch {
+      // Handled below, like an empty list.
+    }
+    if (!list.length) {
+      setSelected(null);
+      toast.error("No se han podido cargar las ediciones de esta carta. Prueba otra vez.");
+      return;
+    }
     setPrintings(list);
+    // A typed printing ("obf 125") wins; else the last set used; else the newest printing.
+    const typed = result.collectorNumber ? list.find((p) => p.id === result.printingId) : undefined;
     const preferred =
+      typed ??
       list.find((p) => p.setCode === preferredSetCode) ??
       list.find((p) => p.id === result.printingId) ??
       list[0];
-    setPrintingId(preferred?.id ?? null);
+    setPrintingId(preferred.id);
     requestAnimationFrame(() => focus(submitId));
   }
 
@@ -165,29 +177,36 @@ export function CardSearchBox({
         >
           {results.map((r, i) => (
             <li
-              key={r.oracleId}
+              key={`${r.oracleId}:${r.printingId}`}
               id={`${listId}-${i}`}
               role="option"
               aria-selected={i === active}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                void choose(r);
-              }}
-              onMouseEnter={() => setActive(i)}
+              // Keep the focus in the box on mousedown; choose on click, which touch fires too.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => void choose(r)}
+              onPointerMove={(e) => e.pointerType === "mouse" && setActive(i)}
               className={cn(
-                "flex cursor-pointer items-center gap-3 rounded-sm px-2 py-1.5",
+                "flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2",
                 i === active && "bg-accent",
               )}
             >
               <CardThumb src={r.imageSmall} alt="" size="xs" />
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-medium">{r.name}</p>
-                {r.printedName && <p className="text-muted-foreground truncate">{r.printedName}</p>}
+                {r.collectorNumber ? (
+                  <p className="text-muted-foreground truncate">
+                    {r.setName ?? r.setCode?.toUpperCase()} #{r.collectorNumber}
+                  </p>
+                ) : (
+                  r.printedName && <p className="text-muted-foreground truncate">{r.printedName}</p>
+                )}
               </div>
               <span className="text-muted-foreground text-right text-xs">
                 {gameById(r.game)?.shortName}
                 <br />
-                {r.printings} {r.printings === 1 ? "ed." : "eds."}
+                {r.collectorNumber
+                  ? r.setCode?.toUpperCase()
+                  : `${r.printings} ${r.printings === 1 ? "ed." : "eds."}`}
               </span>
             </li>
           ))}
@@ -197,21 +216,3 @@ export function CardSearchBox({
   );
 }
 
-export function PrintingSelect({ picker }: { picker: CardPicker }) {
-  const { printing, printings, setPrintingId } = picker;
-  if (!printing) return null;
-  return (
-    <select
-      className={cn(selectClass, "max-w-full min-w-0 flex-1 sm:max-w-80")}
-      value={printing.id}
-      onChange={(e) => setPrintingId(e.target.value)}
-      aria-label="Edición"
-    >
-      {printings.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.setName ?? p.setCode.toUpperCase()} · #{p.collectorNumber} · {formatEur(p.priceEur)}
-        </option>
-      ))}
-    </select>
-  );
-}

@@ -362,3 +362,27 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     fotos que viven poco.
 - **Revisar cuando:** la cola crezca mucho, o haga falta guardar fotos para siempre (por
   ejemplo, del estado de cada copia).
+
+## D26 · Entrada manual: la edición se elige viendo la carta, y se busca también por número — 2026-09-11 · provisional
+
+- **Contexto:** el usuario no conseguía añadir a mano un «Charizard ex» desde el móvil: al tocar
+  el resultado no pasaba nada.
+  - La causa: `/api/printings` solo aceptaba `oracle_id` con forma de UUID, y en Pokémon es
+    `pokemon:<nombre>` (D19).
+  - Consecuencia: **ninguna carta de Pokémon se podía añadir a mano**.
+  - Además, pidió mejorar la entrada manual en general.
+- **Decisión:**
+  - `/api/printings` acepta cualquier `oracle_id`. Si las ediciones no cargan, el selector lo dice
+    en lugar de quedarse en blanco.
+  - Tras elegir la carta, sus ediciones salen como **imágenes**: una tira horizontal, de más
+    nueva a más antigua, con filtro por expansión o número si hay más de 8. Sustituyen al
+    desplegable de texto, porque la edición se reconoce por la ilustración y el símbolo. Sigue
+    marcada por defecto la de la última expansión usada.
+  - La búsqueda entiende **número más expansión, total impreso o parte del nombre**:
+    - por ejemplo, «OBF 125», «125/197», «charizard 125» o «m10 146» (`parsePrintingQuery()`,
+      `searchPrintings()`);
+    - esos resultados salen primero y van directos a esa edición.
+  - Cantidades con −/+ (`QuantityStepper`).
+  - Los resultados se eligen con `click`, que dispara igual el dedo. Antes era `mousedown`.
+- **Revisar cuando:** haya expansiones con cientos de ediciones de una misma carta (tokens,
+  tierras básicas), por si la tira necesita agrupar por expansión.

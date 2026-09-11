@@ -11,10 +11,10 @@ import {
   ConditionSelect,
   FinishSelect,
   LanguageSelect,
+  QuantityStepper,
   finishFor,
 } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { gameById } from "@/lib/games";
 import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 import { addItem } from "@/app/(app)/inventory/actions";
@@ -82,7 +82,7 @@ export function QuickAdd({
       <CardSearchBox
         picker={picker}
         onSubmit={add}
-        placeholder="Añadir carta: escribe el nombre (inglés o español) y pulsa Intro"
+        placeholder="Añadir carta: nombre, o expansión y número (OBF 125)"
         label="Buscar carta para añadir"
       />
       <EntryTarget locations={locations} collections={collections} />
@@ -97,17 +97,9 @@ export function QuickAdd({
           />
           <ConditionSelect value={defaults.condition} onChange={(v) => setDefaults({ condition: v })} />
           <LanguageSelect value={defaults.language} onChange={(v) => setDefaults({ language: v })} />
-          <Input
-            type="number"
-            min={1}
-            max={999}
-            value={quantity}
-            onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-            className="w-20"
-            aria-label="Cantidad"
-          />
+          <QuantityStepper value={quantity} onChange={setQuantity} />
           <Button id={picker.submitId} onClick={add} disabled={pending}>
-            {pending ? "Añadiendo…" : "Añadir"}
+            {pending ? "Añadiendo…" : quantity > 1 ? `Añadir ${quantity}` : "Añadir"}
           </Button>
           <Button variant="ghost" onClick={picker.reset} disabled={pending}>
             Cancelar

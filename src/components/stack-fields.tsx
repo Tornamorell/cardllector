@@ -1,5 +1,6 @@
 "use client";
 
+import { MinusIcon, PlusIcon } from "lucide-react";
 import { CONDITIONS, FINISH_LABELS, LANGUAGES } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -94,6 +95,58 @@ export function LanguageSelect({
         </option>
       ))}
     </select>
+  );
+}
+
+/** How many copies: −/+ for the thumb, and a box that selects itself on focus for typing. */
+export function QuantityStepper({
+  value,
+  onChange,
+  label = "Cantidad",
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  label?: string;
+}) {
+  const set = (v: number) => onChange(Math.min(999, Math.max(1, Math.round(v) || 1)));
+  const stepClass =
+    "text-muted-foreground hover:text-foreground flex h-full w-9 items-center justify-center disabled:opacity-40";
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className="border-input bg-background flex h-9 items-center rounded-md border shadow-xs"
+    >
+      <button
+        type="button"
+        className={stepClass}
+        onClick={() => set(value - 1)}
+        disabled={value <= 1}
+        aria-label="Una menos"
+      >
+        <MinusIcon className="size-4" />
+      </button>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={1}
+        max={999}
+        value={value}
+        onChange={(e) => set(Number(e.target.value))}
+        onFocus={(e) => e.target.select()}
+        aria-label={label}
+        className="h-full w-10 [appearance:textfield] bg-transparent text-center text-sm tabular-nums outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+      <button
+        type="button"
+        className={stepClass}
+        onClick={() => set(value + 1)}
+        disabled={value >= 999}
+        aria-label="Una más"
+      >
+        <PlusIcon className="size-4" />
+      </button>
+    </div>
   );
 }
 

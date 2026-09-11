@@ -56,6 +56,14 @@ que tiene dos partes:
 
 Las dos se recuerdan en el dispositivo (`useStickyDefaults`).
 
+La búsqueda de los formularios de alta (`useCardPicker`, `/api/search`) acepta dos cosas:
+
+- un nombre, en inglés o en español;
+- una expansión y un número, como «OBF 125», «125/197» o «charizard 125».
+
+Tras elegir la carta, sus ediciones salen como imágenes para tocar la tuya (`CardPickerRow`,
+D26).
+
 En el móvil (por debajo de `md`), la navegación es una barra de pestañas fija abajo: Resumen,
 Catálogo, **Escanear** en el centro, Mis cartas y Colecciones. A las ubicaciones se llega desde
 Mis cartas. La búsqueda y el botón de salir van como iconos en la barra superior. Desde `md`

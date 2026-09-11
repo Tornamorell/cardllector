@@ -9,10 +9,10 @@ import {
   ConditionSelect,
   FinishSelect,
   LanguageSelect,
+  QuantityStepper,
   finishFor,
 } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import type { Finish } from "@/lib/games";
 import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 import { addItem } from "../../inventory/actions";
@@ -81,15 +81,7 @@ export function AddCopy({
         />
         <ConditionSelect value={defaults.condition} onChange={(v) => setDefaults({ condition: v })} />
         <LanguageSelect value={defaults.language} onChange={(v) => setDefaults({ language: v })} />
-        <Input
-          type="number"
-          min={1}
-          max={999}
-          value={quantity}
-          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-          className="w-20"
-          aria-label="Cantidad"
-        />
+        <QuantityStepper value={quantity} onChange={setQuantity} />
         <Button onClick={add} disabled={pending}>
           {pending ? "Añadiendo…" : "Añadir a mis cartas"}
         </Button>

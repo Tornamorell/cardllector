@@ -5,9 +5,8 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { CardPickerRow } from "@/components/card-picker-row";
 import { CardSearchBox, useCardPicker } from "@/components/card-picker";
+import { QuantityStepper } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 import { addCardToCollection } from "../actions";
 
@@ -41,24 +40,14 @@ export function CollectionCardAdder({ collectionId }: { collectionId: string }) 
       <CardSearchBox
         picker={picker}
         onSubmit={add}
-        placeholder="Añadir a la colección: busca una carta, la tengas o no"
+        placeholder="Añadir a la colección: nombre, o expansión y número"
         label="Buscar carta para la colección"
       />
       {picker.selected && printing && (
         <CardPickerRow picker={picker}>
           <div className="flex items-center gap-2">
-            <Label htmlFor="wanted" className="text-muted-foreground text-sm font-normal">
-              Copias que quieres
-            </Label>
-            <Input
-              id="wanted"
-              type="number"
-              min={1}
-              max={999}
-              value={wanted}
-              onChange={(e) => setWanted(Math.max(1, Number(e.target.value) || 1))}
-              className="w-20"
-            />
+            <span className="text-muted-foreground text-sm">Copias que quieres</span>
+            <QuantityStepper value={wanted} onChange={setWanted} label="Copias que quieres" />
           </div>
           <Button id={picker.submitId} onClick={add} disabled={pending}>
             {pending ? "Añadiendo…" : "Añadir a la colección"}

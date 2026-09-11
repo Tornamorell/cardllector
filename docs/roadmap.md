@@ -48,6 +48,11 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Las cinco cartas que más han subido y bajado.
   - En la ficha de carta, el histórico de precio de cada acabado.
   - Aparecen cuando hay al menos dos días de precios guardados.
+- **Entrada manual mejorada** (D26):
+  - Arreglado: las cartas de Pokémon no se podían añadir a mano.
+  - Las ediciones se eligen viendo las cartas.
+  - Se busca también por expansión y número («OBF 125», «125/197»).
+  - Cantidades con −/+.
 - **Cola de revisión del escáner** (D25):
   - «Para luego» en el escáner guarda una foto de la carta que no reconoce y sigues escaneando.
   - En `/review` («N por revisar» desde el escáner y Mis cartas) la buscas, con el nombre leído

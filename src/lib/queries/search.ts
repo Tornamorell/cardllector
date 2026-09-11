@@ -1,5 +1,6 @@
 import { pool } from "@/db/client";
 import { normalizeForSearch } from "@/lib/search/normalize";
+import type { PrintingQuery } from "@/lib/search/printing-query";
 
 export interface CardSearchResult {
   /** Groups printings of the same card: Scryfall oracle_id, or "pokemon:<name>" (D19). */
@@ -12,6 +13,10 @@ export interface CardSearchResult {
   printingId: string;
   imageSmall: string | null;
   printings: number;
+  /** Only on printing matches ("obf 125"): `printingId` is then the exact printing typed. */
+  setCode?: string;
+  setName?: string | null;
+  collectorNumber?: string;
 }
 
 function escapeLike(value: string) {
@@ -60,6 +65,38 @@ export async function searchCards(query: string, limit = 12): Promise<CardSearch
      ) latest
      order by r.prefix desc, r.sim desc, latest.name`,
     [`%${escapeLike(q)}%`, `${escapeLike(q)}%`, q, limit],
+  );
+  return rows;
+}
+
+/**
+ * Printing-level search for queries like "obf 125" or "125/197" (parsePrintingQuery): the
+ * collector number must match, and every other word must be the set code (or the code printed
+ * on the cards) or part of the English or Spanish name. Newest sets first.
+ */
+export async function searchPrintings(query: PrintingQuery, limit = 12): Promise<CardSearchResult[]> {
+  const { rows } = await pool.query<CardSearchResult>(
+    `select c.oracle_id as "oracleId", c.game, c.name, null as "printedName",
+            c.id as "printingId", c.image_small as "imageSmall", 1 as printings,
+            c.set_code as "setCode", s.name as "setName", c.collector_number as "collectorNumber"
+     from catalog_cards c
+     join sets s on s.game = c.game and s.code = c.set_code
+     where c.oracle_id is not null
+       and lower(c.collector_number) = any($1::text[])
+       and ($2::int is null or s.printed_total = $2)
+       and not exists (
+         select 1 from unnest($3::text[]) w
+         where w <> lower(s.code)
+           and w <> coalesce(lower(s.print_code), '')
+           and c.search_name not like '%' || w || '%'
+           and not exists (
+             select 1 from card_names n
+             where n.catalog_card_id = c.id and n.search_name like '%' || w || '%'
+           )
+       )
+     order by s.released_at desc nulls last, c.name
+     limit $4`,
+    [query.numbers, query.total, query.words.map(escapeLike), limit],
   );
   return rows;
 }
