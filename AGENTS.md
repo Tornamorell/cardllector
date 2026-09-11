@@ -30,6 +30,13 @@ sources, decisions and roadmap.
   **Exception: card-game terminology stays in English** as collectors use it — rarities
   ("Double Rare", "Mythic"), not "Rara doble"/"Mítica" (D21).
 
+## Git
+
+- The owner allows agents to **commit every finished change** without asking, once typecheck,
+  lint and tests pass (and `next build` for structural changes). Never commit secrets:
+  `.env*` files are ignored; check the staged diff.
+- **Pushing is done by the owner.** `main` deploys to production on Vercel.
+
 ## Conventions
 
 - Every page and server action calls `requireUser()` (`src/lib/session.ts`); actions also check
