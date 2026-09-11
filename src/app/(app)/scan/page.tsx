@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { setOptions } from "@/lib/queries/catalog";
-import { listCollections } from "@/lib/queries/collections";
+import { collectionOptions } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { Scanner } from "./scanner";
@@ -11,7 +11,7 @@ export default async function ScanPage({ searchParams }: PageProps<"/scan">) {
   const user = await requireUser();
   const { set } = await searchParams;
   const [collections, locations, sets] = await Promise.all([
-    listCollections(user.id),
+    collectionOptions(user.id),
     locationOptions(user.id),
     setOptions(),
   ]);
@@ -22,7 +22,7 @@ export default async function ScanPage({ searchParams }: PageProps<"/scan">) {
 
   return (
     <Scanner
-      collections={collections.map((c) => ({ id: c.id, name: c.name }))}
+      collections={collections}
       locations={locations}
       sets={sets}
       initialFixedSet={fixed ? { game: fixed.game, code: fixed.code } : null}

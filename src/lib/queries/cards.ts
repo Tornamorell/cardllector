@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { cardNames, catalogCards, collections, items, locations, sets } from "@/db/schema";
+import { cardNames, catalogCards, items, locations, sets } from "@/db/schema";
 
 const printingColumns = {
   id: catalogCards.id,
@@ -67,8 +67,6 @@ export async function getOwnedStacks(ownerId: string, oracleId: string) {
       finish: items.finish,
       condition: items.condition,
       language: items.language,
-      collectionId: collections.id,
-      collectionName: collections.name,
       locationId: locations.id,
       locationName: locations.name,
       printingId: catalogCards.id,
@@ -76,9 +74,8 @@ export async function getOwnedStacks(ownerId: string, oracleId: string) {
       collectorNumber: catalogCards.collectorNumber,
     })
     .from(items)
-    .innerJoin(collections, eq(collections.id, items.collectionId))
     .innerJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
     .leftJoin(locations, eq(locations.id, items.locationId))
-    .where(and(eq(collections.ownerId, ownerId), eq(catalogCards.oracleId, oracleId)))
-    .orderBy(collections.name, sql`${items.quantity} desc`);
+    .where(and(eq(items.ownerId, ownerId), eq(catalogCards.oracleId, oracleId)))
+    .orderBy(desc(catalogCards.releasedAt), sql`${items.quantity} desc`);
 }

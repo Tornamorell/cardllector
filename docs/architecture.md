@@ -25,7 +25,7 @@ GitHub Actions ── scripts/sync-scryfall.ts ──► catalog_cards, sets  (g
                   │                                                                    │
 TCGdex API (api.tcgdex.net) — una petición por carta                                   │
                └─ snapshotPrices()        ──► price_snapshots,                         │
-                                             collection_value_snapshots               ┘
+                                             inventory_value_snapshots                ┘
                                                         ▲
 Navegador ── páginas (Server Components) + Server Actions ┘
 ```
@@ -34,22 +34,32 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 
 | Ruta | Qué muestra |
 | --- | --- |
-| `/` | Resumen: valor total, colecciones y cartas más valiosas. |
+| `/` | Resumen: lo que valen tus cartas, el progreso de tus colecciones y tus cartas más valiosas. |
 | `/catalog` | Los juegos (TCG). Los que aún no tienen fuente de datos salen como "Próximamente". |
 | `/catalog/[juego]` | Las expansiones del juego, agrupadas por tipo (principales, Commander, especiales, promos), con cuántas cartas tienes de cada una y lo que valen. |
 | `/catalog/[juego]/[expansión]` | Todas las cartas de la expansión en orden de número. Las que no tienes salen en gris. Se filtra por rareza y por "tengo" o "me faltan", y cada carta tiene un botón **+** para añadirla. |
-| `/cards/[id]` | Una edición concreta: precio, el resto de sus ediciones y dónde la tienes. |
-| `/collections`, `/collections/[id]` | Tus colecciones, con alta rápida desde el teclado (y un selector «Guardar en» con la ubicación de la sesión) y filtro por ubicación (`?loc=<id>` o `?loc=none`). |
-| `/locations`, `/locations/[id]` | Ubicaciones físicas: qué hay en cada una, cuánto vale y cómo se reparte por colección. `/locations/none` muestra las copias sin ubicación. |
+| `/cards/[id]` | Una edición concreta: precio y el resto de sus ediciones. Desde aquí se añaden copias a tus cartas y se apunta la edición en una colección, la tengas o no. Enseña dónde tienes cada copia y en qué colecciones está. |
+| `/inventory` | **Mis cartas:** todas tus copias, con alta rápida desde el teclado, filtro por ubicación (`?loc=<id>` o `?loc=none`) y búsqueda. «Añadir a una colección» mete en una lista todo lo que se ve con esos filtros. |
+| `/collections`, `/collections/[id]` | Tus colecciones: listas de ediciones con la cantidad que quieres de cada una. Se ve lo que tienes y lo que te falta, lo que vale lo que tienes y lo que costaría completarla. Filtros: todas, tengo y me faltan. |
+| `/locations`, `/locations/[id]` | Ubicaciones físicas: qué hay en cada una y cuánto vale. `/locations/none` muestra las copias sin ubicación. |
 | `/search` | Búsqueda por nombre, en inglés o en español. |
-| `/scan` | Escáner con la cámara: lee el número y el código de expansión de la carta y la añade al destino de la sesión. `?set=mtg:m10` arranca en modo expansión fija. Detalles en `docs/scanner.md`. |
+| `/scan` | Escáner con la cámara: lee el número y el código de expansión de la carta y la añade a tus cartas, en la ubicación y la colección de la sesión si las has elegido. `?set=mtg:m10` arranca en modo expansión fija. Detalles en `docs/scanner.md`. |
 
-"Tienes X de Y" en una expansión cuenta ediciones distintas, estén en la colección que estén.
+"Tienes X de Y" en una expansión cuenta las ediciones distintas de tus cartas.
+
+Los formularios de alta comparten el selector `EntryTarget` (`src/components/entry-target.tsx`),
+que tiene dos partes:
+
+- **Guardar en:** la ubicación.
+- **Y en la colección:** la colección, opcional.
+
+Las dos se recuerdan en el dispositivo (`useStickyDefaults`).
 
 En el móvil (por debajo de `md`), la navegación es una barra de pestañas fija abajo: Resumen,
-Catálogo, **Escanear** en el centro, Colecciones y Ubicaciones. La búsqueda y el botón de salir
-van como iconos en la barra superior. Desde `md` hacia arriba se ven todos los enlaces en texto
-en la barra superior (`src/app/(app)/nav-links.tsx`).
+Catálogo, **Escanear** en el centro, Mis cartas y Colecciones. A las ubicaciones se llega desde
+Mis cartas. La búsqueda y el botón de salir van como iconos en la barra superior. Desde `md`
+hacia arriba se ven todos los enlaces en texto en la barra superior
+(`src/app/(app)/nav-links.tsx`).
 
 ## Reglas que no hay que romper
 
@@ -63,7 +73,8 @@ en la barra superior (`src/app/(app)/nav-links.tsx`).
   seguir siendo accesible gratis.
 - Cada página y cada Server Action comprueba la sesión con `requireUser()`. `src/proxy.ts` solo
   hace una comprobación optimista de la cookie, y las rutas `/api/*` responden 401 por su cuenta.
-- Las acciones comprueban además que la colección o la carta pertenecen al usuario.
+- Las acciones comprueban además que el montón, la colección o la ubicación pertenecen al
+  usuario.
 
 ## Precios
 
@@ -74,7 +85,8 @@ en la barra superior (`src/app/(app)/nav-links.tsx`).
 - Una copia en otro idioma se asocia a la edición inglesa (mismo `set` y `collector_number`): en
   Cardmarket el producto es la edición, y el idioma es un atributo de la copia.
 - Los foil *etched* no tienen precio en € en Scryfall, así que cuentan como "sin precio".
-- El valor de una colección no cuenta las copias sin precio: se muestran aparte.
+- El valor de tus cartas, y el de lo que tienes de una colección, no cuenta las copias sin
+  precio: se muestran aparte. "Te falta ~X €" suma el precio normal de las copias que faltan.
 - El precio unitario está implementado dos veces, en `unitPriceEur()` (TypeScript) y en
   `unitPriceEurSql` (SQL), en `src/lib/collection/pricing.ts`. Si cambias uno, cambia el otro.
 

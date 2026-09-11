@@ -59,15 +59,17 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
 ## Pantalla (`/scan`)
 
 - **Antes de empezar:**
-  - Colección y ubicación (`AddTargetPicker`).
+  - Ubicación y colección, las dos opcionales (`EntryTarget`, D23). Sin ninguna, lo escaneado
+    entra en Mis cartas sin ubicación.
   - Acabado, estado e idioma por defecto.
   - Expansión fija (opcional). También se entra con ella desde la página de la expansión:
     «Escanear esta expansión», `/scan?set=mtg:m10`.
   - Botón **Foto**, para probar sin cámara.
-  - La lista de la sesión y «¿No la reconoce? Búscala a mano», que abre el alta rápida.
+  - La lista de la sesión, con «Añadir la sesión a una colección», y «¿No la reconoce? Búscala a
+    mano», que abre el alta rápida.
 - **Escaneando, a pantalla completa** (capa fija, con los márgenes de seguridad de iOS gracias a
   `viewportFit: cover`):
-  - **Arriba:** cerrar, destino (colección · ubicación · «solo XXX» si hay expansión fija),
+  - **Arriba:** cerrar, destino (ubicación, colección y «solo XXX» si hay expansión fija),
     linterna (si el móvil la ofrece en `getCapabilities().torch`) y el contador de la sesión.
   - **En medio:** el recuadro guía, con la franja de datos marcada en amarillo y el estado de la
     lectura.

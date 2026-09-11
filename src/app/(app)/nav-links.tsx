@@ -4,7 +4,7 @@ import {
   HouseIcon,
   LayersIcon,
   LibraryBigIcon,
-  PackageIcon,
+  ListChecksIcon,
   ScanLineIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -15,23 +15,25 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   { href: "/", label: "Resumen" },
   { href: "/catalog", label: "Catálogo" },
+  { href: "/inventory", label: "Mis cartas" },
   { href: "/collections", label: "Colecciones" },
   { href: "/locations", label: "Ubicaciones" },
   { href: "/scan", label: "Escanear" },
   { href: "/search", label: "Buscar" },
 ];
 
-// Phones: five tabs at the bottom, the scanner in the middle. Search lives in the top bar.
-const TABS: Array<{ href: string; label: string; icon: LucideIcon; primary?: boolean }> = [
+// Phones: five tabs at the bottom, the scanner in the middle. Search lives in the top bar;
+// locations are reached from "Mis cartas".
+const TABS: Array<{ href: string; label: string; icon: LucideIcon; primary?: boolean; also?: string[] }> = [
   { href: "/", label: "Resumen", icon: HouseIcon },
   { href: "/catalog", label: "Catálogo", icon: LibraryBigIcon },
   { href: "/scan", label: "Escanear", icon: ScanLineIcon, primary: true },
-  { href: "/collections", label: "Colecciones", icon: LayersIcon },
-  { href: "/locations", label: "Ubicaciones", icon: PackageIcon },
+  { href: "/inventory", label: "Mis cartas", icon: LayersIcon, also: ["/locations"] },
+  { href: "/collections", label: "Colecciones", icon: ListChecksIcon },
 ];
 
-const isActive = (pathname: string, href: string) =>
-  href === "/" ? pathname === "/" : pathname.startsWith(href);
+const isActive = (pathname: string, href: string, also: string[] = []) =>
+  href === "/" ? pathname === "/" : [href, ...also].some((h) => pathname.startsWith(h));
 
 /** Text links in the top bar, from tablet width up. */
 export function DesktopNav() {
@@ -66,8 +68,8 @@ export function MobileTabBar() {
       className="bg-background/95 supports-[backdrop-filter]:bg-background/85 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
       <ul className="mx-auto grid max-w-md grid-cols-5">
-        {TABS.map(({ href, label, icon: Icon, primary }) => {
-          const active = isActive(pathname, href);
+        {TABS.map(({ href, label, icon: Icon, primary, also }) => {
+          const active = isActive(pathname, href, also);
           return (
             <li key={href}>
               <Link

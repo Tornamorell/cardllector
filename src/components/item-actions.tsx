@@ -4,11 +4,13 @@ import { MinusIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
+  addInventoryToCollection,
   changeQuantity,
   deleteItem,
   splitItem,
   updateItem,
-} from "@/app/(app)/collections/actions";
+} from "@/app/(app)/inventory/actions";
+import { CollectionPicker, type CollectionOption } from "@/components/collection-picker";
 import { LocationPicker, type LocationOption } from "@/components/location-picker";
 import { ConditionSelect, FinishSelect, LanguageSelect } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
@@ -71,6 +73,7 @@ export function QuantityControl({ itemId, quantity }: { itemId: string; quantity
 
 export interface ActionItem {
   id: string;
+  catalogCardId: string | null;
   game: string | null;
   name: string;
   quantity: number;
@@ -83,8 +86,16 @@ export interface ActionItem {
   finishes: string[];
 }
 
-export function ItemActions({ item, locations }: { item: ActionItem; locations: LocationOption[] }) {
-  const [dialog, setDialog] = useState<"edit" | "split" | "delete" | null>(null);
+export function ItemActions({
+  item,
+  locations,
+  collections,
+}: {
+  item: ActionItem;
+  locations: LocationOption[];
+  collections: CollectionOption[];
+}) {
+  const [dialog, setDialog] = useState<"edit" | "collection" | "split" | "delete" | null>(null);
   const close = () => setDialog(null);
 
   return (
@@ -95,8 +106,13 @@ export function ItemActions({ item, locations }: { item: ActionItem; locations: 
         >
           <MoreHorizontalIcon />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuItem onClick={() => setDialog("edit")}>Editar</DropdownMenuItem>
+          {item.catalogCardId && (
+            <DropdownMenuItem onClick={() => setDialog("collection")}>
+              Añadir a una colección
+            </DropdownMenuItem>
+          )}
           {item.quantity > 1 && (
             <DropdownMenuItem onClick={() => setDialog("split")}>Dividir montón</DropdownMenuItem>
           )}
@@ -108,6 +124,9 @@ export function ItemActions({ item, locations }: { item: ActionItem; locations: 
 
       {/* Mounted only while open, so each opening starts from the current values. */}
       {dialog === "edit" && <EditDialog item={item} locations={locations} onClose={close} />}
+      {dialog === "collection" && (
+        <CollectionDialog item={item} collections={collections} onClose={close} />
+      )}
       {dialog === "split" && <SplitDialog item={item} onClose={close} />}
       {dialog === "delete" && <DeleteDialog item={item} onClose={close} />}
     </>
@@ -239,6 +258,60 @@ function EditDialog({
   );
 }
 
+function CollectionDialog({
+  item,
+  collections,
+  onClose,
+}: {
+  item: ActionItem;
+  collections: CollectionOption[];
+  onClose: () => void;
+}) {
+  const [collectionId, setCollectionId] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Añadir {item.name} a una colección</DialogTitle>
+          <DialogDescription>
+            La carta se añade a la lista. Tus copias siguen donde están.
+          </DialogDescription>
+        </DialogHeader>
+        <CollectionPicker
+          value={collectionId}
+          onChange={setCollectionId}
+          collections={collections}
+          emptyLabel="Elige una colección"
+          className="w-full"
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            disabled={!collectionId || pending}
+            onClick={() =>
+              startTransition(async () => {
+                try {
+                  const r = await addInventoryToCollection({ collectionId: collectionId!, itemIds: [item.id] });
+                  toast.success(`${item.name} está en «${r.collectionName}»`);
+                  onClose();
+                } catch {
+                  toast.error("No se ha podido añadir a la colección.");
+                }
+              })
+            }
+          >
+            Añadir
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function SplitDialog({ item, onClose }: { item: ActionItem; onClose: () => void }) {
   const [count, setCount] = useState("1");
   const [pending, startTransition] = useTransition();
@@ -301,8 +374,8 @@ function DeleteDialog({ item, onClose }: { item: ActionItem; onClose: () => void
         <DialogHeader>
           <DialogTitle>¿Eliminar {item.name}?</DialogTitle>
           <DialogDescription>
-            Se quitará{item.quantity > 1 ? `n las ${item.quantity} copias` : " la copia"} de
-            esta colección.
+            Se quitará{item.quantity > 1 ? `n las ${item.quantity} copias` : " la copia"} de tus
+            cartas. Las colecciones que la incluyen la seguirán listando, como carta que te falta.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

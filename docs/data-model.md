@@ -23,22 +23,29 @@ El esquema está en `src/db/schema.ts` (Drizzle), y las migraciones en `drizzle/
 - La búsqueda (`src/lib/queries/search.ts`) agrupa por `oracle_id` y enseña una sola entrada por
   carta, con su edición más reciente como miniatura.
 
-## Colección
+## Tus cartas y tus colecciones
 
 | Tabla | Una fila por |
 | --- | --- |
-| `collections` | colección del usuario (`owner_id`): cómo agrupa sus cartas |
+| `items` | **montón** de tus cartas: copias idénticas de una edición, con `owner_id`, `quantity` y, opcionalmente, `location_id` |
 | `locations` | ubicación física del usuario ("Caja 1", "Carpeta roja"). El nombre es único por usuario, sin distinguir mayúsculas. |
-| `items` | **montón**: copias idénticas de una edición dentro de una colección, con `quantity` y, opcionalmente, `location_id` |
+| `collections` | colección del usuario (`owner_id`): una lista con nombre, como «Pokédex de Hoenn» |
+| `collection_cards` | (colección, edición): una entrada de la lista, con la `quantity` que quieres (1 por defecto) |
 
-Colección y ubicación son ejes independientes (D20): una colección puede repartirse entre varias
-ubicaciones y una ubicación puede tener cartas de varias colecciones. Borrar una ubicación deja
-sus montones con `location_id = null`.
+Tus cartas y tus colecciones son cosas distintas (D23). Un montón no pertenece a ninguna
+colección, y una colección puede listar ediciones que no tienes. Lo que tienes de una colección
+se calcula cruzando `collection_cards` con tus `items` por `catalog_card_id`
+(`ownedByPrinting()` en `src/lib/queries/items.ts`): cuentan todas tus copias de esa edición,
+tengan el acabado, el estado, el idioma o la ubicación que tengan. Una entrada está completa
+cuando tienes al menos las copias que quieres.
 
-Qué hace idénticas dos copias: misma edición, `finish`, `condition`, `language` y
-`location_id`, y sin gradear. Al añadir una copia idéntica a un montón existente, sube su `quantity` en lugar de
-crearse otra fila (`addItem()` en `src/app/(app)/collections/actions.ts`). "Dividir montón"
-separa copias en una fila nueva, para poder cambiarles el estado o la ubicación.
+La ubicación es independiente de todo lo demás (D20). Borrar una ubicación deja sus montones con
+`location_id = null`. Borrar una colección borra sus entradas y deja tus cartas como estaban.
+
+Qué hace idénticas dos copias: mismo dueño, edición, `finish`, `condition`, `language` y
+`location_id`, y sin gradear. Al añadir una copia idéntica a un montón existente, sube su
+`quantity` en lugar de crearse otra fila (`addItem()` en `src/app/(app)/inventory/actions.ts`).
+"Dividir montón" separa copias en una fila nueva, para poder cambiarles el estado o la ubicación.
 
 - `finish` (`nonfoil` \| `foil` \| `etched`) es genérico, y cada juego le pone nombre en
   `finishLabels`:
@@ -59,7 +66,10 @@ separa copias en una fila nueva, para poder cambiarles el estado o la ubicación
 | Tabla | Clave | Qué guarda |
 | --- | --- | --- |
 | `price_snapshots` | (`catalog_card_id`, `date`) | Precios del día, **solo de las ediciones que tienes**. |
-| `collection_value_snapshots` | (`collection_id`, `date`) | Valor, número de cartas y número de copias sin precio. |
+| `inventory_value_snapshots` | (`owner_id`, `date`) | Valor de todas tus cartas, número de copias y número de copias sin precio. |
+
+El valor histórico de lo que tienes de una colección no se guarda: se puede reconstruir con
+`price_snapshots` y las entradas de la lista.
 
 `date` es la fecha de los datos de precio (el `updated_at` del fichero de Scryfall), no la de la
 ejecución. `snapshotPrices()` es idempotente: repetirla en la misma fecha sobrescribe ese día.

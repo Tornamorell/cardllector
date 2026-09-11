@@ -1,137 +1,105 @@
-import { and, asc, desc, eq, exists, isNull, like, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { cardNames, catalogCards, collections, items, locations, sets } from "@/db/schema";
-import { unitPriceEurSql } from "@/lib/collection/pricing";
-import { normalizeForSearch } from "@/lib/search/normalize";
+import { collectionCards, collections } from "@/db/schema";
+import { ownedByPrinting } from "./items";
 
-/** Copies, value and unpriced copies, over `items` left-joined to `catalog_cards`. */
-export const stackAggregates = {
-  cardCount: sql<number>`coalesce(sum(${items.quantity}), 0)::int`,
-  valueEur: sql<number>`coalesce(sum(${items.quantity} * ${unitPriceEurSql}), 0)::float8`,
-  unpricedCount: sql<number>`coalesce(sum(${items.quantity}) filter (where ${items.id} is not null and ${unitPriceEurSql} is null), 0)::int`,
+/**
+ * A collection is a list of printings with the copies wanted of each; what the user owns is
+ * matched from the inventory (D23). For each collection:
+ * - cardCount: printings listed; completeCount: listed printings owned in full
+ * - wanted / ownedCopies: copies wanted and owned (owned capped at wanted)
+ * - ownedValue: value of the owned copies that count towards the list
+ * - missingCost: what the missing copies would cost at today's price
+ */
+export type CollectionSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+  cardCount: number;
+  completeCount: number;
+  wanted: number;
+  ownedCopies: number;
+  ownedValue: number;
+  missingCost: number;
 };
 
-export async function listCollections(ownerId: string) {
-  return db
-    .select({
-      id: collections.id,
-      name: collections.name,
-      description: collections.description,
-      ...stackAggregates,
-    })
-    .from(collections)
-    .leftJoin(items, eq(items.collectionId, collections.id))
-    .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
-    .where(eq(collections.ownerId, ownerId))
-    .groupBy(collections.id)
-    .orderBy(asc(collections.name));
+async function summaries(ownerId: string, collectionId?: string) {
+  const result = await db.execute<CollectionSummary>(sql`
+    with owned as ${ownedByPrinting(ownerId)}
+    select c.id, c.name, c.description,
+           count(cc.catalog_card_id)::int as "cardCount",
+           (count(cc.catalog_card_id) filter (where coalesce(o.qty, 0) >= cc.quantity))::int as "completeCount",
+           coalesce(sum(cc.quantity), 0)::int as wanted,
+           coalesce(sum(least(coalesce(o.qty, 0), cc.quantity)), 0)::int as "ownedCopies",
+           coalesce(sum(case when o.qty > 0 then o.value * least(o.qty, cc.quantity) / o.qty end), 0)::float8 as "ownedValue",
+           coalesce(sum(greatest(cc.quantity - coalesce(o.qty, 0), 0) * cat.price_eur), 0)::float8 as "missingCost"
+    from collections c
+    left join collection_cards cc on cc.collection_id = c.id
+    left join catalog_cards cat on cat.id = cc.catalog_card_id
+    left join owned o on o.catalog_card_id = cc.catalog_card_id
+    where c.owner_id = ${ownerId} ${collectionId ? sql`and c.id = ${collectionId}` : sql``}
+    group by c.id
+    order by c.name
+  `);
+  return result.rows;
 }
 
+export const listCollections = (ownerId: string) => summaries(ownerId);
+
 export async function getCollection(ownerId: string, id: string) {
-  const [row] = await db
-    .select({
-      id: collections.id,
-      name: collections.name,
-      description: collections.description,
-      ...stackAggregates,
-    })
-    .from(collections)
-    .leftJoin(items, eq(items.collectionId, collections.id))
-    .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
-    .where(and(eq(collections.ownerId, ownerId), eq(collections.id, id)))
-    .groupBy(collections.id);
+  const [row] = await summaries(ownerId, id);
   return row ?? null;
 }
 
-export const ITEM_SORTS = {
-  value: "Valor",
-  name: "Nombre",
-  recent: "Recientes",
-  set: "Edición",
-} as const;
-export type ItemSort = keyof typeof ITEM_SORTS;
-
-export const ITEMS_PAGE_SIZE = 100;
-
-export interface ItemScope {
-  ownerId: string;
-  collectionId?: string;
-  /** A location id, `null` for copies without location, or undefined for any. */
-  locationId?: string | null;
+/** For pickers. */
+export async function collectionOptions(ownerId: string) {
+  return db
+    .select({ id: collections.id, name: collections.name })
+    .from(collections)
+    .where(eq(collections.ownerId, ownerId))
+    .orderBy(asc(collections.name));
 }
 
-/** The user's stacks within a collection and/or location, filtered, sorted and paginated. */
-export async function listItems(
-  scope: ItemScope,
-  { q, sort = "value", page = 1 }: { q?: string; sort?: ItemSort; page?: number },
-) {
-  const filters: SQL[] = [eq(collections.ownerId, scope.ownerId)];
-  if (scope.collectionId) filters.push(eq(items.collectionId, scope.collectionId));
-  if (scope.locationId !== undefined) {
-    filters.push(scope.locationId ? eq(items.locationId, scope.locationId) : isNull(items.locationId));
-  }
-  const needle = q ? normalizeForSearch(q) : "";
-  if (needle) {
-    const pattern = `%${needle.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-    filters.push(
-      or(
-        like(catalogCards.searchName, pattern),
-        exists(
-          db
-            .select({ one: sql`1` })
-            .from(cardNames)
-            .where(
-              and(eq(cardNames.catalogCardId, catalogCards.id), like(cardNames.searchName, pattern)),
-            ),
-        ),
-      )!,
-    );
-  }
+export type CollectionCard = {
+  id: string;
+  game: string;
+  name: string;
+  setCode: string;
+  setName: string | null;
+  collectorNumber: string;
+  rarity: string | null;
+  imageSmall: string | null;
+  finishes: string[];
+  priceEur: number | null;
+  wanted: number;
+  owned: number;
+  addedAt: string;
+};
 
-  const orderBy = {
-    value: [sql`${unitPriceEurSql} * ${items.quantity} desc nulls last`, asc(catalogCards.name)],
-    name: [asc(catalogCards.name), asc(catalogCards.setCode)],
-    recent: [desc(items.createdAt)],
-    set: [desc(catalogCards.releasedAt), asc(catalogCards.setCode), asc(catalogCards.collectorNumber)],
-  }[sort];
-
-  const rows = await db
-    .select({
-      id: items.id,
-      quantity: items.quantity,
-      finish: items.finish,
-      condition: items.condition,
-      language: items.language,
-      locationId: items.locationId,
-      notes: items.notes,
-      purchasePriceEur: items.purchasePriceEur,
-      createdAt: items.createdAt,
-      unitPriceEur: sql<number | null>`${unitPriceEurSql}::float8`,
-      collection: { id: collections.id, name: collections.name },
-      location: { id: locations.id, name: locations.name },
-      card: {
-        id: catalogCards.id,
-        game: catalogCards.game,
-        name: catalogCards.name,
-        setCode: catalogCards.setCode,
-        setName: sets.name,
-        collectorNumber: catalogCards.collectorNumber,
-        rarity: catalogCards.rarity,
-        finishes: catalogCards.finishes,
-        imageSmall: catalogCards.imageSmall,
-      },
-    })
-    .from(items)
-    .innerJoin(collections, eq(collections.id, items.collectionId))
-    .leftJoin(locations, eq(locations.id, items.locationId))
-    .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
-    .leftJoin(sets, and(eq(sets.game, catalogCards.game), eq(sets.code, catalogCards.setCode)))
-    .where(and(...filters))
-    .orderBy(...orderBy)
-    .limit(ITEMS_PAGE_SIZE + 1)
-    .offset((page - 1) * ITEMS_PAGE_SIZE);
-
-  return { rows: rows.slice(0, ITEMS_PAGE_SIZE), hasMore: rows.length > ITEMS_PAGE_SIZE };
+/** The printings a collection lists, with copies wanted and owned. Check ownership first. */
+export async function listCollectionCards(ownerId: string, collectionId: string) {
+  const result = await db.execute<CollectionCard>(sql`
+    with owned as ${ownedByPrinting(ownerId)}
+    select cat.id, cat.game, cat.name, cat.set_code as "setCode", s.name as "setName",
+           cat.collector_number as "collectorNumber", cat.rarity, cat.image_small as "imageSmall",
+           cat.finishes, cat.price_eur::float8 as "priceEur",
+           cc.quantity as wanted, coalesce(o.qty, 0)::int as owned, cc.created_at::text as "addedAt"
+    from collection_cards cc
+    join catalog_cards cat on cat.id = cc.catalog_card_id
+    left join sets s on s.game = cat.game and s.code = cat.set_code
+    left join owned o on o.catalog_card_id = cc.catalog_card_id
+    where cc.collection_id = ${collectionId}
+    order by cc.created_at desc
+  `);
+  return result.rows;
 }
 
-export type CollectionItem = Awaited<ReturnType<typeof listItems>>["rows"][number];
+/** The user's collections that list a printing. */
+export async function collectionsOfCard(ownerId: string, catalogCardId: string) {
+  return db
+    .select({ id: collections.id, name: collections.name, wanted: collectionCards.quantity })
+    .from(collectionCards)
+    .innerJoin(collections, eq(collections.id, collectionCards.collectionId))
+    .where(and(eq(collections.ownerId, ownerId), eq(collectionCards.catalogCardId, catalogCardId)))
+    .orderBy(asc(collections.name));
+}

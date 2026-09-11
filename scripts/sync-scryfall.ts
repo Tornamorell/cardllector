@@ -49,7 +49,7 @@ console.log(`Cards: ${upserted} upserted, ${skipped} digital-only skipped (${ela
 const snapshot = await snapshotPrices(entry.updated_at.slice(0, 10));
 console.log(
   `Snapshot ${entry.updated_at.slice(0, 10)}: ${snapshot.printings} printings, ` +
-    `${snapshot.collections} collections (${elapsed()})`,
+    `${snapshot.owners} inventories (${elapsed()})`,
 );
 
 await pool.end();

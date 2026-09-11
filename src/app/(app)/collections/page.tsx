@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ProgressMeter } from "@/components/progress-meter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatEur, formatInt } from "@/lib/format";
 import { listCollections } from "@/lib/queries/collections";
@@ -17,7 +17,13 @@ export default async function CollectionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Colecciones</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Colecciones</h1>
+          <p className="text-muted-foreground max-w-prose text-sm">
+            Listas de cartas que te interesan, las tengas o no: la Pokédex de Hoenn, tu mazo, lo que
+            quieres conseguir. Cada una te dice qué tienes, qué te falta y cuánto costaría completarla.
+          </p>
+        </div>
         <form action={createCollection} className="flex gap-2">
           <Input name="name" placeholder="Nueva colección…" required maxLength={80} aria-label="Nombre" />
           <Button type="submit">Crear</Button>
@@ -26,26 +32,40 @@ export default async function CollectionsPage() {
 
       {!collections.length ? (
         <p className="text-muted-foreground text-sm">
-          Aún no tienes colecciones. Crea una (por ejemplo «Carpeta Modern» o «Caja de
-          comunes») y empieza a añadir cartas.
+          Aún no tienes colecciones. Crea una y añádele cartas desde el catálogo, desde «Mis cartas» o
+          al escanear.
         </p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {collections.map((c) => (
             <li key={c.id}>
-              <Link href={`/collections/${c.id}`} className="block">
-                <Card className="hover:border-foreground/30 transition-colors">
-                  <CardHeader>
-                    <CardTitle>{c.name}</CardTitle>
-                    {c.description && <CardDescription>{c.description}</CardDescription>}
-                  </CardHeader>
-                  <CardContent className="flex items-baseline justify-between">
-                    <span className="text-2xl font-semibold">{formatEur(c.valueEur)}</span>
-                    <span className="text-muted-foreground text-sm tabular-nums">
-                      {formatInt(c.cardCount)} cartas
-                    </span>
-                  </CardContent>
-                </Card>
+              <Link
+                href={`/collections/${c.id}`}
+                className="bg-card hover:border-primary/60 block h-full space-y-3 rounded-xl border p-4 transition-colors"
+              >
+                <div className="space-y-1">
+                  <h2 className="text-lg font-bold">{c.name}</h2>
+                  {c.description && (
+                    <p className="text-muted-foreground line-clamp-2 text-sm">{c.description}</p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-sm">
+                    Tienes <strong>{formatInt(c.completeCount)}</strong> de {formatInt(c.cardCount)}
+                  </p>
+                  <ProgressMeter
+                    value={c.completeCount}
+                    max={Math.max(c.cardCount, 1)}
+                    showLabel={false}
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex items-baseline justify-between text-sm">
+                  <span className="text-primary font-semibold">{formatEur(c.ownedValue)}</span>
+                  {c.missingCost > 0 && (
+                    <span className="text-muted-foreground">Falta ~{formatEur(c.missingCost)}</span>
+                  )}
+                </div>
               </Link>
             </li>
           ))}

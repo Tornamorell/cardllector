@@ -5,8 +5,8 @@ import type { CONDITIONS } from "./format";
 
 /**
  * Remembered entry settings, so adding hundreds of cards doesn't mean re-picking the same
- * collection, location, language, finish and condition every time — "from now on,
- * everything goes to Caja 1". Per device (localStorage).
+ * location, collection, language, finish and condition every time — "from now on, everything
+ * goes to Caja 1". Per device (localStorage).
  */
 export interface StickyDefaults {
   finish: "nonfoil" | "foil" | "etched";
@@ -14,7 +14,8 @@ export interface StickyDefaults {
   language: string;
   lastLocationId: string | null;
   lastSetCode: string | null;
-  lastCollectionId: string | null;
+  /** Optional: also list what's entered in this collection (D23). Null = no collection. */
+  entryCollectionId: string | null;
 }
 
 const DEFAULTS: StickyDefaults = {
@@ -23,7 +24,7 @@ const DEFAULTS: StickyDefaults = {
   language: "es",
   lastLocationId: null,
   lastSetCode: null,
-  lastCollectionId: null,
+  entryCollectionId: null,
 };
 
 const KEY = "cardllector:defaults";

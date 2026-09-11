@@ -1,9 +1,9 @@
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { catalogCards, collections, items } from "@/db/schema";
+import { catalogCards, items, locations } from "@/db/schema";
 import { unitPriceEurSql } from "@/lib/collection/pricing";
 
-/** The most valuable stacks across all the user's collections. */
+/** The most valuable stacks in the user's inventory. */
 export async function topStacks(ownerId: string, limit = 10) {
   return db
     .select({
@@ -11,8 +11,7 @@ export async function topStacks(ownerId: string, limit = 10) {
       quantity: items.quantity,
       finish: items.finish,
       unitPriceEur: sql<number>`${unitPriceEurSql}::float8`,
-      collectionId: collections.id,
-      collectionName: collections.name,
+      location: { id: locations.id, name: locations.name },
       card: {
         id: catalogCards.id,
         game: catalogCards.game,
@@ -23,9 +22,9 @@ export async function topStacks(ownerId: string, limit = 10) {
       },
     })
     .from(items)
-    .innerJoin(collections, eq(collections.id, items.collectionId))
     .innerJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
-    .where(and(eq(collections.ownerId, ownerId), isNotNull(unitPriceEurSql)))
+    .leftJoin(locations, eq(locations.id, items.locationId))
+    .where(and(eq(items.ownerId, ownerId), isNotNull(unitPriceEurSql)))
     .orderBy(sql`${unitPriceEurSql} desc`)
     .limit(limit);
 }

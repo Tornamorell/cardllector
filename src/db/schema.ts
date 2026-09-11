@@ -146,15 +146,16 @@ export const locations = pgTable(
   (t) => [uniqueIndex("locations_owner_name_uq").on(t.ownerId, sql`lower(${t.name})`)],
 );
 
-// A stack of identical physical copies. Adding a copy identical to an existing stack
-// bumps its quantity instead of creating a new row.
+// The inventory: stacks of identical physical copies the user owns. Adding a copy identical to
+// an existing stack bumps its quantity instead of creating a new row. Copies don't belong to
+// collections (those are lists, see collection_cards); they may have a location (D23).
 export const items = pgTable(
   "items",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    collectionId: uuid("collection_id")
+    ownerId: text("owner_id")
       .notNull()
-      .references(() => collections.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     // Null for items without a catalog entry (e.g. sports cards entered by hand).
     catalogCardId: uuid("catalog_card_id").references(() => catalogCards.id, {
       onDelete: "restrict",
@@ -175,10 +176,32 @@ export const items = pgTable(
     ...timestamps,
   },
   (t) => [
-    index("items_collection_idx").on(t.collectionId),
     index("items_catalog_card_idx").on(t.catalogCardId),
     index("items_location_idx").on(t.locationId),
+    index("items_owner_idx").on(t.ownerId),
     check("items_quantity_positive", sql`${t.quantity} > 0`),
+  ],
+);
+
+// The cards a collection is made of: a curated list ("Pokédex de Hoenn", a wishlist), owned
+// or not. Ownership is computed against `items` (D23).
+export const collectionCards = pgTable(
+  "collection_cards",
+  {
+    collectionId: uuid("collection_id")
+      .notNull()
+      .references(() => collections.id, { onDelete: "cascade" }),
+    catalogCardId: uuid("catalog_card_id")
+      .notNull()
+      .references(() => catalogCards.id, { onDelete: "cascade" }),
+    // Copies wanted (4 for a Magic playset, usually 1).
+    quantity: integer("quantity").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.collectionId, t.catalogCardId] }),
+    index("collection_cards_card_idx").on(t.catalogCardId),
+    check("collection_cards_quantity_positive", sql`${t.quantity} > 0`),
   ],
 );
 
@@ -201,16 +224,17 @@ export const priceSnapshots = pgTable(
   (t) => [primaryKey({ columns: [t.catalogCardId, t.date] })],
 );
 
-export const collectionValueSnapshots = pgTable(
-  "collection_value_snapshots",
+// The whole inventory's value per day: what the dashboard's history chart will read.
+export const inventoryValueSnapshots = pgTable(
+  "inventory_value_snapshots",
   {
-    collectionId: uuid("collection_id")
+    ownerId: text("owner_id")
       .notNull()
-      .references(() => collections.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     date: date("date").notNull(),
     valueEur: numeric("value_eur", { precision: 12, scale: 2, mode: "number" }).notNull(),
     cardCount: integer("card_count").notNull(),
     unpricedCount: integer("unpriced_count").notNull(),
   },
-  (t) => [primaryKey({ columns: [t.collectionId, t.date] })],
+  (t) => [primaryKey({ columns: [t.ownerId, t.date] })],
 );

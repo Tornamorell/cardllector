@@ -108,6 +108,6 @@ if (!ownedOnly) {
 }
 
 const snapshot = await snapshotPrices(today);
-console.log(`Snapshot ${today}: ${snapshot.printings} printings, ${snapshot.collections} collections (${elapsed()})`);
+console.log(`Snapshot ${today}: ${snapshot.printings} printings, ${snapshot.owners} inventories (${elapsed()})`);
 
 await pool.end();

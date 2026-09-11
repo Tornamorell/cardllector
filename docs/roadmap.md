@@ -19,7 +19,7 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Crear, renombrar y borrar colecciones.
   - Alta rápida con teclado y valores que se recuerdan de una carta a otra.
   - Editar, dividir y eliminar montones; ±1 de cantidad.
-  - Resumen con el valor total, las cartas más valiosas y el desglose por colección.
+  - Resumen con el valor total, las cartas más valiosas y el progreso de cada colección.
 - **Catálogo navegable:** juego → expansiones → cartas, con filtros por rareza y por
   "tengo" o "me faltan", y un botón **+** para añadir (D16).
 - **Pokémon** (D17–D19):
@@ -28,10 +28,19 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Acabados «Estándar» y «Reverse holo».
   - La búsqueda y el alta rápida cubren los dos juegos.
 - **Ubicaciones físicas** (D20):
-  - Páginas `/locations`, con el valor de cada ubicación y su reparto por colección.
+  - Páginas `/locations`, con el valor de cada ubicación.
   - Selector con «+ Nueva ubicación…» en todos los formularios de alta.
   - "Ubicación de sesión" recordada: a partir de ahora, todo va a la Caja 1.
-  - Filtro por ubicación en cada colección.
+  - Filtro por ubicación en Mis cartas.
+- **Tus cartas y colecciones como listas** (D23):
+  - «Mis cartas» (`/inventory`) es el inventario. Escanear y dar de alta ya no piden colección
+    ni ubicación.
+  - Las colecciones son listas de ediciones con la cantidad que quieres, las tengas o no, con
+    su progreso, lo que vale lo que tienes y lo que falta.
+  - Al dar de alta, colección opcional. Lo ya dado de alta se añade a una colección en bloque
+    desde Mis cartas, desde una ubicación o desde la sesión del escáner.
+  - Migraciones `0006`–`0008`, que convierten los datos existentes. Probadas en local; en
+    producción se aplican con el siguiente despliegue.
 
 Verificado por HTTP y SQL. **Falta probar en el navegador con la sesión iniciada** el alta rápida,
 los diálogos y el botón +.
@@ -74,9 +83,10 @@ cartas reales (necesita el despliegue con HTTPS). Estado real, mediciones y pend
      un botón "+1".
 5. **Modo "edición fija":** eliges la expansión y basta con leer el número. Cubre las cartas de
    2003 a 2014, que no traen código de edición. Se puede lanzar desde la página de la expansión.
-6. **La sesión empieza eligiendo colección y ubicación** ("voy a escanear la Caja 1", D20).
-   Además se fijan foil, estado e idioma, reutilizando `useStickyDefaults` y `LocationPicker`.
-   Lo escaneado se puede deshacer o corregir desde la lista de la sesión.
+6. **La sesión puede empezar eligiendo ubicación** ("voy a escanear la Caja 1", D20) **y
+   colección**, las dos opcionales (D23). Además se fijan foil, estado e idioma, reutilizando
+   `useStickyDefaults`. Lo escaneado se puede deshacer o corregir desde la lista de la sesión, y
+   la sesión entera se puede añadir a una colección al terminar.
 7. **Cola de revisión** (`/review`, tabla `pending_scans`, sin crear todavía): guarda una miniatura
    y el texto leído de lo que no se reconoce. Luego se resuelve buscando a mano.
 8. Manifest y service worker (Serwist) para instalar la app en el móvil.
@@ -85,8 +95,9 @@ cartas reales (necesita el despliegue con HTTPS). Estado real, mediciones y pend
 
 ### Fase 4 · Evolución del valor
 
-- Gráfica del valor en el tiempo, total y por colección (`collection_value_snapshots`). Cargar la
-  skill `dataviz` antes de hacerla.
+- Gráfica del valor de tus cartas en el tiempo (`inventory_value_snapshots`). Por colección
+  habría que reconstruirla con `price_snapshots` (D23). Cargar la skill `dataviz` antes de
+  hacerla.
 - Las cartas que más suben y bajan en 7 y 30 días (`price_snapshots`).
 - Histórico de precio en la ficha de carta.
 - Beneficio o pérdida frente al precio de compra.
@@ -98,7 +109,9 @@ cartas reales (necesita el despliegue con HTTPS). Estado real, mediciones y pend
   (`abbreviation.official`, por ejemplo "MEW") y el número. Encaja con el mismo enfoque de OCR.
 - **Fútbol y deporte**, a mano.
 - Importar CSV de ManaBox y otras apps.
-- Filtro por expansión dentro de una colección.
+- Filtro por expansión dentro de una colección y de Mis cartas.
+- Colecciones con entradas de "cualquier edición" o por acabado, y colecciones generadas (una
+  expansión entera) (D23).
 - Detección automática del contorno de la carta en el escáner (OpenCV.js).
 - Abrir la app a otros usuarios (D14).
 

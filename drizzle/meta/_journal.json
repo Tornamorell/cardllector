@@ -43,6 +43,27 @@
       "when": 1789139504477,
       "tag": "0005_set_print_info",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789157076328,
+      "tag": "0006_inventory_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789157076780,
+      "tag": "0007_backfill_inventory",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789157225448,
+      "tag": "0008_drop_collection_items",
+      "breakpoints": true
     }
   ]
 }

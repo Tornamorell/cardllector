@@ -126,8 +126,9 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
 
 ## D11 · Histórico de precios solo de lo que tienes — 2026-09-11 · provisional
 
-- **Decisión:** `price_snapshots` guarda cada día solo las ediciones presentes en alguna colección.
-  El valor de cada colección se guarda aparte, cada día.
+- **Decisión:** `price_snapshots` guarda cada día solo las ediciones de las que tienes alguna
+  copia. El valor de todas tus cartas se guarda aparte, cada día (`inventory_value_snapshots`;
+  hasta D23 era por colección).
 - **Descartado:** guardar las ~110 000 ediciones cada día (~40 M de filas al año), que no cabe
   en Neon gratis.
 - **Consecuencia:** una carta añadida hoy no tiene histórico anterior a hoy.
@@ -246,6 +247,8 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   cartas de dos formas.
 - **Revisar cuando:** hagan falta ubicaciones anidadas (estantería → caja → separador) o una
   posición dentro de la caja (página de la carpeta, orden).
+- **Actualización (D23):** las copias ya no pertenecen a ninguna colección. La ubicación sigue
+  igual: es un dato opcional de cada montón de tus cartas.
 
 ## D21 · Las rarezas se muestran en inglés — 2026-09-11 · provisional
 
@@ -277,3 +280,39 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   ediciones" agrupan por nombre (todos los "Charizard ex"), aunque sean cartas con ataques
   distintos.
 - **Revisar cuando:** moleste que se mezclen cartas diferentes con el mismo nombre.
+
+## D23 · Tus cartas por un lado; las colecciones, listas de lo que quieres — 2026-09-11 · provisional
+
+- **Contexto:** probándolo, el usuario vio que para escanear no debería hacer falta ni colección
+  ni ubicación, y que una colección (por ejemplo, «Pokédex de Hoenn») es una lista de cartas que
+  quiere, las tenga o no: la app le dice cuáles tiene. Sustituye la parte de D10 y D20 en la que
+  cada montón pertenecía a una colección.
+- **Decisión:**
+  - `items` es **tu inventario**: cada montón lleva `owner_id` y, si quieres, `location_id`. Dar
+    de alta o escanear solo necesita la carta.
+  - `collection_cards` (colección, edición, `quantity` deseada, 1 por defecto) es **la lista**.
+    Lo que tienes de ella se calcula cruzando con tus cartas por edición: cuenta cualquier
+    acabado, estado, idioma o ubicación.
+  - Al dar de alta puedes elegir, **opcionalmente**, una colección (`entryCollectionId`, que se
+    recuerda en el dispositivo como la ubicación). La copia entra en tus cartas y, si la edición
+    no estaba en la lista, también en la lista.
+  - Lo ya dado de alta se añade a una colección en bloque (`addInventoryToCollection`): desde
+    «Mis cartas» (con la búsqueda y la ubicación filtradas), desde una ubicación y desde la sesión
+    del escáner. Si la edición ya estaba, se queda la cantidad deseada mayor; no se suman.
+  - Borrar una colección borra la lista, no tus cartas.
+  - El valor diario se guarda por usuario (`inventory_value_snapshots`), no por colección.
+- **Migración (`0006`–`0008`):**
+  - Las copias de cada colección pasan a su dueño.
+  - Cada colección se convierte en una lista con sus ediciones, con cantidad deseada igual a las
+    copias que había (máximo 999).
+  - Los snapshots por colección se suman en snapshots por usuario.
+  - Los montones que quedan repetidos al quitar la colección (misma edición, acabado, estado,
+    idioma y ubicación) se fusionan si no tienen notas, precio de compra ni gradeo. Si tienen
+    alguno de esos datos, se dejan separados.
+- **Descartado:**
+  - `items.collection_id` opcional: mezcla "lo que tengo" con "lo que quiero" y no permite
+    listas con cartas que no tienes.
+  - Entradas de "cualquier edición" ("quiero un Treecko, el que sea"). De momento cada entrada
+    es una edición concreta.
+- **Revisar cuando:** se quieran entradas por carta en lugar de por edición, por acabado ("lo
+  quiero en foil") o colecciones generadas (una expansión entera).

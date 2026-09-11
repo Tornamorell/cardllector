@@ -1,0 +1,119 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { CardPickerRow } from "@/components/card-picker-row";
+import { CardSearchBox, useCardPicker } from "@/components/card-picker";
+import type { CollectionOption } from "@/components/collection-picker";
+import { EntryTarget } from "@/components/entry-target";
+import type { LocationOption } from "@/components/location-picker";
+import {
+  ConditionSelect,
+  FinishSelect,
+  LanguageSelect,
+  finishFor,
+} from "@/components/stack-fields";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { gameById } from "@/lib/games";
+import { useStickyDefaults } from "@/lib/use-sticky-defaults";
+import { addItem } from "@/app/(app)/inventory/actions";
+
+/**
+ * Keyboard-first entry into the inventory: type a name → Enter picks the card → Enter adds it
+ * with the remembered location, optional collection, finish, condition and language.
+ */
+export function QuickAdd({
+  locations,
+  collections,
+}: {
+  locations: LocationOption[];
+  collections: CollectionOption[];
+}) {
+  const [defaults, setDefaults] = useStickyDefaults();
+  const picker = useCardPicker(defaults.lastSetCode);
+  const [quantity, setQuantity] = useState(1);
+  const [pending, startTransition] = useTransition();
+  const { printing } = picker;
+  const finish = finishFor(defaults.finish, printing?.finishes ?? []);
+
+  function add() {
+    if (!printing) return;
+    startTransition(async () => {
+      try {
+        const r = await addItem({
+          catalogCardId: printing.id,
+          quantity,
+          finish,
+          condition: defaults.condition,
+          language: defaults.language,
+          locationId: defaults.lastLocationId,
+          collectionId: defaults.entryCollectionId,
+        });
+        if (!r.ok) {
+          setDefaults(r.error === "location_not_found" ? { lastLocationId: null } : { entryCollectionId: null });
+          toast.error(
+            r.error === "location_not_found"
+              ? "La ubicación elegida ya no existe. Elige otra."
+              : "La colección elegida ya no existe. Elige otra.",
+          );
+          return;
+        }
+        toast.success(`${r.name} · ${r.setCode.toUpperCase()} #${r.number}`, {
+          description: [
+            r.merged ? `Ahora tienes ${r.quantity}` : `Añadida ×${quantity}`,
+            r.locationName && `en ${r.locationName}`,
+            r.collectionName && `y en «${r.collectionName}»`,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        });
+        setDefaults({ lastSetCode: printing.setCode });
+        setQuantity(1);
+        picker.reset();
+      } catch {
+        toast.error("No se ha podido añadir la carta.");
+      }
+    });
+  }
+
+  return (
+    <div className="bg-card space-y-3 rounded-xl border p-3">
+      <CardSearchBox
+        picker={picker}
+        onSubmit={add}
+        placeholder="Añadir carta: escribe el nombre (inglés o español) y pulsa Intro"
+        label="Buscar carta para añadir"
+      />
+      <EntryTarget locations={locations} collections={collections} />
+
+      {picker.selected && printing && (
+        <CardPickerRow picker={picker}>
+          <FinishSelect
+            value={finish}
+            available={printing.finishes}
+            labels={gameById(printing.game)?.finishLabels}
+            onChange={(v) => setDefaults({ finish: v })}
+          />
+          <ConditionSelect value={defaults.condition} onChange={(v) => setDefaults({ condition: v })} />
+          <LanguageSelect value={defaults.language} onChange={(v) => setDefaults({ language: v })} />
+          <Input
+            type="number"
+            min={1}
+            max={999}
+            value={quantity}
+            onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+            className="w-20"
+            aria-label="Cantidad"
+          />
+          <Button id={picker.submitId} onClick={add} disabled={pending}>
+            {pending ? "Añadiendo…" : "Añadir"}
+          </Button>
+          <Button variant="ghost" onClick={picker.reset} disabled={pending}>
+            Cancelar
+          </Button>
+        </CardPickerRow>
+      )}
+    </div>
+  );
+}

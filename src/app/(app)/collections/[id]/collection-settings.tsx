@@ -96,7 +96,7 @@ export function CollectionSettings({
           <DialogHeader>
             <DialogTitle>¿Eliminar «{name}»?</DialogTitle>
             <DialogDescription>
-              Se borrarán la colección y todas sus cartas. No se puede deshacer.
+              Se borrará la lista. Tus cartas no se tocan: siguen en «Mis cartas». No se puede deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

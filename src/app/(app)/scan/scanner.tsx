@@ -1,12 +1,14 @@
 "use client";
 
 import { FlashlightIcon, ImageUpIcon, MinusIcon, PlusIcon, ScanLineIcon, XIcon } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AddTargetPicker } from "@/components/add-target-picker";
+import { AddFilteredToCollection } from "@/components/add-filtered-to-collection";
 import { CardThumb } from "@/components/card-thumb";
+import type { CollectionOption } from "@/components/collection-picker";
+import { EntryTarget } from "@/components/entry-target";
 import type { LocationOption } from "@/components/location-picker";
+import { QuickAdd } from "@/components/quick-add";
 import {
   ConditionSelect,
   FinishSelect,
@@ -29,10 +31,9 @@ import {
 } from "@/lib/scan/geometry";
 import { numberVariants, parseCollectorLine, parseTitle, type CollectorLine } from "@/lib/scan/parse";
 import { normalizeForSearch } from "@/lib/search/normalize";
-import { useStickyDefaults, validId } from "@/lib/use-sticky-defaults";
+import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 import { cn } from "@/lib/utils";
-import { QuickAdd } from "../collections/[id]/quick-add";
-import { addItem, changeFinish, changeQuantity } from "../collections/actions";
+import { addItem, changeFinish, changeQuantity } from "../inventory/actions";
 
 type OcrWorker = import("tesseract.js").Worker;
 type Psm = import("tesseract.js").PSM;
@@ -124,14 +125,14 @@ export function Scanner({
   sets,
   initialFixedSet,
 }: {
-  collections: Array<{ id: string; name: string }>;
+  collections: CollectionOption[];
   locations: LocationOption[];
   sets: SetOption[];
   initialFixedSet: FixedSet | null;
 }) {
   const [defaults, setDefaults] = useStickyDefaults();
-  const collectionId = validId(defaults.lastCollectionId, collections) ?? collections[0]?.id ?? null;
-  const collectionName = collections.find((c) => c.id === collectionId)?.name ?? "";
+  // Both optional: scanning just fills the inventory (D23).
+  const collectionName = collections.find((c) => c.id === defaults.entryCollectionId)?.name ?? null;
   const locationName = locations.find((l) => l.id === defaults.lastLocationId)?.name ?? null;
 
   const [fixedSet, setFixedSet] = useState<FixedSet | null>(initialFixedSet);
@@ -170,9 +171,9 @@ export function Scanner({
     cache: new Map<string, ScanMatch[]>(),
   });
   // The read loop is async and long-lived: it reads the latest settings from here.
-  const settings = useRef({ collectionId, defaults, fixedSet });
+  const settings = useRef({ defaults, fixedSet });
   useEffect(() => {
-    settings.current = { collectionId, defaults, fixedSet };
+    settings.current = { defaults, fixedSet };
   });
 
   useEffect(
@@ -360,16 +361,21 @@ export function Scanner({
 
   // --- Adding and adjusting --------------------------------------------------
 
+  /** A remembered location/collection was deleted elsewhere: forget it and say so. */
+  function forgetMissing(error: "location_not_found" | "collection_not_found") {
+    setDefaults(error === "location_not_found" ? { lastLocationId: null } : { entryCollectionId: null });
+    toast.error(
+      error === "location_not_found"
+        ? "La ubicación elegida ya no existe. Elige otra."
+        : "La colección elegida ya no existe. Elige otra.",
+    );
+  }
+
   async function add(match: ScanMatch, lang: string | null) {
-    const { collectionId, defaults } = settings.current;
-    if (!collectionId) {
-      toast.error("Crea una colección antes de escanear.");
-      return;
-    }
+    const { defaults } = settings.current;
     const finish = finishFor(defaults.finish, match.finishes) as Finish;
     try {
       const r = await addItem({
-        collectionId,
         catalogCardId: match.id,
         quantity: 1,
         finish,
@@ -377,11 +383,11 @@ export function Scanner({
         // The card's own language code, when printed, beats the session default.
         language: lang ?? defaults.language,
         locationId: defaults.lastLocationId,
+        collectionId: defaults.entryCollectionId,
         source: "scan",
       });
       if (!r.ok) {
-        setDefaults({ lastLocationId: null });
-        toast.error("La ubicación elegida ya no existe. Elige otra.");
+        forgetMissing(r.error);
         return;
       }
       beep();
@@ -412,10 +418,9 @@ export function Scanner({
 
   const plusOne = (e: Entry) =>
     mutate(async () => {
-      const { collectionId, defaults } = settings.current;
-      if (!collectionId) return;
+      const { defaults } = settings.current;
       const r = await addItem({
-        collectionId,
+        collectionId: defaults.entryCollectionId,
         catalogCardId: e.match.id,
         quantity: 1,
         finish: e.finish,
@@ -571,21 +576,6 @@ export function Scanner({
 
   // --- Render ---------------------------------------------------------------
 
-  if (!collections.length) {
-    return (
-      <div className="space-y-2 py-10 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Escanear</h1>
-        <p className="text-muted-foreground">
-          Primero{" "}
-          <Link href="/collections" className="underline">
-            crea una colección
-          </Link>{" "}
-          donde guardar lo que escanees.
-        </p>
-      </div>
-    );
-  }
-
   const total = entries.reduce((n, e) => n + e.count, 0);
   const current = entries[0] ?? null;
   const guide = stage ? guideIn({ x: 0, y: 0, w: stage.w, h: stage.h }) : null;
@@ -597,7 +587,7 @@ export function Scanner({
       <h1 className="text-2xl font-semibold tracking-tight">Escanear</h1>
 
       <section className="bg-muted/40 space-y-3 rounded-lg border p-3" aria-label="Sesión">
-        <AddTargetPicker collections={collections} locations={locations} />
+        <EntryTarget collections={collections} locations={locations} />
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-muted-foreground">Por defecto</span>
           <FinishSelect value={defaults.finish} onChange={(v) => setDefaults({ finish: v })} />
@@ -676,9 +666,16 @@ export function Scanner({
 
       {entries.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-sm font-medium">
-            En esta sesión: {total} {total === 1 ? "carta" : "cartas"}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-medium">
+              En esta sesión: {total} {total === 1 ? "carta" : "cartas"}
+            </h2>
+            <AddFilteredToCollection
+              collections={collections}
+              filter={{ itemIds: entries.map((e) => e.itemId) }}
+              label="Añadir la sesión a una colección"
+            />
+          </div>
           <ul className="divide-y rounded-md border">
             {entries.map((e) => (
               <li key={e.key} className="flex items-center gap-3 px-3 py-2">
@@ -716,14 +713,12 @@ export function Scanner({
         </section>
       )}
 
-      {collectionId && (
-        <details className="rounded-lg border p-3">
-          <summary className="cursor-pointer text-sm font-medium">¿No la reconoce? Búscala a mano</summary>
-          <div className="pt-3">
-            <QuickAdd collectionId={collectionId} locations={locations} />
-          </div>
-        </details>
-      )}
+      <details className="rounded-lg border p-3">
+        <summary className="cursor-pointer text-sm font-medium">¿No la reconoce? Búscala a mano</summary>
+        <div className="pt-3">
+          <QuickAdd locations={locations} collections={collections} />
+        </div>
+      </details>
 
       {/* Full-screen scanner. Always mounted so the video and stage refs exist. */}
       <div
@@ -744,10 +739,10 @@ export function Scanner({
             <XIcon />
           </Button>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-medium">{collectionName}</p>
+            <p className="truncate text-sm font-medium">{locationName ?? "Sin ubicación"}</p>
             <p className="truncate text-xs text-white/70">
-              {locationName ?? "Sin ubicación"}
-              {fixedCode && ` · solo ${fixedCode}`}
+              {collectionName ? `y en «${collectionName}»` : "Sin colección"}
+              {fixedCode && `, solo ${fixedCode}`}
             </p>
           </div>
           {torch.supported && (

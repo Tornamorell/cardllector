@@ -17,11 +17,12 @@ import {
 import { LANGUAGES, formatEur } from "@/lib/format";
 import { finishLabel, gameById, rarityLabel } from "@/lib/games";
 import { getOwnedStacks, getPrinting, getPrintingsOf, getSpanishName } from "@/lib/queries/cards";
-import { listCollections } from "@/lib/queries/collections";
+import { collectionOptions, collectionsOfCard } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
-import { AddToCollection } from "./add-to-collection";
+import { AddCopy } from "./add-copy";
+import { WantInCollection } from "./want-in-collection";
 
 async function load(id: string) {
   if (!z.uuid().safeParse(id).success) notFound();
@@ -42,18 +43,18 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
   const printing = await load(id);
   const oracleId = printing.oracleId;
 
-  const [printings, spanishName, owned, collections, locations] = await Promise.all([
+  const [printings, spanishName, owned, collections, locations, lists] = await Promise.all([
     oracleId ? getPrintingsOf(oracleId) : Promise.resolve([printing]),
     oracleId ? getSpanishName(oracleId) : Promise.resolve(null),
     oracleId ? getOwnedStacks(user.id, oracleId) : Promise.resolve([]),
-    listCollections(user.id),
+    collectionOptions(user.id),
     locationOptions(user.id),
+    collectionsOfCard(user.id, printing.id),
   ]);
 
   const updated = printing.pricesUpdatedAt
     ? new Date(printing.pricesUpdatedAt).toLocaleDateString("es-ES")
     : null;
-
   const game = gameById(printing.game);
   const setHref = game ? `/catalog/${game.slug}/${printing.setCode}` : null;
   const setName = printing.setName ?? printing.setCode.toUpperCase();
@@ -79,10 +80,10 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
 
         <div className="space-y-5">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">{printing.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{printing.name}</h1>
             {spanishName && <p className="text-muted-foreground">{spanishName}</p>}
             {printing.typeLine && <p className="text-sm">{printing.typeLine}</p>}
-            <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+            <p className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm">
               <SetIcon src={printing.setIcon} alt="" />
               {setHref ? (
                 <Link href={setHref} className="hover:text-foreground underline-offset-2 hover:underline">
@@ -105,11 +106,7 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
           <dl className="grid max-w-md grid-cols-3 gap-3">
             <Price label={finishLabel(printing.game, "nonfoil")} value={printing.priceEur} />
             <Price label={finishLabel(printing.game, "foil")} value={printing.priceEurFoil} />
-            <Price
-              label="USD"
-              value={printing.priceUsd}
-              format={(v) => `$${v.toFixed(2)}`}
-            />
+            <Price label="USD" value={printing.priceUsd} format={(v) => `$${v.toFixed(2)}`} />
           </dl>
           <p className="text-muted-foreground text-xs">
             Precios de Cardmarket vía {game?.sourceName ?? "Scryfall"}
@@ -126,30 +123,31 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
             )}
           </p>
 
-          <AddToCollection
+          <AddCopy
             printingId={printing.id}
             finishes={printing.finishes}
             finishLabels={game?.finishLabels}
-            collections={collections.map((c) => ({ id: c.id, name: c.name }))}
             locations={locations}
+            collections={collections}
+          />
+          <WantInCollection
+            printingId={printing.id}
+            collections={collections}
+            listedIn={lists.map((l) => l.id)}
           />
 
           {owned.length > 0 && (
             <div className="space-y-2">
-              <h2 className="text-sm font-medium">En tus colecciones</h2>
+              <h2 className="text-sm font-medium">En tus cartas</h2>
               <ul className="space-y-1 text-sm">
                 {owned.map((s) => (
                   <li key={s.id}>
                     <span className="font-medium tabular-nums">{s.quantity}×</span>{" "}
-                    {s.setCode.toUpperCase()} #{s.collectorNumber} ·{" "}
-                    {finishLabel(printing.game, s.finish)} ·{" "}
-                    {s.condition} · {LANGUAGES[s.language] ?? s.language} —{" "}
-                    <Link href={`/collections/${s.collectionId}`} className="underline">
-                      {s.collectionName}
-                    </Link>
+                    {s.setCode.toUpperCase()} #{s.collectorNumber}, {finishLabel(printing.game, s.finish)},{" "}
+                    {s.condition}, {LANGUAGES[s.language] ?? s.language}
                     {s.locationId && (
                       <>
-                        {" · "}
+                        {" en "}
                         <Link href={`/locations/${s.locationId}`} className="underline">
                           {s.locationName}
                         </Link>
@@ -160,26 +158,45 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
               </ul>
             </div>
           )}
+
+          {lists.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-sm font-medium">En tus colecciones</h2>
+              <ul className="flex flex-wrap gap-2 text-sm">
+                {lists.map((l) => (
+                  <li key={l.id}>
+                    <Link
+                      href={`/collections/${l.id}`}
+                      className="bg-card hover:border-primary/60 inline-block rounded-md border px-2.5 py-1"
+                    >
+                      {l.name}
+                      {l.wanted > 1 && <span className="text-muted-foreground"> (quieres {l.wanted})</span>}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 
       {printings.length > 1 && (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Ediciones ({printings.length})</h2>
-          <div className="overflow-x-auto rounded-md border">
+          <h2 className="text-lg font-bold">Ediciones ({printings.length})</h2>
+          <div className="bg-card overflow-x-auto rounded-xl border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Edición</TableHead>
                   <TableHead>Nº</TableHead>
                   <TableHead>Fecha</TableHead>
-                  <TableHead className="text-right">Normal</TableHead>
-                  <TableHead className="text-right">Foil</TableHead>
+                  <TableHead className="text-right">{finishLabel(printing.game, "nonfoil")}</TableHead>
+                  <TableHead className="text-right">{finishLabel(printing.game, "foil")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {printings.map((p) => (
-                  <TableRow key={p.id} className={cn(p.id === printing.id && "bg-muted/60")}>
+                  <TableRow key={p.id} className={cn(p.id === printing.id && "bg-primary/8")}>
                     <TableCell>
                       <Link href={`/cards/${p.id}`} className="flex items-center gap-1.5 hover:underline">
                         <SetIcon src={p.setIcon} alt="" />
@@ -187,13 +204,9 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
                       </Link>
                     </TableCell>
                     <TableCell className="tabular-nums">{p.collectorNumber}</TableCell>
-                    <TableCell className="text-muted-foreground tabular-nums">
-                      {p.releasedAt?.slice(0, 4)}
-                    </TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">{p.releasedAt?.slice(0, 4)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatEur(p.priceEur)}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatEur(p.priceEurFoil)}
-                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{formatEur(p.priceEurFoil)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -215,7 +228,7 @@ function Price({
   format?: (v: number) => string;
 }) {
   return (
-    <div className="rounded-md border p-3">
+    <div className="bg-card rounded-xl border p-3">
       <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="text-lg font-semibold">{value == null ? "—" : format(value)}</dd>
     </div>

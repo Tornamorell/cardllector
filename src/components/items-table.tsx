@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CardThumb } from "@/components/card-thumb";
+import type { CollectionOption } from "@/components/collection-picker";
 import { ItemActions, QuantityControl } from "@/components/item-actions";
 import type { LocationOption } from "@/components/location-picker";
 import { Badge } from "@/components/ui/badge";
@@ -15,24 +16,26 @@ import {
 } from "@/components/ui/table";
 import { formatEur } from "@/lib/format";
 import { finishLabel } from "@/lib/games";
-import { ITEM_SORTS, type CollectionItem, type ItemSort } from "@/lib/queries/collections";
+import { ITEM_SORTS, type InventoryItem, type ItemSort } from "@/lib/queries/items";
 import { cn } from "@/lib/utils";
 
 /**
- * Stacks table shared by collection and location pages. `context` decides which of the two
- * the rows don't already share: a collection page shows each row's location, and vice versa.
+ * Stacks of the inventory. In the full inventory each row shows its location; on a location's
+ * own page it doesn't need to.
  */
 export function ItemsTable({
   rows,
   context,
   locations,
+  collections,
 }: {
-  rows: CollectionItem[];
-  context: "collection" | "location";
+  rows: InventoryItem[];
+  context: "inventory" | "location";
   locations: LocationOption[];
+  collections: CollectionOption[];
 }) {
   return (
-    <div className="overflow-x-auto rounded-md border">
+    <div className="bg-card overflow-x-auto rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -77,20 +80,12 @@ export function ItemsTable({
                   <Badge variant="outline" className="uppercase">
                     {item.language}
                   </Badge>
-                  {context === "collection" && item.location?.id && (
+                  {context === "inventory" && item.location?.id && (
                     <Link
                       href={`/locations/${item.location.id}`}
                       className="text-muted-foreground hover:text-foreground"
                     >
                       {item.location.name}
-                    </Link>
-                  )}
-                  {context === "location" && item.collection && (
-                    <Link
-                      href={`/collections/${item.collection.id}`}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      {item.collection.name}
                     </Link>
                   )}
                 </div>
@@ -99,14 +94,16 @@ export function ItemsTable({
                 <QuantityControl itemId={item.id} quantity={item.quantity} />
               </TableCell>
               <TableCell className="text-right tabular-nums">{formatEur(item.unitPriceEur)}</TableCell>
-              <TableCell className="text-right font-medium tabular-nums">
+              <TableCell className="text-primary text-right font-semibold tabular-nums">
                 {item.unitPriceEur == null ? "—" : formatEur(item.unitPriceEur * item.quantity)}
               </TableCell>
               <TableCell>
                 <ItemActions
                   locations={locations}
+                  collections={collections}
                   item={{
                     id: item.id,
+                    catalogCardId: item.card?.id ?? null,
                     game: item.card?.game ?? null,
                     name: item.card?.name ?? "Carta",
                     quantity: item.quantity,

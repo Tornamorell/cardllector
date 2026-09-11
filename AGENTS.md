@@ -11,7 +11,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # Cardllector — guide for agents
 
 Personal trading-card collection tracker (Magic now, Pokémon next, sports later): catalog,
-prices (Cardmarket €), collections and value over time. Single user for now. Next.js 16 +
+prices (Cardmarket €), the owner's cards (inventory, with optional physical locations),
+collections as curated want-lists (D23) and value over time. Single user for now. Next.js 16 +
 Drizzle + Postgres (Neon in prod, PGlite locally) + Better Auth; catalog data from bulk sources
 synced by GitHub Actions.
 
@@ -40,7 +41,7 @@ sources, decisions and roadmap.
 ## Conventions
 
 - Every page and server action calls `requireUser()` (`src/lib/session.ts`); actions also check
-  ownership of the collection/item. `src/proxy.ts` is only an optimistic redirect; `/api/*`
+  ownership of the item, collection or location. `src/proxy.ts` is only an optimistic redirect; `/api/*`
   routes check the session themselves and return 401.
 - Never call external catalog APIs (Scryfall, TCGdex…) from a user request path — search and
   scan hit our DB. Source clients live in `src/lib/<source>/`, sync jobs in `scripts/`.

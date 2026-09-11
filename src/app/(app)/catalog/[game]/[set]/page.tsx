@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AddCopyButton } from "@/components/add-copy-button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CardThumb, SetIcon } from "@/components/card-thumb";
+import { EntryTarget } from "@/components/entry-target";
 import { ProgressMeter } from "@/components/progress-meter";
 import { RarityMark } from "@/components/rarity-mark";
+import { buttonVariants } from "@/components/ui/button";
 import { formatEur, formatInt } from "@/lib/format";
 import { gameBySlug, rarityLabel, rarityRank, setTypeLabel } from "@/lib/games";
 import { listSetCards, listSets } from "@/lib/queries/catalog";
-import { listCollections } from "@/lib/queries/collections";
+import { collectionOptions } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
-import { AddTargetPicker } from "@/components/add-target-picker";
-import { buttonVariants } from "@/components/ui/button";
-import { AddOneButton } from "./set-actions";
 
 const OWNED_FILTERS = { all: "Todas", have: "Tengo", missing: "Me faltan" } as const;
 const SORTS = { number: "Número", price: "Precio", name: "Nombre" } as const;
@@ -49,7 +49,7 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
 
   const [cards, collections, locations] = await Promise.all([
     listSetCards(game.id, set.code, user.id),
-    listCollections(user.id),
+    collectionOptions(user.id),
     locationOptions(user.id),
   ]);
 
@@ -95,7 +95,6 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
     return qs ? `?${qs}` : "?";
   };
 
-  const collectionIds = collections.map((c) => c.id);
   const pct = set.cardCount ? Math.round((set.ownedDistinct / set.cardCount) * 100) : 0;
 
   return (
@@ -182,10 +181,7 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
               ))}
             </nav>
           </div>
-          <AddTargetPicker
-            collections={collections.map((c) => ({ id: c.id, name: c.name }))}
-            locations={locations}
-          />
+          <EntryTarget collections={collections} locations={locations} />
         </div>
       </div>
 
@@ -211,12 +207,7 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
                     ×{c.owned}
                   </span>
                 )}
-                <AddOneButton
-                  printingId={c.id}
-                  finishes={c.finishes}
-                  name={c.name}
-                  collectionIds={collectionIds}
-                />
+                <AddCopyButton printingId={c.id} finishes={c.finishes} name={c.name} />
               </div>
               <div className="text-xs leading-tight">
                 <p className="truncate font-medium" title={c.name}>

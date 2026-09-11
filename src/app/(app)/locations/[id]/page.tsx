@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { AddFilteredToCollection } from "@/components/add-filtered-to-collection";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import {
   ItemsTable,
@@ -11,13 +11,9 @@ import {
   parseItemParams,
 } from "@/components/items-table";
 import { formatEur, formatInt } from "@/lib/format";
-import { listItems } from "@/lib/queries/collections";
-import {
-  getLocation,
-  locationByCollection,
-  locationOptions,
-  unlocatedSummary,
-} from "@/lib/queries/locations";
+import { collectionOptions } from "@/lib/queries/collections";
+import { listItems } from "@/lib/queries/items";
+import { getLocation, locationOptions, unlocatedSummary } from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { LocationSettings } from "./location-settings";
 
@@ -45,32 +41,33 @@ export default async function LocationPage({ params, searchParams }: PageProps<"
   const location = await load(user.id, id);
   const { q, sort, page } = parseItemParams(await searchParams);
 
-  const [{ rows, hasMore }, byCollection, locations] = await Promise.all([
+  const [{ rows, hasMore }, locations, collections] = await Promise.all([
     listItems({ ownerId: user.id, locationId: location.id }, { q, sort, page }),
-    locationByCollection(user.id, location.id),
     locationOptions(user.id),
+    collectionOptions(user.id),
   ]);
 
   const href = hrefBuilder({ q, sort: sort === "value" ? undefined : sort });
-  const locParam = location.id ?? "none";
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs items={[{ label: "Ubicaciones", href: "/locations" }, { label: location.name }]} />
+      <Breadcrumbs
+        items={[
+          { label: "Mis cartas", href: "/inventory" },
+          { label: "Ubicaciones", href: "/locations" },
+          { label: location.name },
+        ]}
+      />
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{location.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{location.name}</h1>
           {location.description && (
             <p className="text-muted-foreground text-sm">{location.description}</p>
           )}
         </div>
         {location.id && (
-          <LocationSettings
-            id={location.id}
-            name={location.name}
-            description={location.description}
-          />
+          <LocationSettings id={location.id} name={location.name} description={location.description} />
         )}
       </div>
 
@@ -78,30 +75,9 @@ export default async function LocationPage({ params, searchParams }: PageProps<"
         <p className="display text-primary text-3xl font-bold">{formatEur(location.valueEur)}</p>
         <p className="text-muted-foreground text-sm">
           {formatInt(location.cardCount)} cartas
-          {location.unpricedCount > 0 && ` · ${formatInt(location.unpricedCount)} sin precio`}
+          {location.unpricedCount > 0 && `, ${formatInt(location.unpricedCount)} sin precio`}
         </p>
       </div>
-
-      {byCollection.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium">Por colección</h2>
-          <ul className="flex flex-wrap gap-2 text-sm">
-            {byCollection.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/collections/${c.id}?loc=${locParam}`}
-                  className="hover:bg-muted flex items-baseline gap-2 rounded-md border px-3 py-1.5"
-                >
-                  <span className="font-medium">{c.name}</span>
-                  <span className="text-muted-foreground tabular-nums">
-                    {formatInt(c.cardCount)} · {formatEur(c.valueEur)}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <ItemsToolbar q={q} sort={sort} href={href} hidden={{ sort: sort === "value" ? undefined : sort }} />
 
@@ -112,7 +88,16 @@ export default async function LocationPage({ params, searchParams }: PageProps<"
             : "Aquí no hay cartas todavía. Elige esta ubicación al añadir o escanear."}
         </p>
       ) : (
-        <ItemsTable rows={rows} context="location" locations={locations} />
+        <>
+          <div className="flex justify-end">
+            <AddFilteredToCollection
+              collections={collections}
+              filter={{ locationId: location.id, ...(q && { q }) }}
+              label="Añadir estas cartas a una colección"
+            />
+          </div>
+          <ItemsTable rows={rows} context="location" locations={locations} collections={collections} />
+        </>
       )}
 
       <Pagination page={page} hasMore={hasMore} href={href} />

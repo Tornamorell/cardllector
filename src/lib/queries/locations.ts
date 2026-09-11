@@ -1,7 +1,7 @@
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
-import { catalogCards, collections, items, locations } from "@/db/schema";
-import { stackAggregates } from "./collections";
+import { catalogCards, items, locations } from "@/db/schema";
+import { stackAggregates } from "./items";
 
 /** For pickers: the user's locations, alphabetical. */
 export async function locationOptions(ownerId: string) {
@@ -33,9 +33,8 @@ export async function unlocatedSummary(ownerId: string) {
   const [row] = await db
     .select(stackAggregates)
     .from(items)
-    .innerJoin(collections, eq(collections.id, items.collectionId))
     .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
-    .where(and(eq(collections.ownerId, ownerId), isNull(items.locationId)));
+    .where(and(eq(items.ownerId, ownerId), isNull(items.locationId)));
   return row;
 }
 
@@ -53,34 +52,4 @@ export async function getLocation(ownerId: string, id: string) {
     .where(and(eq(locations.ownerId, ownerId), eq(locations.id, id)))
     .groupBy(locations.id);
   return row ?? null;
-}
-
-/** What a location holds, per collection. `null` = copies without location. */
-export async function locationByCollection(ownerId: string, locationId: string | null) {
-  return db
-    .select({ id: collections.id, name: collections.name, ...stackAggregates })
-    .from(items)
-    .innerJoin(collections, eq(collections.id, items.collectionId))
-    .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
-    .where(
-      and(
-        eq(collections.ownerId, ownerId),
-        locationId ? eq(items.locationId, locationId) : isNull(items.locationId),
-      ),
-    )
-    .groupBy(collections.id)
-    .orderBy(asc(collections.name));
-}
-
-/** Where a collection's copies are, per location (id null = without location). */
-export async function collectionByLocation(ownerId: string, collectionId: string) {
-  return db
-    .select({ id: locations.id, name: locations.name, ...stackAggregates })
-    .from(items)
-    .innerJoin(collections, eq(collections.id, items.collectionId))
-    .leftJoin(locations, eq(locations.id, items.locationId))
-    .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
-    .where(and(eq(collections.ownerId, ownerId), eq(items.collectionId, collectionId)))
-    .groupBy(locations.id)
-    .orderBy(sql`${locations.name} nulls last`);
 }
