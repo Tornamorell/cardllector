@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { CardThumb, SetIcon } from "@/components/card-thumb";
+import { SetIcon } from "@/components/card-thumb";
+import { HoloCard } from "@/components/holo-card";
+import { RarityMark } from "@/components/rarity-mark";
 import {
   Table,
   TableBody,
@@ -69,12 +71,10 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
         />
       )}
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
-        <CardThumb
+        <HoloCard
           src={printing.imageNormal}
           alt={printing.name}
-          size="lg"
-          priority
-          className="mx-auto md:mx-0"
+          foil={printing.finishes.includes("foil") && !printing.finishes.includes("nonfoil")}
         />
 
         <div className="space-y-5">
@@ -92,7 +92,13 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
                 setName
               )}{" "}
               · #{printing.collectorNumber}
-              {game && printing.rarity && ` · ${rarityLabel(game, printing.rarity)}`}
+              {game && printing.rarity && (
+                <>
+                  {" · "}
+                  <RarityMark rarity={printing.rarity} />
+                  {rarityLabel(game, printing.rarity)}
+                </>
+              )}
             </p>
           </div>
 

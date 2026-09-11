@@ -50,7 +50,12 @@ export function ItemsTable({
               <TableCell>
                 {item.card?.id ? (
                   <Link href={`/cards/${item.card.id}`} className="flex items-center gap-3">
-                    <CardThumb src={item.card.imageSmall} alt="" size="xs" />
+                    <CardThumb
+                      src={item.card.imageSmall}
+                      alt=""
+                      size="xs"
+                      foil={item.finish !== "nonfoil"}
+                    />
                     <div className="min-w-0">
                       <p className="font-medium hover:underline">{item.card.name}</p>
                       <p className="text-muted-foreground text-xs">

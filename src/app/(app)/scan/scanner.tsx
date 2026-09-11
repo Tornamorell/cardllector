@@ -682,7 +682,7 @@ export function Scanner({
           <ul className="divide-y rounded-md border">
             {entries.map((e) => (
               <li key={e.key} className="flex items-center gap-3 px-3 py-2">
-                <CardThumb src={e.match.imageSmall} alt="" size="xs" />
+                <CardThumb src={e.match.imageSmall} alt="" size="xs" foil={e.finish !== "nonfoil"} />
                 <div className="min-w-0 flex-1 text-sm">
                   <p className="truncate font-medium">{e.match.name}</p>
                   <p className="text-muted-foreground text-xs">
@@ -775,7 +775,7 @@ export function Scanner({
                 style={{ left: guide.x, top: guide.y, width: guide.w, height: guide.h }}
               />
               <div
-                className="absolute rounded border-2 border-amber-400/90"
+                className="absolute rounded border-2 border-primary"
                 style={{ left: strip.x, top: strip.y, width: strip.w, height: strip.h }}
               />
             </>
@@ -875,7 +875,12 @@ function CurrentCard({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <CardThumb src={match.imageSmall} alt={match.name} size="sm" />
+        <CardThumb
+          src={match.imageSmall}
+          alt={match.name}
+          size="sm"
+          foil={entry.finish !== "nonfoil"}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{match.name}</p>
           <p className="truncate text-xs text-white/70">
@@ -938,7 +943,7 @@ function ChoicesGrid({
   onDismiss: () => void;
 }) {
   return (
-    <section className="space-y-2 rounded-lg border border-amber-400 p-3">
+    <section className="space-y-2 rounded-lg border border-primary p-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">¿Cuál es?</h2>
         <Button variant="ghost" size="sm" onClick={onDismiss}>

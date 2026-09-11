@@ -1,4 +1,4 @@
-/** A card outline with a "C": shared by icon.tsx and apple-icon.tsx. */
+/** A gold card outline with a "C" on the indigo table: shared by icon.tsx and apple-icon.tsx. */
 export function AppIcon({ size }: { size: number }) {
   const u = size / 512;
   return (
@@ -9,7 +9,7 @@ export function AppIcon({ size }: { size: number }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#171717",
+        background: "#16142b",
       }}
     >
       <div
@@ -17,13 +17,14 @@ export function AppIcon({ size }: { size: number }) {
           width: 250 * u,
           height: 350 * u,
           borderRadius: 26 * u,
-          border: `${18 * u}px solid #fafafa`,
+          border: `${18 * u}px solid #e9b949`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#fafafa",
+          color: "#e9b949",
           fontSize: 190 * u,
           fontWeight: 700,
+          transform: "rotate(-6deg)",
         }}
       >
         C

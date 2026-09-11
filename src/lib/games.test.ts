@@ -6,6 +6,7 @@ import {
   gameBySlug,
   rarityLabel,
   rarityRank,
+  rarityTier,
   setTypeFilter,
   setTypeLabel,
 } from "./games";
@@ -56,6 +57,21 @@ describe("games", () => {
   it("ranks unknown rarities after known ones", () => {
     expect(rarityRank(magic, "common")).toBeLessThan(rarityRank(magic, "mythic"));
     expect(rarityRank(magic, "weird")).toBe(magic.rarities.length);
+  });
+
+  it("maps rarities onto set-symbol colour tiers", () => {
+    expect(rarityTier("common")).toBe("common");
+    expect(rarityTier("uncommon")).toBe("uncommon");
+    expect(rarityTier("rare")).toBe("rare");
+    expect(rarityTier("rare holo")).toBe("rare");
+    expect(rarityTier("mythic")).toBe("mythic");
+    expect(rarityTier("special illustration rare")).toBe("mythic");
+    expect(rarityTier("hyper rare")).toBe("mythic");
+    expect(rarityTier("double rare")).toBe("special");
+    expect(rarityTier("holo rare vmax")).toBe("special");
+    expect(rarityTier("illustration rare")).toBe("special");
+    expect(rarityTier("promo")).toBe("common");
+    expect(rarityTier(null)).toBe("common");
   });
 
   it("names finishes per game", () => {

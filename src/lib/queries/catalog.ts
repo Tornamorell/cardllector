@@ -15,6 +15,18 @@ export async function setOptions() {
   return result.rows;
 }
 
+/** A game's most valuable printings with an image, to show off on its catalog tile. */
+export async function gameShowcase(game: CatalogGameId, limit = 3) {
+  const result = await db.execute<{ name: string; image: string }>(sql`
+    select name, image_normal as image
+    from catalog_cards
+    where game = ${game} and image_normal is not null and price_eur is not null
+    order by price_eur desc
+    limit ${limit}
+  `);
+  return result.rows;
+}
+
 export async function catalogStats() {
   const result = await db.execute<{ game: CatalogGameId; cards: number; sets: number }>(sql`
     select game, count(*)::int as cards, count(distinct set_code)::int as sets

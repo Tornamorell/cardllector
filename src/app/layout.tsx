@@ -1,16 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// One family, two voices: expanded width for headings, normal width for text (globals.css).
+const archivo = Archivo({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  axes: ["wdth"],
+  variable: "--font-archivo",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -18,7 +16,7 @@ export const metadata: Metadata = {
   description: "Tu colección de cartas, con precio.",
   applicationName: "Cardllector",
   // Full-screen when added to the iPhone home screen.
-  appleWebApp: { capable: true, title: "Cardllector", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Cardllector", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
@@ -26,17 +24,17 @@ export const viewport: Viewport = {
   initialScale: 1,
   // Lets the full-screen scanner use the whole screen (notch areas via safe-area insets).
   viewportFit: "cover",
+  themeColor: "#16142b",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    // Dark only for now: the "play table at night" identity (docs/design.md).
+    <html lang="es" className={`dark ${archivo.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         {children}
-        <Toaster position="top-center" />
+        <Toaster position="top-center" theme="dark" />
       </body>
     </html>
   );

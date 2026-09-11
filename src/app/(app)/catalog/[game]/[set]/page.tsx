@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CardThumb, SetIcon } from "@/components/card-thumb";
 import { ProgressMeter } from "@/components/progress-meter";
+import { RarityMark } from "@/components/rarity-mark";
 import { formatEur, formatInt } from "@/lib/format";
 import { gameBySlug, rarityLabel, rarityRank, setTypeLabel } from "@/lib/games";
 import { listSetCards, listSets } from "@/lib/queries/catalog";
@@ -148,6 +149,7 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
           </FilterLink>
           {rarities.map((r) => (
             <FilterLink key={r.value} href={href({ rarity: r.value })} active={rarity === r.value}>
+              <RarityMark rarity={r.value} />
               {r.label}{" "}
               <Count>
                 {r.owned}/{r.total}
@@ -221,8 +223,8 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
                   {c.name}
                 </p>
                 <p className="text-muted-foreground flex justify-between gap-1">
-                  <span>
-                    #{c.collectorNumber} · {rarityLabel(game, c.rarity)}
+                  <span title={rarityLabel(game, c.rarity)}>
+                    <RarityMark rarity={c.rarity} />#{c.collectorNumber}
                   </span>
                   <span className="tabular-nums">{formatEur(c.priceEur)}</span>
                 </p>

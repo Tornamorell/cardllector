@@ -46,7 +46,7 @@ export function DesktopNav() {
           className={cn(
             "rounded-md px-2.5 py-1.5 transition-colors",
             isActive(pathname, href)
-              ? "bg-muted text-foreground font-medium"
+              ? "bg-primary/12 text-primary font-medium"
               : "text-muted-foreground hover:text-foreground",
           )}
         >
@@ -75,14 +75,14 @@ export function MobileTabBar() {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-16 flex-col items-center justify-center gap-1 text-[11px] transition-colors",
-                  active ? "text-foreground font-medium" : "text-muted-foreground",
+                  active ? "text-primary font-medium" : "text-muted-foreground",
                 )}
               >
                 {primary ? (
                   <span
                     className={cn(
                       "bg-primary text-primary-foreground -mt-6 flex size-12 items-center justify-center rounded-full shadow-md ring-4 ring-background",
-                      active && "ring-primary/20",
+                      active && "ring-primary/25",
                     )}
                   >
                     <Icon className="size-6" />

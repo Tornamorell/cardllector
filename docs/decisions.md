@@ -258,6 +258,17 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   español, como el tipo de las cartas de Pokémon ("Pokémon · Fase 2 · Fuego") o los acabados
   ("Estándar").
 
+## D22 · Identidad visual: modo oscuro "mesa de juego por la noche" — 2026-09-11 · provisional
+
+- **Contexto:** el usuario veía la app "algo impersonal, estilos muy planos" y pidió modo oscuro.
+- **Decisión:** solo modo oscuro, en índigo de tapete. El oro marca el dinero y las acciones; el
+  iridiscente, solo el foil; los colores de rareza son los de los símbolos. Tipografía Archivo
+  (ancha en los titulares). Las cartas se tratan como objetos físicos: abanico en el resumen y
+  el catálogo, e inclinación con reflejo en la ficha. Detalle en `docs/design.md`.
+- **Descartado:** el gris neutro de shadcn tal cual, y los tópicos de las interfaces generadas
+  (negro con un único color ácido, degradados decorativos, etiquetas en mayúsculas).
+- **Revisar cuando:** el usuario quiera modo claro o un selector de tema.
+
 ## D19 · "Otras ediciones" de Pokémon agrupadas por nombre — 2026-09-11 · provisional
 
 - **Contexto:** Scryfall tiene `oracle_id`, que agrupa las ediciones de la misma carta. TCGdex no

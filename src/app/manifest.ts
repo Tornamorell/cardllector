@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Tu colección de cartas, con precio.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#171717",
+    background_color: "#16142b",
+    theme_color: "#16142b",
     icons: [
       { src: "/icon", sizes: "512x512", type: "image/png" },
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },

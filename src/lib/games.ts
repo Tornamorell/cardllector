@@ -184,6 +184,24 @@ export function rarityRank(game: GameConfig, rarity: string | null): number {
   return i === -1 ? game.rarities.length : i;
 }
 
+export type RarityTier = "common" | "uncommon" | "rare" | "mythic" | "special";
+
+/**
+ * Colour tier of a rarity, like the set symbol colours on Magic cards: common (grey), uncommon
+ * (silver), rare (gold), mythic (orange-red), special (violet). Pokémon's long ladder is folded
+ * onto the same tiers. Rendered by <RarityMark>, colours in globals.css (--rarity-*).
+ */
+export function rarityTier(rarity: string | null): RarityTier {
+  const r = rarity ?? "";
+  if (r === "uncommon") return "uncommon";
+  if (r === "mythic" || /secret|hyper|special illustration|gold|crown/.test(r)) return "mythic";
+  if (r === "special" || r === "bonus") return "special";
+  if (/illustration|ultra|double|ace spec|radiant|amazing|shiny|full art|legend|prime|lv\.x|\bv(max|star)?\b|black white/.test(r))
+    return "special";
+  if (/rare/.test(r)) return "rare";
+  return "common";
+}
+
 export function setTypeLabel(game: GameConfig, setType: string | null): string {
   if (!setType) return "";
   return game.setTypeLabels[setType] ?? setType.replaceAll("_", " ");
