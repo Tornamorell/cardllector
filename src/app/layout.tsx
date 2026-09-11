@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   title: { default: "Cardllector", template: "%s · Cardllector" },
   description: "Tu colección de cartas, con precio.",
   applicationName: "Cardllector",
+  // Full-screen when added to the iPhone home screen.
+  appleWebApp: { capable: true, title: "Cardllector", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

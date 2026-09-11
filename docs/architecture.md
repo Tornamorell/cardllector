@@ -42,6 +42,7 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 | `/collections`, `/collections/[id]` | Tus colecciones, con alta rápida desde el teclado (y un selector «Guardar en» con la ubicación de la sesión) y filtro por ubicación (`?loc=<id>` o `?loc=none`). |
 | `/locations`, `/locations/[id]` | Ubicaciones físicas: qué hay en cada una, cuánto vale y cómo se reparte por colección. `/locations/none` muestra las copias sin ubicación. |
 | `/search` | Búsqueda por nombre, en inglés o en español. |
+| `/scan` | Escáner con la cámara: lee el número y el código de expansión de la carta y la añade al destino de la sesión. `?set=mtg:m10` arranca en modo expansión fija. Detalles en `docs/scanner.md`. |
 
 "Tienes X de Y" en una expansión cuenta ediciones distintas, estén en la colección que estén.
 

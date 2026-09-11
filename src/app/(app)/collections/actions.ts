@@ -109,6 +109,7 @@ const addItemInput = stackFields.extend({
   collectionId: z.uuid(),
   catalogCardId: z.uuid(),
   quantity: z.number().int().min(1).max(999),
+  source: z.enum(["manual", "scan"]).default("manual"),
 });
 
 export type AddItemInput = z.input<typeof addItemInput>;
@@ -116,6 +117,8 @@ export type AddItemInput = z.input<typeof addItemInput>;
 export type AddItemResult =
   | {
       ok: true;
+      /** The stack the copies went into (new or existing): lets the scanner undo with -1. */
+      itemId: string;
       name: string;
       setCode: string;
       number: string;
@@ -161,6 +164,7 @@ export async function addItem(input: AddItemInput): Promise<AddItemResult> {
     .limit(1);
 
   let quantity: number;
+  let itemId: string;
   if (existing) {
     const [updated] = await db
       .update(items)
@@ -168,15 +172,17 @@ export async function addItem(input: AddItemInput): Promise<AddItemResult> {
       .where(eq(items.id, existing.id))
       .returning({ quantity: items.quantity });
     quantity = updated.quantity;
+    itemId = existing.id;
   } else {
-    const { collectionId, catalogCardId, ...rest } = data;
-    await db.insert(items).values({ collectionId, catalogCardId, ...rest, source: "manual" });
+    const [inserted] = await db.insert(items).values(data).returning({ id: items.id });
     quantity = data.quantity;
+    itemId = inserted.id;
   }
 
   refresh(data.collectionId);
   return {
     ok: true,
+    itemId,
     name: card.name,
     setCode: card.setCode,
     number: card.number,

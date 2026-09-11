@@ -51,6 +51,10 @@ export const sets = pgTable(
     releasedAt: date("released_at"),
     iconUri: text("icon_uri"),
     cardCount: integer("card_count"),
+    // What's printed on the cards, used by the scanner: the set code ("MKM", "PAL") and the
+    // total after the slash in "001/193". Null when the cards don't print it.
+    printCode: text("print_code"),
+    printedTotal: integer("printed_total"),
   },
   (t) => [uniqueIndex("sets_game_code_uq").on(t.game, t.code)],
 );

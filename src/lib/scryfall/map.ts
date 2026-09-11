@@ -62,6 +62,8 @@ export function mapScryfallSet(set: ScryfallSet): SetRow | null {
     releasedAt: set.released_at ?? null,
     iconUri: set.icon_svg_uri,
     cardCount: set.card_count,
+    printCode: set.code.toUpperCase(),
+    printedTotal: set.printed_size ?? null,
   };
 }
 

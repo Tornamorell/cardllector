@@ -71,6 +71,14 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   el OCR.
 - **Revisar cuando:** se mida la tasa de acierto con cartas reales. Si la cola de revisión crece
   demasiado, volver a plantear la IA como respaldo.
+- **Actualización (implementado, 2026-09-11):**
+  - La expansión se identifica por el código impreso o, si no lo hay, por el **total impreso**
+    ("001/195" → la expansión Pokémon de 195 cartas). Para ello, `sets` guarda `print_code` y
+    `printed_total`.
+  - En vez de la cola de revisión con miniaturas prevista, el primer respaldo es la búsqueda
+    manual dentro de la propia pantalla del escáner, y la elección entre candidatos cuando la
+    lectura es ambigua. La cola queda pendiente, por si hace falta.
+  - Detalles y mediciones en `docs/scanner.md`.
 
 ## D07 · Idioma por copia; precio de la edición inglesa — 2026-09-11 · provisional
 

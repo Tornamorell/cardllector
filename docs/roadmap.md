@@ -47,7 +47,9 @@ los diálogos y el botón +.
 
 ### Fase 3 · Escáner (PWA)
 
-Diseño propuesto (D06), sin empezar:
+**Implementado el 2026-09-11 y probado con imágenes de muestra**. Falta probarlo en el móvil con
+cartas reales (necesita el despliegue con HTTPS). Estado real, mediciones y pendientes en
+`docs/scanner.md`; la lista siguiente es el diseño original, para contexto:
 
 1. `/scan` abre la cámara trasera (`getUserMedia`) con una guía superpuesta en proporción 63×88.
 2. **Lectura continua, sin botón de disparo:**

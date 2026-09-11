@@ -151,5 +151,8 @@ export function mapTcgdexSet(set: TcgdexSet, iconUri: string | null): SetRow {
     releasedAt: set.releaseDate ?? null,
     iconUri,
     cardCount: set.cardCount.total,
+    // Printed on Scarlet & Violet cards onwards ("PAL EN"); older ones only show a symbol.
+    printCode: set.abbreviation?.official ?? null,
+    printedTotal: set.cardCount.official || null,
   };
 }

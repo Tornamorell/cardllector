@@ -4,6 +4,17 @@ import { catalogCards, collections, items, sets } from "@/db/schema";
 import { unitPriceEurSql } from "@/lib/collection/pricing";
 import type { CatalogGameId, SetTypeFilter } from "@/lib/games";
 
+/** Every set with cards, newest first — for pickers such as the scanner's fixed-set mode. */
+export async function setOptions() {
+  const result = await db.execute<{ game: CatalogGameId; code: string; name: string }>(sql`
+    select game, code, name
+    from sets
+    where card_count > 0
+    order by released_at desc nulls last, name
+  `);
+  return result.rows;
+}
+
 export async function catalogStats() {
   const result = await db.execute<{ game: CatalogGameId; cards: number; sets: number }>(sql`
     select game, count(*)::int as cards, count(distinct set_code)::int as sets

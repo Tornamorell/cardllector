@@ -20,7 +20,15 @@ export async function upsertSets(rows: SetRow[]) {
     .onConflictDoUpdate({
       target: [sets.game, sets.code],
       // card_count is ours (paper printings in the catalog), see refreshSetCounts().
-      set: excluded(sets, ["name", "setType", "parentSetCode", "releasedAt", "iconUri"]),
+      set: excluded(sets, [
+        "name",
+        "setType",
+        "parentSetCode",
+        "releasedAt",
+        "iconUri",
+        "printCode",
+        "printedTotal",
+      ]),
     });
 }
 

@@ -11,7 +11,9 @@ import { listCollections } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
-import { AddOneButton, AddTargetPicker } from "./set-actions";
+import { AddTargetPicker } from "@/components/add-target-picker";
+import { buttonVariants } from "@/components/ui/button";
+import { AddOneButton } from "./set-actions";
 
 const OWNED_FILTERS = { all: "Todas", have: "Tengo", missing: "Me faltan" } as const;
 const SORTS = { number: "Número", price: "Precio", name: "Nombre" } as const;
@@ -130,6 +132,12 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
             showLabel={false}
             className="ml-auto w-56"
           />
+          <Link
+            href={`/scan?set=${game.id}:${encodeURIComponent(set.code)}`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Escanear esta expansión
+          </Link>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/catalog", label: "Catálogo" },
   { href: "/collections", label: "Colecciones" },
   { href: "/locations", label: "Ubicaciones" },
+  { href: "/scan", label: "Escanear" },
   { href: "/search", label: "Buscar" },
 ];
 

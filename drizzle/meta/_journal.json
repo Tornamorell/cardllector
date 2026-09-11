@@ -36,6 +36,13 @@
       "when": 1789137504989,
       "tag": "0004_drop_item_location",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789139504477,
+      "tag": "0005_set_print_info",
+      "breakpoints": true
     }
   ]
 }

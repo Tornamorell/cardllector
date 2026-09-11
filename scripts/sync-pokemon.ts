@@ -4,6 +4,7 @@
  *
  *   npm run sync:pokemon                  # full: sets, every card, Spanish names (weekly)
  *   npm run sync:pokemon -- --owned-only  # prices of the printings you own only (daily)
+ *   npm run sync:pokemon -- --sets-only   # set metadata only
  *
  * Both end with the day's price snapshot.
  */
@@ -22,6 +23,8 @@ import { assetExists, getCard, getSet, listCards, listSets } from "../src/lib/tc
 import { EXCLUDED_SERIES, mapTcgdexCard, mapTcgdexSet } from "../src/lib/tcgdex/map";
 
 const ownedOnly = process.argv.includes("--owned-only");
+// Only refresh set metadata (~1 min), e.g. after adding a column to `sets`.
+const setsOnly = process.argv.includes("--sets-only");
 const CONCURRENCY = 6;
 const BATCH_SIZE = 500;
 const fetchedAt = new Date();
@@ -55,6 +58,12 @@ if (ownedOnly) {
   for (const s of sets) releaseBySet.set(s.id, s.releaseDate ?? null);
   cardIds = sets.flatMap((s) => s.cards.map((c) => c.id));
   console.log(`Sets: ${sets.length} (${briefs.length - sets.length} digital skipped), cards: ${cardIds.length} (${elapsed()})`);
+
+  if (setsOnly) {
+    await refreshSetCounts();
+    await pool.end();
+    process.exit(0);
+  }
 }
 
 let batch: CatalogCardRow[] = [];

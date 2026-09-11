@@ -51,6 +51,8 @@ export interface ScryfallSet {
   set_type: string;
   released_at?: string;
   card_count: number;
+  /** The total printed on cards ("001/280"); absent for sets that don't print it. */
+  printed_size?: number;
   parent_set_code?: string;
   digital: boolean;
   icon_svg_uri: string;
