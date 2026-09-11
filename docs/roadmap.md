@@ -41,6 +41,13 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
     desde Mis cartas, desde una ubicación o desde la sesión del escáner.
   - Migraciones `0006`–`0008`, que convierten los datos existentes. Probadas en local; en
     producción se aplican con el siguiente despliegue.
+- **Evolución del valor** (D24):
+  - En el resumen: la gráfica del valor de tus cartas por días, con periodo de 7, 30 o 90 días
+    o todo.
+  - Cuánto ha cambiado tu valor solo por los precios.
+  - Las cinco cartas que más han subido y bajado.
+  - En la ficha de carta, el histórico de precio de cada acabado.
+  - Aparecen cuando hay al menos dos días de precios guardados.
 
 Verificado por HTTP y SQL. **Falta probar en el navegador con la sesión iniciada** el alta rápida,
 los diálogos y el botón +.
@@ -95,12 +102,11 @@ cartas reales (necesita el despliegue con HTTPS). Estado real, mediciones y pend
 
 ### Fase 4 · Evolución del valor
 
-- Gráfica del valor de tus cartas en el tiempo (`inventory_value_snapshots`). Por colección
-  habría que reconstruirla con `price_snapshots` (D23). Cargar la skill `dataviz` antes de
-  hacerla.
-- Las cartas que más suben y bajan en 7 y 30 días (`price_snapshots`).
-- Histórico de precio en la ficha de carta.
+Lo principal está hecho (ver "Hecho", D24). Falta:
+
 - Beneficio o pérdida frente al precio de compra.
+- El valor en el tiempo de lo que tienes de cada colección. Se puede reconstruir con
+  `price_snapshots` (D23).
 
 ## Más adelante / ideas
 

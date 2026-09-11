@@ -1,4 +1,4 @@
-import { sql, type SQL } from "drizzle-orm";
+import { sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { catalogCards, items } from "@/db/schema";
 
 type Finish = (typeof items.$inferSelect)["finish"];
@@ -20,11 +20,24 @@ export function unitPriceEur(finish: Finish, card: PricedCard | null): number | 
   return null;
 }
 
-/** SQL twin of unitPriceEur(), for aggregate queries over items joined to catalog_cards. */
-export const unitPriceEurSql: SQL<number | null> = sql`(case ${items.finish}
-  when 'nonfoil' then ${catalogCards.priceEur}
-  when 'foil' then ${catalogCards.priceEurFoil}
-end)`;
+/**
+ * SQL twin of unitPriceEur() over any pair of price columns: today's catalog prices, or a
+ * day's row in price_snapshots.
+ */
+export function unitPriceSql(
+  finish: SQLWrapper,
+  eur: SQLWrapper,
+  eurFoil: SQLWrapper,
+): SQL<number | null> {
+  return sql`(case ${finish} when 'nonfoil' then ${eur} when 'foil' then ${eurFoil} end)`;
+}
+
+/** Today's unit price of each stack, for queries over items joined to catalog_cards. */
+export const unitPriceEurSql = unitPriceSql(
+  items.finish,
+  catalogCards.priceEur,
+  catalogCards.priceEurFoil,
+);
 
 export interface StackValue {
   valueEur: number;

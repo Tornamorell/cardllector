@@ -34,11 +34,11 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 
 | Ruta | Qué muestra |
 | --- | --- |
-| `/` | Resumen: lo que valen tus cartas, el progreso de tus colecciones y tus cartas más valiosas. |
+| `/` | Resumen: lo que valen tus cartas, su evolución (`?period=7`, `30` —por defecto—, `90` o `all`), cuánto ha cambiado el valor por los precios y lo que más ha subido y bajado, el progreso de tus colecciones y tus cartas más valiosas. |
 | `/catalog` | Los juegos (TCG). Los que aún no tienen fuente de datos salen como "Próximamente". |
 | `/catalog/[juego]` | Las expansiones del juego, agrupadas por tipo (principales, Commander, especiales, promos), con cuántas cartas tienes de cada una y lo que valen. |
 | `/catalog/[juego]/[expansión]` | Todas las cartas de la expansión en orden de número. Las que no tienes salen en gris. Se filtra por rareza y por "tengo" o "me faltan", y cada carta tiene un botón **+** para añadirla. |
-| `/cards/[id]` | Una edición concreta: precio y el resto de sus ediciones. Desde aquí se añaden copias a tus cartas y se apunta la edición en una colección, la tengas o no. Enseña dónde tienes cada copia y en qué colecciones está. |
+| `/cards/[id]` | Una edición concreta: precio, histórico de precio (si la tienes) y el resto de sus ediciones. Desde aquí se añaden copias a tus cartas y se apunta la edición en una colección, la tengas o no. Enseña dónde tienes cada copia y en qué colecciones está. |
 | `/inventory` | **Mis cartas:** todas tus copias, con alta rápida desde el teclado, filtro por ubicación (`?loc=<id>` o `?loc=none`) y búsqueda. «Añadir a una colección» mete en una lista todo lo que se ve con esos filtros. |
 | `/collections`, `/collections/[id]` | Tus colecciones: listas de ediciones con la cantidad que quieres de cada una. Se ve lo que tienes y lo que te falta, lo que vale lo que tienes y lo que costaría completarla. Filtros: todas, tengo y me faltan. |
 | `/locations`, `/locations/[id]` | Ubicaciones físicas: qué hay en cada una y cuánto vale. `/locations/none` muestra las copias sin ubicación. |

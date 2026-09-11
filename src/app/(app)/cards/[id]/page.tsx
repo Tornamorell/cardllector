@@ -19,7 +19,9 @@ import { finishLabel, gameById, rarityLabel } from "@/lib/games";
 import { getOwnedStacks, getPrinting, getPrintingsOf, getSpanishName } from "@/lib/queries/cards";
 import { collectionOptions, collectionsOfCard } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
+import { priceHistory } from "@/lib/queries/value";
 import { requireUser } from "@/lib/session";
+import { ValueChart } from "@/components/value-chart";
 import { cn } from "@/lib/utils";
 import { AddCopy } from "./add-copy";
 import { WantInCollection } from "./want-in-collection";
@@ -43,14 +45,29 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
   const printing = await load(id);
   const oracleId = printing.oracleId;
 
-  const [printings, spanishName, owned, collections, locations, lists] = await Promise.all([
+  const [printings, spanishName, owned, collections, locations, lists, history] = await Promise.all([
     oracleId ? getPrintingsOf(oracleId) : Promise.resolve([printing]),
     oracleId ? getSpanishName(oracleId) : Promise.resolve(null),
     oracleId ? getOwnedStacks(user.id, oracleId) : Promise.resolve([]),
     collectionOptions(user.id),
     locationOptions(user.id),
     collectionsOfCard(user.id, printing.id),
+    priceHistory(printing.id),
   ]);
+  const historySeries = [
+    {
+      key: "nonfoil",
+      label: finishLabel(printing.game, "nonfoil"),
+      color: "var(--chart-1)",
+      values: history.map((h) => h.eur),
+    },
+    {
+      key: "foil",
+      label: finishLabel(printing.game, "foil"),
+      color: "var(--chart-2)",
+      values: history.map((h) => h.eurFoil),
+    },
+  ].filter((s) => s.values.some((v) => v != null));
 
   const updated = printing.pricesUpdatedAt
     ? new Date(printing.pricesUpdatedAt).toLocaleDateString("es-ES")
@@ -179,6 +196,20 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
           )}
         </div>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold">Histórico de precio</h2>
+        {history.length >= 2 && historySeries.length > 0 ? (
+          <div className="bg-card rounded-xl border p-4">
+            <ValueChart dates={history.map((h) => h.date)} series={historySeries} height={200} />
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            Se guarda un precio al día de las cartas que tienes, desde que añades la primera copia.
+            {history.length === 1 && " De momento hay uno."}
+          </p>
+        )}
+      </section>
 
       {printings.length > 1 && (
         <section className="space-y-3">

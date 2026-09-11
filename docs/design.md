@@ -33,6 +33,26 @@ porque lo veía plano e impersonal. Es provisional como todo lo demás (ver D22 
 | `--foil` | Degradado cian → violeta → rosa → oro | Película foil |
 | `--rarity-*` | common `#A9A4C7`, uncommon `#A8C8DC`, rare `#E9B949`, mythic `#F0703C`, special `#B98BF0` | `<RarityMark>` |
 
+### Gráficas
+
+Siguen las especificaciones de la skill `dataviz`. Los colores se validan con su script
+(`validate_palette.js --mode dark --surface "#201d3a"`).
+
+| Token | Hex | Uso |
+| --- | --- | --- |
+| `--chart-1` | `#BC8A26` | Línea del valor y del precio normal: el oro, un paso más oscuro que el del texto |
+| `--chart-2` | `#9379D7` | Línea del precio foil: el violeta del foil, un paso más oscuro |
+| `--gain` / `--loss` | `#5FD39A` / `#F07167` | Subidas y bajadas. Siempre con flecha y signo (`<Delta>`), nunca solo con el color |
+
+Los oros del texto (`#E9B949`) y el violeta del foil son demasiado claros para una línea sobre
+`--card`: el validador pide una luminosidad OKLCH entre 0,48 y 0,67 en oscuro.
+
+- La gráfica es `<ValueChart>` (`src/components/value-chart.tsx`), en SVG y sin librerías:
+  - Líneas de 2 px. Con una sola serie, un velo del 10 % bajo la línea y el valor al final.
+  - Con dos series, leyenda.
+  - Cruz que salta al día más cercano, con el puntero o con las flechas del teclado.
+  - «Ver los datos» abre la tabla equivalente.
+
 La app va **siempre en oscuro** (`<html class="dark">`). Los tokens claros de `:root` siguen
 siendo los de shadcn por si algún día se añade un selector de tema.
 

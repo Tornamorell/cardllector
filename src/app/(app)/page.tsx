@@ -8,10 +8,13 @@ import { finishLabel } from "@/lib/games";
 import { listCollections } from "@/lib/queries/collections";
 import { topStacks } from "@/lib/queries/dashboard";
 import { inventorySummary } from "@/lib/queries/items";
+import { parsePeriod } from "@/lib/queries/value";
 import { requireUser } from "@/lib/session";
+import { ValueOverview } from "./value-overview";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   const user = await requireUser();
+  const period = parsePeriod((await searchParams).period);
   const [summary, collections, top] = await Promise.all([
     inventorySummary(user.id),
     listCollections(user.id),
@@ -69,6 +72,8 @@ export default async function DashboardPage() {
           </dl>
         </div>
       </section>
+
+      <ValueOverview ownerId={user.id} period={period} />
 
       <div className="grid gap-10 lg:grid-cols-2">
         <section className="space-y-3">

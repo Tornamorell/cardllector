@@ -316,3 +316,25 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     es una edición concreta.
 - **Revisar cuando:** se quieran entradas por carta en lugar de por edición, por acabado ("lo
   quiero en foil") o colecciones generadas (una expansión entera).
+
+## D24 · Evolución del valor: la gráfica incluye tus altas; "cambio por precios", no — 2026-09-11 · provisional
+
+- **Contexto:** el valor diario (`inventory_value_snapshots`) sube tanto si suben los precios
+  como si añades cartas. Una sola cifra de "has ganado X €" mezclaría las dos cosas.
+- **Decisión:**
+  - La gráfica del resumen enseña el valor de tus cartas cada día, tal cual, y lo dice
+    ("también sube cuando añades cartas"). El tooltip incluye cuántas cartas tenías ese día.
+  - **"Por cambios de precio"** y la lista de lo que más sube y baja comparan, para cada
+    edición y acabado que tienes **hoy**, el último precio guardado con el de hace N días
+    (`priceMoves()` en `src/lib/queries/value.ts`). El impacto de cada carta es cantidad ×
+    diferencia. Si no hay precio tan antiguo, la carta no entra, así que la cifra refleja solo
+    precios.
+  - Un periodo (7, 30 o 90 días, o todo) manda sobre la gráfica y sobre las listas (`?period=`).
+  - En la ficha de carta, el histórico de cada acabado, que solo existe para las cartas que
+    tienes (D11).
+  - Gráfica propia en SVG (`<ValueChart>`) en lugar de Recharts: es una línea con tooltip y
+    tabla, y no justifica una dependencia.
+- **Consecuencia:** hasta que no haya N días de precios guardados, el periodo de N días sale
+  vacío. Con «Todo» se compara con el primer día guardado.
+- **Revisar cuando:** se apunten precios de compra (beneficio real) o se quiera separar en la
+  gráfica lo que es precio de lo que son altas.
