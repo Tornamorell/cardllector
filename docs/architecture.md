@@ -46,6 +46,11 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 
 "Tienes X de Y" en una expansión cuenta ediciones distintas, estén en la colección que estén.
 
+En el móvil (por debajo de `md`), la navegación es una barra de pestañas fija abajo: Resumen,
+Catálogo, **Escanear** en el centro, Colecciones y Ubicaciones. La búsqueda y el botón de salir
+van como iconos en la barra superior. Desde `md` hacia arriba se ven todos los enlaces en texto
+en la barra superior (`src/app/(app)/nav-links.tsx`).
+
 ## Reglas que no hay que romper
 
 - **Nunca se llama a la API de Scryfall desde una petición del usuario.** La API tiene límites
