@@ -8,15 +8,15 @@ export const metadata: Metadata = { title: "Entrar" };
 // Three icons of the two games, fanned above the form: static, so the login page needs no DB.
 const COVER = [
   {
-    src: "https://cards.scryfall.io/normal/front/d/5/d573ef03-4730-45aa-93dd-e45ac1dbaf4a.jpg?1783948684",
+    src: "https://cards.scryfall.io/small/front/d/5/d573ef03-4730-45aa-93dd-e45ac1dbaf4a.jpg?1783948684",
     alt: "Lightning Bolt",
   },
   {
-    src: "https://cards.scryfall.io/normal/front/b/0/b0faa7f2-b547-42c4-a810-839da50dadfe.jpg?1783948669",
+    src: "https://cards.scryfall.io/small/front/b/0/b0faa7f2-b547-42c4-a810-839da50dadfe.jpg?1783948669",
     alt: "Black Lotus",
     foil: true,
   },
-  { src: "https://assets.tcgdex.net/en/base/base1/4/high.webp", alt: "Charizard" },
+  { src: "https://assets.tcgdex.net/en/base/base1/4/low.webp", alt: "Charizard" },
 ];
 
 export default function LoginPage() {

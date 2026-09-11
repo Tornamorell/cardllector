@@ -248,6 +248,14 @@
     transition: none;
   }
 
+  /* A foil label wears the foil film, not the gold (gold is money). */
+  .foil-badge {
+    border: 0;
+    background: var(--foil);
+    background-size: 200% 200%;
+    color: #1b1630;
+  }
+
   /* Set-symbol colours, as a small diamond before a rarity. */
   .rarity-mark {
     display: inline-block;

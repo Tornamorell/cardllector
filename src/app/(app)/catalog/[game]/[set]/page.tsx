@@ -119,7 +119,7 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
             {set.releasedAt && ` · ${new Date(set.releasedAt).toLocaleDateString("es-ES", { year: "numeric", month: "long" })}`}
           </p>
         </div>
-        <div className="space-y-1.5 text-right">
+        <div className="w-full space-y-1.5 sm:w-auto sm:text-right">
           <p className="text-sm">
             Tienes <strong>{formatInt(set.ownedDistinct)}</strong> de {formatInt(set.cardCount)}{" "}
             ({pct}%)
@@ -131,7 +131,7 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
             value={set.ownedDistinct}
             max={set.cardCount}
             showLabel={false}
-            className="ml-auto w-56"
+            className="w-full sm:ml-auto sm:w-56"
           />
           <Link
             href={`/scan?set=${game.id}:${encodeURIComponent(set.code)}`}
@@ -203,7 +203,7 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
                     src={c.imageSmall}
                     alt={c.name}
                     size="md"
-                    className={cn("w-full!", c.owned === 0 && "opacity-40 grayscale")}
+                    className={cn("w-full!", c.owned === 0 && "opacity-55 grayscale-[0.75]")}
                   />
                 </Link>
                 {c.owned > 0 && (

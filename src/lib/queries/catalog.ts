@@ -18,9 +18,9 @@ export async function setOptions() {
 /** A game's most valuable printings with an image, to show off on its catalog tile. */
 export async function gameShowcase(game: CatalogGameId, limit = 3) {
   const result = await db.execute<{ name: string; image: string }>(sql`
-    select name, image_normal as image
+    select name, image_small as image
     from catalog_cards
-    where game = ${game} and image_normal is not null and price_eur is not null
+    where game = ${game} and image_small is not null and price_eur is not null
     order by price_eur desc
     limit ${limit}
   `);

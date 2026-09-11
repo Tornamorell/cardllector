@@ -64,7 +64,7 @@ export default async function CollectionPage({
       </div>
 
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-        <p className="text-3xl font-semibold tracking-tight">{formatEur(collection.valueEur)}</p>
+        <p className="display text-primary text-3xl font-bold">{formatEur(collection.valueEur)}</p>
         <p className="text-muted-foreground text-sm">
           {formatInt(collection.cardCount)} cartas
           {collection.unpricedCount > 0 && ` · ${formatInt(collection.unpricedCount)} sin precio`}

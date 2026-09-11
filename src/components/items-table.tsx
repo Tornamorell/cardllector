@@ -71,7 +71,7 @@ export function ItemsTable({
               <TableCell>
                 <div className="flex flex-wrap items-center gap-1 text-xs">
                   {item.finish !== "nonfoil" && (
-                    <Badge>{finishLabel(item.card?.game, item.finish)}</Badge>
+                    <Badge className="foil-badge">{finishLabel(item.card?.game, item.finish)}</Badge>
                   )}
                   <Badge variant="outline">{item.condition}</Badge>
                   <Badge variant="outline" className="uppercase">

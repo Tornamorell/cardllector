@@ -75,7 +75,7 @@ export default async function LocationPage({ params, searchParams }: PageProps<"
       </div>
 
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-        <p className="text-3xl font-semibold tracking-tight">{formatEur(location.valueEur)}</p>
+        <p className="display text-primary text-3xl font-bold">{formatEur(location.valueEur)}</p>
         <p className="text-muted-foreground text-sm">
           {formatInt(location.cardCount)} cartas
           {location.unpricedCount > 0 && ` · ${formatInt(location.unpricedCount)} sin precio`}
