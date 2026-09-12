@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { ConditionBadge, LanguageFlag } from "@/components/card-attributes";
 import { SetIcon } from "@/components/card-thumb";
 import { HoloCard } from "@/components/holo-card";
 import { RarityMark } from "@/components/rarity-mark";
@@ -14,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LANGUAGES, formatEur } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import { finishLabel, gameById, rarityLabel } from "@/lib/games";
 import { gradeLabel } from "@/lib/grading";
 import { getOwnedStacks, getPrinting, getPrintingsOf, getSpanishName } from "@/lib/queries/cards";
@@ -161,8 +162,8 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
                 {owned.map((s) => (
                   <li key={s.id}>
                     <span className="font-medium tabular-nums">{s.quantity}×</span>{" "}
-                    {s.setCode.toUpperCase()} #{s.collectorNumber}, {finishLabel(printing.game, s.finish)},{" "}
-                    {s.condition}, {LANGUAGES[s.language] ?? s.language}
+                    {s.setCode.toUpperCase()} #{s.collectorNumber}, {finishLabel(printing.game, s.finish)}{" "}
+                    <ConditionBadge condition={s.condition} /> <LanguageFlag code={s.language} withName />
                     {s.gradingCompany && (
                       <>
                         , <strong>{gradeLabel(s.gradingCompany, s.grade)}</strong>

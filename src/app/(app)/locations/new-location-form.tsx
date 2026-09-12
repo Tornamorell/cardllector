@@ -17,6 +17,7 @@ export function NewLocationForm() {
       className="flex gap-2"
       onSubmit={(event) => {
         event.preventDefault();
+        if (pending) return;
         startTransition(async () => {
           try {
             const location = await createLocation(name);
@@ -36,8 +37,8 @@ export function NewLocationForm() {
         maxLength={60}
         aria-label="Nombre de la ubicación"
       />
-      <Button type="submit" disabled={pending || !name.trim()}>
-        Crear
+      <Button type="submit" disabled={pending || !name.trim()} aria-busy={pending}>
+        {pending ? "Creando…" : "Crear"}
       </Button>
     </form>
   );

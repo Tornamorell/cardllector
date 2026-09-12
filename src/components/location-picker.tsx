@@ -49,7 +49,7 @@ export function LocationPicker({
   const current = value && options.some((o) => o.id === value) ? value : "";
 
   function create() {
-    if (!name.trim()) return;
+    if (!name.trim() || pending) return;
     startTransition(async () => {
       try {
         const location = await createLocation(name);
@@ -84,8 +84,8 @@ export function LocationPicker({
           aria-label="Nombre de la nueva ubicación"
           maxLength={60}
         />
-        <Button size="sm" onClick={create} disabled={pending || !name.trim()}>
-          Crear
+        <Button size="sm" onClick={create} disabled={pending || !name.trim()} aria-busy={pending}>
+          {pending ? "Creando…" : "Crear"}
         </Button>
         <Button
           size="icon-sm"

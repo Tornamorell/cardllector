@@ -135,7 +135,26 @@ Lo principal está hecho (ver "Hecho", D24). Falta:
 - **Pokémon, cartas antiguas:** 1ª edición y shadowless con precio propio (hueco de D18).
 - **Pokémon en el escáner:** las cartas modernas llevan impresos el código de expansión
   (`abbreviation.official`, por ejemplo "MEW") y el número. Encaja con el mismo enfoque de OCR.
-- **Fútbol y deporte**, a mano.
+- **Fútbol (cromos y cartas)**, planteado el 2026-09-12 y aparcado:
+  - Un álbum es una expansión (`game = sports`) y cada cromo es una carta con número, jugador y
+    equipo.
+  - **Listas:** crear el álbum pegando su listado («1 Courtois – Real Madrid»), o solo con el
+    total («1 a 441») y completar los nombres después.
+    - CromosRepes enseña en abierto el total y la editorial de cada colección, pero la lista
+      pide iniciar sesión. No se extrae de forma automática.
+  - **Marcar por números:** una cuadrícula del álbum para tocar lo que tienes, o escribir «1,
+    5, 23-30, 45x2».
+  - **Faltas y repes** como texto para compartir en CromosRepes o WhatsApp.
+  - **Imágenes:**
+    - una foto propia opcional, reutilizando «Para luego», y si no, un marcador con número y
+      nombre;
+    - un botón «Buscar imagen» que abre la búsqueda en otra pestaña;
+    - sin búsqueda automática: lo impiden los derechos de Panini y Topps y las condiciones de
+      los buscadores.
+  - **Precio:** no hay fuente. Para las piezas buenas, valor estimado (D27).
+  - **Escáner:** en los cromos adhesivos el número va detrás, y en las cartas tipo Adrenalyn
+    delante. Probar el modo «expansión fija».
+  - Antes de empezar, preguntar qué álbum concreto tiene el usuario y si son cromos o cartas.
 - Importar CSV de ManaBox y otras apps.
 - Filtro por expansión dentro de una colección y de Mis cartas.
 - Colecciones con entradas de "cualquier edición" o por acabado, y colecciones generadas (una

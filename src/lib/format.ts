@@ -29,6 +29,33 @@ export const LANGUAGES: Record<string, string> = {
   zht: "Chino trad.",
 };
 
+/** Flags for the card languages above. English uses the UK flag, as on Cardmarket. */
+export const LANGUAGE_FLAGS: Record<string, string> = {
+  es: "🇪🇸",
+  en: "🇬🇧",
+  fr: "🇫🇷",
+  de: "🇩🇪",
+  it: "🇮🇹",
+  pt: "🇵🇹",
+  ja: "🇯🇵",
+  ko: "🇰🇷",
+  ru: "🇷🇺",
+  zhs: "🇨🇳",
+  zht: "🇹🇼",
+};
+
 export const CONDITIONS = ["MT", "NM", "EX", "GD", "LP", "PL", "PO"] as const;
+export type Condition = (typeof CONDITIONS)[number];
+
+/** Cardmarket's names for each condition, in English like collectors use them (D21). */
+export const CONDITION_NAMES: Record<Condition, string> = {
+  MT: "Mint",
+  NM: "Near Mint",
+  EX: "Excellent",
+  GD: "Good",
+  LP: "Light Played",
+  PL: "Played",
+  PO: "Poor",
+};
 
 export const FINISH_LABELS = { nonfoil: "Normal", foil: "Foil", etched: "Etched" } as const;

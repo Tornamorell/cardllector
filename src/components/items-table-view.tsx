@@ -4,6 +4,7 @@ import { MoveIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { AddFilteredToCollection } from "@/components/add-filtered-to-collection";
+import { ConditionBadge, LanguageFlag } from "@/components/card-attributes";
 import { CardThumb } from "@/components/card-thumb";
 import type { CollectionOption } from "@/components/collection-picker";
 import { ItemActions, QuantityControl, type ActionItem } from "@/components/item-actions";
@@ -264,10 +265,8 @@ function Details({ item, context }: { item: InventoryItem; context: Context }) {
       {item.finish !== "nonfoil" && (
         <Badge className="foil-badge">{finishLabel(item.card?.game, item.finish)}</Badge>
       )}
-      <Badge variant="outline">{item.condition}</Badge>
-      <Badge variant="outline" className="uppercase">
-        {item.language}
-      </Badge>
+      <ConditionBadge condition={item.condition} />
+      <LanguageFlag code={item.language} />
       {context === "inventory" && item.location?.id && (
         <Link
           href={`/locations/${item.location.id}`}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProgressMeter } from "@/components/progress-meter";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { formatEur, formatInt } from "@/lib/format";
 import { listCollections } from "@/lib/queries/collections";
@@ -26,7 +26,7 @@ export default async function CollectionsPage() {
         </div>
         <form action={createCollection} className="flex gap-2">
           <Input name="name" placeholder="Nueva colección…" required maxLength={80} aria-label="Nombre" />
-          <Button type="submit">Crear</Button>
+          <SubmitButton pendingText="Creando…">Crear</SubmitButton>
         </form>
       </div>
 

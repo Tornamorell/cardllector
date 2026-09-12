@@ -43,7 +43,7 @@ export function CollectionPicker({
   const current = value && options.some((o) => o.id === value) ? value : "";
 
   function create() {
-    if (!name.trim()) return;
+    if (!name.trim() || pending) return;
     startTransition(async () => {
       try {
         const collection = await createCollectionNamed(name);
@@ -78,8 +78,8 @@ export function CollectionPicker({
           aria-label="Nombre de la nueva colección"
           maxLength={80}
         />
-        <Button size="sm" onClick={create} disabled={pending || !name.trim()}>
-          Crear
+        <Button size="sm" onClick={create} disabled={pending || !name.trim()} aria-busy={pending}>
+          {pending ? "Creando…" : "Crear"}
         </Button>
         <Button size="icon-sm" variant="ghost" onClick={() => setCreating(false)} aria-label="Cancelar">
           <XIcon />

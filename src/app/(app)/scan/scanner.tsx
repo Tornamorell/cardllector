@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AddFilteredToCollection } from "@/components/add-filtered-to-collection";
+import { LanguageFlag } from "@/components/card-attributes";
 import { CardThumb } from "@/components/card-thumb";
 import type { CollectionOption } from "@/components/collection-picker";
 import { EntryTarget, targetFor, useEntryResult } from "@/components/entry-target";
@@ -1058,7 +1059,12 @@ function CurrentCard({
           <p className="truncate font-semibold">{match.name}</p>
           <p className="truncate text-xs text-white/70">
             {match.setName} · #{match.collectorNumber}
-            {entry.lang && ` · ${entry.lang.toUpperCase()}`}
+            {entry.lang && (
+              <>
+                {" · "}
+                <LanguageFlag code={entry.lang} />
+              </>
+            )}
           </p>
           <p className="text-sm tabular-nums">{formatEur(price)}</p>
         </div>
@@ -1137,7 +1143,12 @@ function SessionList({
                 {e.addedAt ? `${clock.format(e.addedAt)} · ` : ""}
                 {e.match.setCode.toUpperCase()} #{e.match.collectorNumber} ·{" "}
                 {(gameById(e.match.game)?.finishLabels ?? FINISH_LABELS)[e.finish]}
-                {e.lang && ` · ${e.lang.toUpperCase()}`}
+                {e.lang && (
+                  <>
+                    {" · "}
+                    <LanguageFlag code={e.lang} />
+                  </>
+                )}
               </p>
             </div>
             <span className="text-right text-sm tabular-nums">

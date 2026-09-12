@@ -1,7 +1,7 @@
 "use client";
 
 import { MinusIcon, PlusIcon } from "lucide-react";
-import { CONDITIONS, FINISH_LABELS, LANGUAGES } from "@/lib/format";
+import { CONDITIONS, CONDITION_NAMES, FINISH_LABELS, LANGUAGE_FLAGS, LANGUAGES } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 // Native selects: fastest to operate with the keyboard and the best picker on phones.
@@ -65,7 +65,7 @@ export function ConditionSelect({
     >
       {CONDITIONS.map((c) => (
         <option key={c} value={c}>
-          {c}
+          {c} · {CONDITION_NAMES[c]}
         </option>
       ))}
     </select>
@@ -91,7 +91,7 @@ export function LanguageSelect({
     >
       {Object.entries(LANGUAGES).map(([code, label]) => (
         <option key={code} value={code}>
-          {label}
+          {LANGUAGE_FLAGS[code] ? `${LANGUAGE_FLAGS[code]} ${label}` : label}
         </option>
       ))}
     </select>

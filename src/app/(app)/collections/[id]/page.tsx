@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { AddCopyButton } from "@/components/add-copy-button";
-import { CardThumb } from "@/components/card-thumb";
+import { OwnedCardTile } from "@/components/owned-card-tile";
 import { ProgressMeter } from "@/components/progress-meter";
 import { RarityMark } from "@/components/rarity-mark";
 import { formatEur, formatInt } from "@/lib/format";
@@ -148,30 +147,17 @@ export default async function CollectionPage({
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {shown.map((c) => {
             const game = gameById(c.game);
-            const complete = isComplete(c);
             return (
               <li key={c.id} className="space-y-1.5">
-                <div className="relative">
-                  <Link href={`/cards/${c.id}`} className="block">
-                    <CardThumb
-                      src={c.imageSmall}
-                      alt={c.name}
-                      size="md"
-                      className={cn("w-full!", c.owned === 0 && "opacity-55 grayscale-[0.75]")}
-                    />
-                  </Link>
-                  {c.owned > 0 && (
-                    <span
-                      className={cn(
-                        "absolute top-1.5 left-1.5 rounded-md px-1.5 py-0.5 text-xs font-semibold shadow-sm",
-                        complete ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
-                      )}
-                    >
-                      {c.wanted > 1 || !complete ? `${c.owned}/${c.wanted}` : "✓"}
-                    </span>
-                  )}
-                  <AddCopyButton printingId={c.id} finishes={c.finishes} name={c.name} withCollection={false} />
-                </div>
+                <OwnedCardTile
+                  printingId={c.id}
+                  name={c.name}
+                  imageSmall={c.imageSmall}
+                  finishes={c.finishes}
+                  owned={c.owned}
+                  wanted={c.wanted}
+                  withCollection={false}
+                />
                 <div className="text-xs leading-tight">
                   <p className="truncate font-medium" title={c.name}>
                     {c.name}

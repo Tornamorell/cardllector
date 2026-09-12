@@ -74,6 +74,19 @@ siendo los de shadcn por si algún día se añade un selector de tema.
 
 ## Piezas
 
+- `src/components/card-attributes.tsx`:
+  - `<ConditionBadge>` pinta el estado con los colores de Cardmarket: MT turquesa, NM verde, EX
+    verde lima, GD amarillo, LP naranja, PL rojo claro y PO rojo. El nombre completo sale al
+    pasar el ratón.
+  - `<LanguageFlag>` muestra el idioma con su bandera; el inglés lleva la del Reino Unido, como
+    en Cardmarket.
+  - Los selectores de estado e idioma también muestran el nombre y la bandera.
+- `src/components/owned-card-tile.tsx`: la carta en la cuadrícula de una expansión o una
+  colección. El **+** cuenta al instante (`useOptimistic`): la carta pierde el gris y el número
+  sube antes de que conteste el servidor, y vuelve atrás si falla.
+- `src/components/submit-button.tsx`: botón de envío que dice «Creando…» y no se puede pulsar
+  dos veces. Los selectores con «+ Nueva…» hacen lo mismo. Además, el servidor reutiliza una
+  colección con el mismo nombre creada hace menos de 15 segundos.
 - `src/components/card-thumb.tsx`: carta con sombra; `foil` añade la película.
   - El marco no encoge en filas flexibles (`flex: none`), y la imagen lo llena en posición
     absoluta. Así se evita el recorte que hacía Safari en iOS.

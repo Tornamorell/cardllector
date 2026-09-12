@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AddCopyButton } from "@/components/add-copy-button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { CardThumb, SetIcon } from "@/components/card-thumb";
+import { SetIcon } from "@/components/card-thumb";
 import { EntryTarget } from "@/components/entry-target";
+import { OwnedCardTile } from "@/components/owned-card-tile";
 import { ProgressMeter } from "@/components/progress-meter";
 import { RarityMark } from "@/components/rarity-mark";
 import { buttonVariants } from "@/components/ui/button";
@@ -193,22 +193,13 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {shown.map((c) => (
             <li key={c.id} className="space-y-1.5">
-              <div className="relative">
-                <Link href={`/cards/${c.id}`} className="block">
-                  <CardThumb
-                    src={c.imageSmall}
-                    alt={c.name}
-                    size="md"
-                    className={cn("w-full!", c.owned === 0 && "opacity-55 grayscale-[0.75]")}
-                  />
-                </Link>
-                {c.owned > 0 && (
-                  <span className="bg-primary text-primary-foreground absolute top-1.5 left-1.5 rounded-md px-1.5 py-0.5 text-xs font-semibold shadow-sm">
-                    ×{c.owned}
-                  </span>
-                )}
-                <AddCopyButton printingId={c.id} finishes={c.finishes} name={c.name} />
-              </div>
+              <OwnedCardTile
+                printingId={c.id}
+                name={c.name}
+                imageSmall={c.imageSmall}
+                finishes={c.finishes}
+                owned={c.owned}
+              />
               <div className="text-xs leading-tight">
                 <p className="truncate font-medium" title={c.name}>
                   {c.name}

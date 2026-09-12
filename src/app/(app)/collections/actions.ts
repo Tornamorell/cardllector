@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -32,30 +32,45 @@ const collectionFields = z.object({
     .transform((v) => v || null),
 });
 
+/**
+ * Creates a collection, unless one with the same name was created seconds ago: that's a double
+ * tap or a retried request, not a second list, so it returns the first one.
+ */
+async function insertCollection(ownerId: string, fields: z.output<typeof collectionFields>) {
+  const [recent] = await db
+    .select({ id: collections.id, name: collections.name })
+    .from(collections)
+    .where(
+      and(
+        eq(collections.ownerId, ownerId),
+        sql`lower(${collections.name}) = lower(${fields.name})`,
+        gt(collections.createdAt, sql`now() - interval '15 seconds'`),
+      ),
+    )
+    .limit(1);
+  if (recent) return recent;
+  const [created] = await db
+    .insert(collections)
+    .values({ ...fields, ownerId })
+    .returning({ id: collections.id, name: collections.name });
+  refresh();
+  return created;
+}
+
 export async function createCollection(formData: FormData) {
   const user = await requireUser();
   const fields = collectionFields.parse({
     name: formData.get("name"),
     description: formData.get("description") ?? "",
   });
-  const [created] = await db
-    .insert(collections)
-    .values({ ...fields, ownerId: user.id })
-    .returning({ id: collections.id });
-  refresh();
+  const created = await insertCollection(user.id, fields);
   redirect(`/collections/${created.id}`);
 }
 
 /** Creates a collection from a picker ("+ Nueva colección…") and returns it. */
 export async function createCollectionNamed(name: string): Promise<{ id: string; name: string }> {
   const user = await requireUser();
-  const fields = collectionFields.parse({ name, description: "" });
-  const [created] = await db
-    .insert(collections)
-    .values({ ...fields, ownerId: user.id })
-    .returning({ id: collections.id, name: collections.name });
-  refresh();
-  return created;
+  return insertCollection(user.id, collectionFields.parse({ name, description: "" }));
 }
 
 export async function updateCollection(collectionId: string, formData: FormData) {
