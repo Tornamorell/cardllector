@@ -58,7 +58,8 @@ import { cn } from "@/lib/utils";
 import { addItem, changeFinish, changeQuantity } from "../inventory/actions";
 import { savePendingScan } from "../review/actions";
 import { saveCardPhoto } from "../cards/photo-actions";
-import { cardInGuideBlob } from "@/lib/card-photo";
+import { cardInGuideBlob, cardInGuidePixels } from "@/lib/card-photo";
+import { bestMatch, cardHash } from "@/lib/scan/card-hash";
 import { useScanSession } from "./scan-session";
 
 type OcrWorker = import("tesseract.js").Worker;
@@ -243,6 +244,8 @@ export function Scanner({
   const psmRef = useRef<{ block: Psm; line: Psm } | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const runningRef = useRef(false);
+  /** Catalog card id → hash of its shared photo (D33), of the fixed set or of all. */
+  const photoHashesRef = useRef(new Map<string, string>());
   const readState = useRef({
     votes: [] as Array<string | null>,
     empty: 0,
@@ -435,6 +438,45 @@ export function Scanner({
     }
   }
 
+  /** The shared photos' hashes (D33): of the fixed set, or of all. */
+  async function loadPhotoHashes() {
+    const { fixedSet } = settings.current;
+    try {
+      const query = fixedSet ? `?set=${encodeURIComponent(`${fixedSet.game}:${fixedSet.code}`)}` : "";
+      const res = await fetch(`/api/scan/hashes${query}`);
+      if (!res.ok) return;
+      const { hashes } = (await res.json()) as { hashes: { id: string; hash: string }[] };
+      photoHashesRef.current = new Map(hashes.map((p) => [p.id, p.hash]));
+    } catch {
+      // No recognition by photo this session; reading text still works.
+    }
+  }
+
+  function lookupIds(ids: string[]) {
+    return post("/api/scan/cards", { ids }, JSON.stringify(["ids", ids]));
+  }
+
+  /**
+   * Recognises the card by its photo (D33): straightened, hashed and compared with the shared
+   * photos. Any design, once someone has photographed the card. True if a photo matched.
+   */
+  async function readByImage(video: HTMLVideoElement, card: Rect) {
+    const photos = photoHashesRef.current;
+    if (!photos.size) return false;
+    const pixels = cardInGuidePixels(video, card);
+    if (!pixels) return false;
+    const hash = cardHash(pixels.data, pixels.width, pixels.height);
+    const match = bestMatch(hash, Array.from(photos, ([id, h]) => ({ id, hash: h })));
+    if (!match) return false;
+    readState.current.empty = 0;
+    setLastText(`foto: a ${match.distance} bits`);
+    setStatus("Reconociendo por la foto…");
+    if (vote(`img:${match.id}`) >= VOTES_NEEDED) {
+      await resolve(await lookupIds([match.id]), null, "Reconocida por la foto");
+    }
+    return true;
+  }
+
   async function tick() {
     if (!runningRef.current) return;
     // Looking at the history: don't add cards behind the user's back.
@@ -449,6 +491,11 @@ export function Scanner({
       const s = readState.current;
       s.tick++;
       try {
+        // Every third read, by the photo; the rest, by the text.
+        if (s.tick % 3 === 0 && (await readByImage(video, card))) {
+          if (runningRef.current) setTimeout(tick, TICK_MS);
+          return;
+        }
         if (settings.current.nameLayout) {
           await readPrintedName(video, card, canvas, settings.current.nameLayout);
           if (runningRef.current) setTimeout(tick, TICK_MS);
@@ -611,6 +658,8 @@ export function Scanner({
       form.set("onlyIfMissing", "1");
       const r = await saveCardPhoto(form);
       if (!r.saved || !r.url) return;
+      // Recognised by this photo from the next card on (D33).
+      if (r.hash) photoHashesRef.current.set(catalogCardId, r.hash);
       const url = r.url;
       // The session and the lookup cache show it from now on.
       setEntries((list) =>
@@ -776,6 +825,7 @@ export function Scanner({
       video.srcObject = stream;
       await video.play();
       await getWorker();
+      void loadPhotoHashes();
       readState.current = {
         ...readState.current,
         votes: [],

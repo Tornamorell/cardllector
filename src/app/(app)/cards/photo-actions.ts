@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import { catalogCardPhotos, catalogCards } from "@/db/schema";
 import { cardPhotoUrl, isCardPhoto } from "@/lib/card-photo";
+import { photoHash } from "@/lib/scan/photo-hash";
 import { requireUser } from "@/lib/session";
 
 /** A 300×419 JPEG weighs ~30 KB; this leaves room without letting big files in. */
@@ -16,7 +17,9 @@ const MAX_IMAGE_BYTES = 250_000;
  * catalog image (Scryfall, TCGdex). With `onlyIfMissing` (the scanner) it doesn't replace a
  * photo someone already took; from the card page it does ("Cambiar foto").
  */
-export async function saveCardPhoto(form: FormData): Promise<{ saved: boolean; url?: string }> {
+export async function saveCardPhoto(
+  form: FormData,
+): Promise<{ saved: boolean; url?: string; hash?: string | null }> {
   const user = await requireUser();
   const image = form.get("image");
   if (!(image instanceof File) || image.type !== "image/jpeg" || image.size > MAX_IMAGE_BYTES) {
@@ -36,12 +39,14 @@ export async function saveCardPhoto(form: FormData): Promise<{ saved: boolean; u
 
   const now = new Date();
   const bytes = Buffer.from(await image.arrayBuffer());
+  // What the scanner recognises the card by (D33). Without it, /api/scan/hashes retries later.
+  const hash = await photoHash(bytes).catch(() => null);
   await db
     .insert(catalogCardPhotos)
-    .values({ catalogCardId, image: bytes, contributedBy: user.id, source, updatedAt: now })
+    .values({ catalogCardId, image: bytes, contributedBy: user.id, source, hash, updatedAt: now })
     .onConflictDoUpdate({
       target: catalogCardPhotos.catalogCardId,
-      set: { image: sql`excluded.image`, contributedBy: user.id, source, updatedAt: now },
+      set: { image: sql`excluded.image`, contributedBy: user.id, source, hash, updatedAt: now },
     });
   const url = cardPhotoUrl(catalogCardId, now);
   await db
@@ -49,5 +54,5 @@ export async function saveCardPhoto(form: FormData): Promise<{ saved: boolean; u
     .set({ imageSmall: url, imageNormal: url })
     .where(eq(catalogCards.id, catalogCardId));
   revalidatePath("/", "layout");
-  return { saved: true, url };
+  return { saved: true, url, hash };
 }

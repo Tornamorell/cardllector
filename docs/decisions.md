@@ -611,3 +611,34 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
 - **Revisar cuando:** falle con fotos reales del escáner, o se quiera usar también para el OCR
   (la carta enderezada pone las franjas exactamente donde tocan, pero habría que hacerlo en
   cada fotograma).
+
+## D33 · Reconocer las cartas por su foto compartida — 2026-09-12 · provisional
+
+- **Contexto:** el escáner solo reconocía leyendo texto. Una carta sin número legible (Élite,
+  Flashback…) había que identificarla con la IA cada vez, aunque ya tuviera foto: le pasó al
+  usuario con la Flashback Anthology de Messi, Suárez, Lamine Yamal y Lewandowski.
+- **Decisión:**
+  - Cada foto compartida (D30) guarda su huella perceptual (`catalog_card_photos.hash`): pHash
+    de 63 bits, con una rejilla de 32×32 y el 6 % de cada borde fuera
+    (`src/lib/scan/card-hash.ts`). La calcula el servidor al guardarla, con sharp. Las
+    anteriores la reciben la primera vez que se piden.
+  - Al empezar, el escáner descarga las huellas del álbum fijado, o todas si no hay ninguno
+    (`GET /api/scan/hashes`). Una de cada tres lecturas endereza la carta (D32), calcula su
+    huella y busca la más cercana en el propio dispositivo.
+  - Cuenta si está a 12 bits o menos y a 6 o más de la siguiente. Como el OCR, la misma
+    carta tiene que salir en 2 de las últimas 6 lecturas.
+  - Si no se encuentran los bordes, no compara: sin enderezar, la huella de la misma carta se
+    va hasta 26 bits.
+  - Así, la primera vez una carta sin texto legible se identifica con la IA (D31), y a partir
+    de ahí se reconoce sola, gratis y para todos.
+  - Medido el 2026-09-12 con cuatro cartas reales, enderezadas y fotografiadas de nuevo con
+    giro, luz, desenfoque y JPEG: la misma carta quedó a 8 bits como mucho (3 de media); la
+    carta distinta más cercana, a 22.
+- **Descartado:**
+  - pHash de 255 bits: el hueco entre «la misma» y «otra» era menor (54 frente a 112).
+  - Comparar en el servidor: una petición por lectura, cuando las huellas de un álbum entero
+    son unos pocos KB.
+  - Huellas calculadas por el móvil y enviadas con la foto: con el servidor hay una sola
+    fuente y se pueden rellenar las fotos antiguas.
+- **Revisar cuando:** con muchas fotos haya falsos positivos entre cartas de la misma serie
+  (todas comparten plantilla), o no reconozca cartas brillantes por los reflejos.

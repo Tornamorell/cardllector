@@ -1,0 +1,1 @@
+ALTER TABLE "catalog_card_photos" ADD COLUMN "hash" text;

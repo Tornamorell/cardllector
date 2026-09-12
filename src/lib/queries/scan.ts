@@ -237,3 +237,22 @@ export async function lookupReading(
   }
   return byName;
 }
+
+/** Cards by id: the one the scanner recognised by its photo (D33). */
+export async function lookupIds(ids: string[]): Promise<ScanMatch[]> {
+  if (!ids.length) return [];
+  return find("c.id = any($1::uuid[])", [ids]);
+}
+
+/** The shared photos' hashes (D33), of one set or of all; `hash` is null until computed. */
+export async function photoHashRows(set?: FixedSetRef | null) {
+  const { rows } = await pool.query<{ id: string; hash: string | null }>(
+    `select p.catalog_card_id as id, p.hash
+     from catalog_card_photos p
+     join catalog_cards c on c.id = p.catalog_card_id
+     ${set ? "where c.game = $1 and lower(c.set_code) = lower($2)" : ""}
+     limit 20000`,
+    set ? [set.game, set.code] : [],
+  );
+  return rows;
+}

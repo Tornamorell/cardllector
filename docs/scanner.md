@@ -126,8 +126,15 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     - La carta se busca alrededor del recuadro, se endereza y se recorta a sus bordes, con los
       niveles ajustados (D32). Lo mismo con la foto de «Para luego» y la de «Identificar con
       IA». Si no encuentra los bordes, usa el recorte del recuadro.
-    - La foto no sirve para reconocer la carta: el escáner solo reconoce leyendo texto, así que
-      una Élite o una Flashback se vuelven a identificar con la IA aunque ya tengan foto.
+  - **Reconocer por la foto** (D33):
+    - Al empezar se descargan las huellas perceptuales de las fotos compartidas del álbum fijado,
+      o de todas.
+    - Una de cada tres lecturas endereza la carta del recuadro, calcula su huella (63 bits) y la
+      compara en el propio dispositivo. Cuenta si está a 12 bits o menos y claramente más cerca
+      que la siguiente, y la misma carta tiene que salir en 2 de las últimas 6 lecturas.
+    - Así, una Élite o una Flashback se identifican con la IA la primera vez y, desde que tienen
+      foto, se reconocen solas.
+    - «Ver lo que lee» muestra «foto: a N bits» cuando reconoce una.
   - **Identificar con IA** (D31), junto a «Para luego», solo si está configurada
     `ANTHROPIC_API_KEY`:
     - Manda la foto del recuadro (JPEG de 560 px) a `POST /api/scan/identify`, que se la pasa a

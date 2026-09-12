@@ -61,6 +61,8 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
     cruza lo que lee con el catálogo. Sirve para cualquier diseño y juego.
   - **Fotos enderezadas** (D32): las fotos compartidas, la de «Para luego» y la que va a la IA
     salen con la carta recortada a sus bordes y recta, como un escaneo.
+  - **Reconocer por la foto** (D33): una carta con foto compartida se reconoce comparando
+    huellas perceptuales en el móvil, aunque no tenga texto legible.
 - **Colecciones desde una expansión:**
   - Se crean llenas con una expansión entera, o con una de sus rarezas.
   - Se hace desde `/collections` o con «Guardar como colección…» en la expansión.

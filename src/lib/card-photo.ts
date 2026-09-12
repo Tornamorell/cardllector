@@ -51,29 +51,34 @@ function draw(source: CanvasImageSource, r: Rect, width: number) {
 
 /**
  * The card found in `search`, straightened and trimmed to its edges like a scan, with its
- * brightness evened out (D32), on an outW×outH canvas. If its edges aren't clear, `fallback`
- * as it is: better the plain crop than a wrong one.
+ * brightness evened out (D32), as outW×outH RGBA. Null if its edges aren't clear.
  */
+function straighten(source: CanvasImageSource, search: Rect, outW: number, outH: number) {
+  const small = draw(source, search, DETECT_WIDTH);
+  const quad = detectCardQuad(small.pixels(), small.canvas.width, small.canvas.height);
+  if (!quad) return null;
+  // Sampled at ~2× the output, not from a possibly 4K frame.
+  const big = draw(source, search, Math.min(search.w, outW * 2.5));
+  const k = big.canvas.width / small.canvas.width;
+  const at = (p: { x: number; y: number }) => ({ x: p.x * k, y: p.y * k });
+  const scaled: Quad = { tl: at(quad.tl), tr: at(quad.tr), br: at(quad.br), bl: at(quad.bl) };
+  return autoLevels(warpCard(big.pixels(), big.canvas.width, big.canvas.height, scaled, outW, outH));
+}
+
+/** The card straightened on an outW×outH canvas or, if its edges aren't clear, `fallback` as it is. */
 function cardImage(source: CanvasImageSource, search: Rect, fallback: Rect, outW: number, outH: number) {
   const out = document.createElement("canvas");
   out.width = outW;
   out.height = outH;
   const ctx = out.getContext("2d")!;
   try {
-    const small = draw(source, search, DETECT_WIDTH);
-    const quad = detectCardQuad(small.pixels(), small.canvas.width, small.canvas.height);
-    if (quad) {
-      // Sampled at ~2× the output, not from a possibly 4K frame.
-      const big = draw(source, search, Math.min(search.w, outW * 2.5));
-      const k = big.canvas.width / small.canvas.width;
-      const at = (p: { x: number; y: number }) => ({ x: p.x * k, y: p.y * k });
-      const scaled: Quad = { tl: at(quad.tl), tr: at(quad.tr), br: at(quad.br), bl: at(quad.bl) };
-      const flat = warpCard(big.pixels(), big.canvas.width, big.canvas.height, scaled, outW, outH);
-      ctx.putImageData(new ImageData(autoLevels(flat), outW, outH), 0, 0);
+    const flat = straighten(source, search, outW, outH);
+    if (flat) {
+      ctx.putImageData(new ImageData(flat, outW, outH), 0, 0);
       return out;
     }
   } catch {
-    // The plain crop below.
+    // The plain crop below: better than a wrong one.
   }
   ctx.drawImage(source, fallback.x, fallback.y, fallback.w, fallback.h, 0, 0, outW, outH);
   return out;
@@ -82,20 +87,37 @@ function cardImage(source: CanvasImageSource, search: Rect, fallback: Rect, outW
 const jpeg = (canvas: HTMLCanvasElement, quality: number) =>
   new Promise<Blob | null>((done) => canvas.toBlob(done, "image/jpeg", quality));
 
-/**
- * The card in the scanner's guide (`guide`, in `source` pixels), `height` px tall. Searched a
- * little beyond the guide, which is only where the card should be. 300×419 is the shared photo
- * (~30 KB); the AI and «Para luego» take it bigger.
- */
-export function cardInGuideBlob(source: CanvasImageSource, guide: Rect, height = HEIGHT, quality = 0.82) {
+/** Where to look for the card: the guide and a margin around it, which is only where it should be. */
+function aroundGuide(source: CanvasImageSource, guide: Rect): Rect {
   const { w, h } = sourceSize(source);
   const mx = guide.w * GUIDE_MARGIN;
   const my = guide.h * GUIDE_MARGIN;
   const x = Math.max(0, guide.x - mx);
   const y = Math.max(0, guide.y - my);
-  const search = { x, y, w: Math.min(w, guide.x + guide.w + mx) - x, h: Math.min(h, guide.y + guide.h + my) - y };
+  return { x, y, w: Math.min(w, guide.x + guide.w + mx) - x, h: Math.min(h, guide.y + guide.h + my) - y };
+}
+
+/**
+ * The card in the scanner's guide (`guide`, in `source` pixels), `height` px tall. 300×419 is
+ * the shared photo (~30 KB); the AI and «Para luego» take it bigger.
+ */
+export function cardInGuideBlob(source: CanvasImageSource, guide: Rect, height = HEIGHT, quality = 0.82) {
   const width = height === HEIGHT ? WIDTH : Math.round(height * RATIO);
-  return jpeg(cardImage(source, search, guide, width, height), quality);
+  return jpeg(cardImage(source, aroundGuide(source, guide), guide, width, height), quality);
+}
+
+/**
+ * The card in the guide straightened as the shared photos are, as 300×419 RGBA: what the
+ * scanner hashes to recognise it by its photo (D33). Null if its edges aren't clear: a plain
+ * crop's hash drifts too far to trust.
+ */
+export function cardInGuidePixels(source: CanvasImageSource, guide: Rect) {
+  try {
+    const data = straighten(source, aroundGuide(source, guide), WIDTH, HEIGHT);
+    return data && { data, width: WIDTH, height: HEIGHT };
+  } catch {
+    return null;
+  }
 }
 
 /** The card in a picture of it (camera or gallery), as a 300×419 shared photo. */

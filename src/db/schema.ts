@@ -321,6 +321,8 @@ export const catalogCardPhotos = pgTable("catalog_card_photos", {
   contributedBy: text("contributed_by").references(() => user.id, { onDelete: "set null" }),
   /** "scan" (taken by the scanner) or "upload" (from the card page). */
   source: text("source").notNull(),
+  /** Perceptual hash of the photo (src/lib/scan/card-hash.ts): the scanner recognises the card by it (D33). */
+  hash: text("hash"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
