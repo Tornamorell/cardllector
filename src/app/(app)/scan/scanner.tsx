@@ -58,7 +58,7 @@ import { cn } from "@/lib/utils";
 import { addItem, changeFinish, changeQuantity } from "../inventory/actions";
 import { savePendingScan } from "../review/actions";
 import { saveCardPhoto } from "../cards/photo-actions";
-import { cardPhotoBlob } from "@/lib/card-photo";
+import { cardInGuideBlob } from "@/lib/card-photo";
 import { useScanSession } from "./scan-session";
 
 type OcrWorker = import("tesseract.js").Worker;
@@ -602,7 +602,7 @@ export function Scanner({
       const video = videoRef.current;
       const card = cardInVideo();
       if (!video || !card) return;
-      const blob = await cardPhotoBlob(video, card);
+      const blob = await cardInGuideBlob(video, card);
       if (!blob) return;
       const form = new FormData();
       form.set("image", blob, "carta.jpg");
@@ -627,18 +627,12 @@ export function Scanner({
     }
   }
 
-  /** What's in the guide as a JPEG, PHOTO_HEIGHT px tall at most: for «Para luego» and the AI. */
+  /** The card in the guide, straightened (D32), PHOTO_HEIGHT px tall: for «Para luego» and the AI. */
   async function guidePhoto(): Promise<Blob | null> {
     const video = videoRef.current;
     const card = cardInVideo();
     if (!video || !card) return null;
-    const canvas = document.createElement("canvas");
-    canvas.height = Math.min(PHOTO_HEIGHT, Math.round(card.h));
-    canvas.width = Math.round((card.w * canvas.height) / card.h);
-    canvas
-      .getContext("2d")
-      ?.drawImage(video, card.x, card.y, card.w, card.h, 0, 0, canvas.width, canvas.height);
-    return new Promise<Blob | null>((done) => canvas.toBlob(done, "image/jpeg", 0.8));
+    return cardInGuideBlob(video, card, PHOTO_HEIGHT, 0.8);
   }
 
   /**

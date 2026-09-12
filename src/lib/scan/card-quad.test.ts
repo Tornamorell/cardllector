@@ -1,0 +1,154 @@
+import { describe, expect, it } from "vitest";
+import { applyHomography, autoLevels, detectCardQuad, homography, warpCard, type Pt, type Quad } from "./card-quad";
+
+type Rgb = [number, number, number];
+const W = 360;
+const H = 480;
+
+/** A card-shaped quad: `width` px wide, centred, turned `deg` clockwise. */
+function cardAt(width: number, deg: number): Pt[] {
+  const t = (deg * Math.PI) / 180;
+  const hw = width / 2;
+  const hh = width / (63 / 88) / 2;
+  return [
+    [-hw, -hh],
+    [hw, -hh],
+    [hw, hh],
+    [-hw, hh],
+  ].map(([x, y]) => ({ x: W / 2 + x * Math.cos(t) - y * Math.sin(t), y: H / 2 + x * Math.sin(t) + y * Math.cos(t) }));
+}
+
+/**
+ * A photo: a noisy cloth, and the card at `corners` painted by `design(u, v)` (0–1 across and
+ * down the card).
+ */
+function photo(corners: Pt[], cloth: Rgb, design: (u: number, v: number) => Rgb): Uint8ClampedArray {
+  const toCard = homography(corners, [
+    { x: 0, y: 0 },
+    { x: 1, y: 0 },
+    { x: 1, y: 1 },
+    { x: 0, y: 1 },
+  ]);
+  let seed = 7;
+  const noise = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648 - 0.5) * 30;
+  const img = new Uint8ClampedArray(W * H * 4);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const { x: u, y: v } = applyHomography(toCard, { x: x + 0.5, y: y + 0.5 });
+      const inside = u >= 0 && u <= 1 && v >= 0 && v <= 1;
+      const n = noise();
+      const rgb = inside ? design(u, v) : (cloth.map((c) => c + n) as Rgb);
+      img.set([...rgb, 255], (y * W + x) * 4);
+    }
+  }
+  return img;
+}
+
+/** A printed design: white border, a gold inner frame, diagonal purple stripes. */
+function design(u: number, v: number): Rgb {
+  if (u < 0.03 || u > 0.97 || v < 0.02 || v > 0.98) return [235, 235, 230];
+  if (Math.abs(u - 0.08) < 0.01 || Math.abs(u - 0.92) < 0.01 || Math.abs(v - 0.06) < 0.008) return [200, 160, 60];
+  return Math.floor((u + v) * 12) % 2 ? [90, 40, 140] : [150, 90, 200];
+}
+
+const RED_CLOTH: Rgb = [150, 30, 40];
+
+function worstError(q: Quad | null, corners: Pt[]) {
+  expect(q).not.toBeNull();
+  const got = [q!.tl, q!.tr, q!.br, q!.bl];
+  return Math.max(...got.map((p, i) => Math.hypot(p.x - corners[i].x, p.y - corners[i].y)));
+}
+
+describe("detectCardQuad", () => {
+  it("finds a turned card on a cloth", () => {
+    const corners = cardAt(250, 7);
+    const q = detectCardQuad(photo(corners, RED_CLOTH, design), W, H);
+    expect(worstError(q, corners)).toBeLessThan(2.5);
+    expect(q!.inferred).toBeUndefined();
+  });
+
+  it("finds a weak edge: green grass printed next to a green mat", () => {
+    const corners = cardAt(250, -5);
+    const mat: Rgb = [40, 120, 60];
+    const grassy = (u: number, v: number): Rgb => (v > 0.75 ? [52, 132, 72] : design(u, v));
+    const q = detectCardQuad(photo(corners, mat, grassy), W, H);
+    expect(worstError(q, corners)).toBeLessThan(3);
+  });
+
+  it("deduces a side that fades into the background", () => {
+    const corners = cardAt(250, 4);
+    // The card's lower part fades smoothly into the cloth: no edge to find there.
+    const fading = (u: number, v: number): Rgb => {
+      if (v < 0.6) return design(u, v);
+      const t = Math.min(1, (v - 0.6) / 0.3);
+      const d = design(u, 0.59);
+      return d.map((c, i) => c + (RED_CLOTH[i] - c) * t) as Rgb;
+    };
+    const q = detectCardQuad(photo(corners, RED_CLOTH, fading), W, H);
+    expect(q?.inferred).toBe("bottom");
+    expect(worstError(q, corners)).toBeLessThan(4);
+  });
+
+  it("gives up rather than return the wrong shape", () => {
+    const corners = cardAt(250, 3);
+    // The bottom fifth of the card is exactly the cloth's colour: the only bottom edge in
+    // sight is the design's, and that shape isn't a card.
+    const cut = (u: number, v: number): Rgb => (v > 0.8 ? RED_CLOTH : design(u, v));
+    expect(detectCardQuad(photo(corners, RED_CLOTH, cut), W, H)).toBeNull();
+  });
+
+  it("finds nothing on an empty cloth", () => {
+    expect(detectCardQuad(photo([], RED_CLOTH, design).fill(128), W, H)).toBeNull();
+  });
+});
+
+describe("homography", () => {
+  it("maps the four points exactly", () => {
+    const from = [
+      { x: 0, y: 0 },
+      { x: 300, y: 0 },
+      { x: 300, y: 419 },
+      { x: 0, y: 419 },
+    ];
+    const to = cardAt(250, 9);
+    const Hm = homography(from, to);
+    from.forEach((p, i) => {
+      const q = applyHomography(Hm, p);
+      expect(q.x).toBeCloseTo(to[i].x, 6);
+      expect(q.y).toBeCloseTo(to[i].y, 6);
+    });
+  });
+});
+
+describe("warpCard", () => {
+  it("flattens the card: border at the edges, design inside, no cloth", () => {
+    const corners = cardAt(250, 7);
+    const img = photo(corners, RED_CLOTH, design);
+    const [tl, tr, br, bl] = corners;
+    const flat = warpCard(img, W, H, { tl, tr, br, bl }, 300, 419);
+    const px = (u: number, v: number) => [...flat.slice((v * 300 + u) * 4, (v * 300 + u) * 4 + 3)];
+    // Edges: the white border, not the red cloth.
+    for (const [u, v] of [[2, 200], [297, 200], [150, 2], [150, 416]]) {
+      expect(px(u, v)[0]).toBeGreaterThan(200);
+      expect(px(u, v)[1]).toBeGreaterThan(200);
+    }
+    // Middle: a purple stripe.
+    const mid = px(150, 210);
+    expect(mid[2]).toBeGreaterThan(mid[1]);
+  });
+});
+
+describe("autoLevels", () => {
+  it("stretches a dull image to full range", () => {
+    const img = new Uint8ClampedArray(100 * 4);
+    for (let i = 0; i < 100; i++) img.set([50 + i, 50 + i, 50 + i, 255], i * 4);
+    const out = autoLevels(img);
+    expect(out[0]).toBeLessThanOrEqual(3);
+    expect(out[99 * 4]).toBeGreaterThanOrEqual(252);
+  });
+
+  it("leaves a flat image alone", () => {
+    const img = new Uint8ClampedArray(40).fill(120);
+    expect(autoLevels(img)).toBe(img);
+  });
+});

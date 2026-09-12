@@ -528,6 +528,8 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     si la carta aún no tiene ninguna.
   - **Ficha de la carta:** «Añadir foto» o «Cambiar foto», con la cámara o la galería, recortada
     con la forma de la carta desde el centro.
+  - **Actualización (D32):** en los dos casos, la carta se busca en la foto y se endereza, como
+    un escaneo. Si no se encuentra, el recorte de antes.
   - Nunca sustituye una imagen del catálogo (Scryfall, TCGdex). Un escaneo no reemplaza una
     foto que ya aportó alguien; «Cambiar foto» sí.
   - `catalog_cards.image_*` apuntan a `/api/card-photos/<id>?v=<fecha>`: pide sesión y se
@@ -579,3 +581,33 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     fotos compartidas (D30).
 - **Revisar cuando:** se mida con más series (solo hay dos fotos probadas), si el gasto sube, o
   si un modelo más barato acierta igual.
+
+## D32 · Fotos de cartas enderezadas en el dispositivo, sin IA — 2026-09-12 · provisional
+
+- **Contexto:**
+  - Las fotos compartidas (D30) eran el recorte del recuadro guía: torcidas y con trozos de
+    mesa. El usuario pidió que la IA las limpiara.
+  - Claude no edita imágenes. Pedirle las esquinas de la carta para enderezarla nosotros no
+    sirve: con cartas giradas sobre un fondo, Sonnet 5 falló por 33–90 px en una carta de
+    380 px de ancho (12–24 %).
+- **Decisión:** detectar los bordes en el propio dispositivo (`src/lib/scan/card-quad.ts`,
+  funciones puras sobre RGBA):
+  - Busca en el recuadro, con un 12 % de margen alrededor, a 360 px de ancho: gradiente de
+    color, varias candidatas por línea de barrido y, en cada lado, la recta más exterior en la
+    que coinciden muchas líneas.
+  - Si falta un lado, lo deduce de los otros tres y la forma 63×88.
+  - Endereza la carta con una homografía y le ajusta los niveles, sin cambiar el tono.
+  - Si no hay bordes claros, o la forma no es de carta, usa el recorte de siempre: nunca
+    inventa.
+  - Se usa en la foto compartida del escáner, en «Para luego», en «Identificar con IA» y en
+    «Añadir foto» de la ficha (`src/lib/card-photo.ts`).
+  - Medido el 2026-09-12: 0–2 px de error en composiciones con esquinas conocidas, y bien en
+    tres fotos reales (fondo rojo y tapete verde con textura, con el borde inferior de césped
+    sobre verde). 50–150 ms por foto en un Mac.
+- **Descartado:**
+  - Pedir las esquinas a la IA: imprecisa (arriba).
+  - Modelos que generan imágenes: inventarían detalles de la carta.
+  - OpenCV.js: ~8 MB de descarga para lo mismo.
+- **Revisar cuando:** falle con fotos reales del escáner, o se quiera usar también para el OCR
+  (la carta enderezada pone las franjas exactamente donde tocan, pero habría que hacerlo en
+  cada fotograma).

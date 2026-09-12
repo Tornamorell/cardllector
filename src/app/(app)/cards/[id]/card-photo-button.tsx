@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { useRef, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { cardPhotoBlob, centerCardRect } from "@/lib/card-photo";
+import { cardInPictureBlob } from "@/lib/card-photo";
 import { saveCardPhoto } from "../photo-actions";
 
 /**
- * «Añadir foto» / «Cambiar foto» for a card without a catalog image: camera or gallery, cropped
- * to a card's shape from the middle of the picture, and shared with everyone (D30).
+ * «Añadir foto» / «Cambiar foto» for a card without a catalog image: camera or gallery, the
+ * card found and straightened (or the middle of the picture, cut to a card's shape), and
+ * shared with everyone (D30, D32).
  */
 export function CardPhotoButton({ catalogCardId, hasPhoto }: { catalogCardId: string; hasPhoto: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -21,7 +22,7 @@ export function CardPhotoButton({ catalogCardId, hasPhoto }: { catalogCardId: st
     startTransition(async () => {
       try {
         const bitmap = await createImageBitmap(file);
-        const blob = await cardPhotoBlob(bitmap, centerCardRect(bitmap.width, bitmap.height));
+        const blob = await cardInPictureBlob(bitmap);
         if (!blob) throw new Error("No photo");
         const form = new FormData();
         form.set("image", blob, "carta.jpg");

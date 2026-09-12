@@ -59,6 +59,8 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
     nombre de la franja vertical (solo el diseño de la base).
   - **Identificar con IA** (D31): botón en el escáner que manda la foto a Claude Sonnet 5 y
     cruza lo que lee con el catálogo. Sirve para cualquier diseño y juego.
+  - **Fotos enderezadas** (D32): las fotos compartidas, la de «Para luego» y la que va a la IA
+    salen con la carta recortada a sus bordes y recta, como un escaneo.
 - **Colecciones desde una expansión:**
   - Se crean llenas con una expansión entera, o con una de sus rarezas.
   - Se hace desde `/collections` o con «Guardar como colección…» en la expansión.

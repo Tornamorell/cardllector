@@ -123,6 +123,11 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
   - **Foto compartida:** al añadir una carta sin imagen de catálogo (fútbol, algunas de
     Pokémon), el escáner guarda en segundo plano la foto del recuadro (300×419) como imagen de
     esa carta para todos, si aún no tiene ninguna (D30).
+    - La carta se busca alrededor del recuadro, se endereza y se recorta a sus bordes, con los
+      niveles ajustados (D32). Lo mismo con la foto de «Para luego» y la de «Identificar con
+      IA». Si no encuentra los bordes, usa el recorte del recuadro.
+    - La foto no sirve para reconocer la carta: el escáner solo reconoce leyendo texto, así que
+      una Élite o una Flashback se vuelven a identificar con la IA aunque ya tengan foto.
   - **Identificar con IA** (D31), junto a «Para luego», solo si está configurada
     `ANTHROPIC_API_KEY`:
     - Manda la foto del recuadro (JPEG de 560 px) a `POST /api/scan/identify`, que se la pasa a
