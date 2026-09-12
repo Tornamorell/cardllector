@@ -323,3 +323,28 @@ export const catalogCardPhotos = pgTable("catalog_card_photos", {
   source: text("source").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ---------------------------------------------------------------------------
+// Each «Identificar con IA» from the scanner (D31): for the daily limit, and to see what the AI
+// reads and what it costs. The photo isn't kept.
+// ---------------------------------------------------------------------------
+
+export const aiIdentifications = pgTable(
+  "ai_identifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    model: text("model").notNull(),
+    inputTokens: integer("input_tokens").notNull(),
+    outputTokens: integer("output_tokens").notNull(),
+    costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull(),
+    /** What the model read (CardReading), or null if it gave no answer. */
+    reading: jsonb("reading"),
+    /** How many catalog cards the reading matched. */
+    matches: integer("matches").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("ai_identifications_owner_idx").on(t.ownerId, t.createdAt)],
+);

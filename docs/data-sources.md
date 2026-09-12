@@ -143,3 +143,17 @@ eBay, 130point y Card Ladder, sin API pública. Los álbumes salen de las listas
 - Ejemplo: Liga 2025-26 Megacracks, 717 fichas con paralelas, BIS, bajas, series especiales,
   ediciones limitadas y autógrafos.
 - No hay imágenes. Las cartas llevan un marcador con su número.
+
+## IA: API de Claude (verificado el 2026-09-12)
+
+«Identificar con IA» en el escáner (D31) usa la API de Anthropic con el SDK oficial,
+`@anthropic-ai/sdk`.
+
+- Precios por millón de tokens, entrada y salida, según
+  [la página de precios](https://platform.claude.com/docs/en/about-claude/pricing):
+  - Sonnet 5: 2 $ y 10 $. Era el precio de lanzamiento y se ha quedado como el estándar.
+  - Haiku 4.5: 1 $ y 5 $.
+  - Opus 5: 5 $ y 25 $.
+- Una foto de carta de 560 px de alto, con las instrucciones, son unos 1 000–1 200 tokens.
+- No hay nivel gratuito. Se paga con saldo prepagado (las cuentas nuevas traen algo para
+  probar), y la consola permite poner un tope de gasto.

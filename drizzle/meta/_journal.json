@@ -92,6 +92,13 @@
       "when": 1789228325252,
       "tag": "0012_card_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789233462676,
+      "tag": "0013_ai_identifications",
+      "breakpoints": true
     }
   ]
 }

@@ -29,6 +29,7 @@ export default async function ScanPage({ searchParams }: PageProps<"/scan">) {
       sets={sets}
       initialFixedSet={fixed ? { game: fixed.game, code: fixed.code } : null}
       initialPending={pending}
+      aiEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
     />
   );
 }

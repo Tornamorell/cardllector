@@ -1,5 +1,12 @@
 import { pool } from "@/db/client";
+import { gameById, rarityLabel } from "@/lib/games";
 import { numberVariants, type CollectorLine } from "@/lib/scan/parse";
+import {
+  seriesFirst,
+  splitNumber,
+  type CardReading,
+  type IdentifyContext,
+} from "@/lib/scan/reading";
 import { normalizeForSearch } from "@/lib/search/normalize";
 
 export type ScanMatch = {
@@ -176,4 +183,57 @@ export async function lookupByName(
     ]);
   }
   return find("c.oracle_id = $1", [best.oracle_id]);
+}
+
+type FixedSetRef = { game: string; code: string };
+
+/** What the AI identifier is told about the fixed set: its name and a football album's series (D31). */
+export async function identifyContext(fixedSet?: FixedSetRef | null): Promise<IdentifyContext> {
+  if (!fixedSet) return { game: null, setName: null, series: [] };
+  const { rows } = await pool.query<{ name: string; rarities: string[] }>(
+    `select s.name,
+            array(select distinct c.rarity from catalog_cards c
+                  where c.game = s.game and c.set_code = s.code and c.rarity is not null) as rarities
+     from sets s
+     where s.game = $1 and lower(s.code) = lower($2)`,
+    [fixedSet.game, fixedSet.code],
+  );
+  const game = gameById(fixedSet.game);
+  const row = rows[0];
+  const series =
+    row && game && !game.hasMarketPrices ? row.rarities.map((r) => rarityLabel(game, r)) : [];
+  return { game: fixedSet.game, setName: row?.name ?? null, series };
+}
+
+/**
+ * The catalog cards an AI reading can be (D31):
+ *   - football albums: the player's cards in the album, the series the model saw first;
+ *   - Magic and Pokémon: the printing with that number and that name if there is one, else the
+ *     printings of that name (the name may be in Spanish: lookupByName knows both).
+ */
+export async function lookupReading(
+  reading: CardReading,
+  fixedSet?: FixedSetRef | null,
+): Promise<ScanMatch[]> {
+  const q = normalizeForSearch(reading.name);
+  if (q.replace(/[^a-z]/g, "").length < 3) return [];
+  if (fixedSet?.game === "sports") return seriesFirst(await lookupInAlbum(q, fixedSet), reading.series);
+
+  const byName = await lookupByName(reading.name, fixedSet);
+  const printed = reading.number ? splitNumber(reading.number) : null;
+  if (printed) {
+    const byNumber = await lookupScan(
+      {
+        number: printed.number,
+        total: printed.total,
+        setCodes: reading.setCode ? [reading.setCode.toUpperCase()] : [],
+        lang: null,
+      },
+      fixedSet,
+    );
+    const both = byNumber.filter((m) => byName.some((n) => n.id === m.id));
+    if (both.length) return both;
+    if (!byName.length) return byNumber;
+  }
+  return byName;
 }

@@ -55,6 +55,10 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Series como rarezas y marcador con el número en lugar de imagen.
   - **Fotos compartidas** (D30): el escáner guarda la foto de las cartas sin imagen para
     todos, y en la ficha se puede añadir o cambiar.
+  - **El escáner lee las Megacracks por delante:** con el álbum como expansión fija, lee el
+    nombre de la franja vertical (solo el diseño de la base).
+  - **Identificar con IA** (D31): botón en el escáner que manda la foto a Claude Sonnet 5 y
+    cruza lo que lee con el catálogo. Sirve para cualquier diseño y juego.
 - **Colecciones desde una expansión:**
   - Se crean llenas con una expansión entera, o con una de sus rarezas.
   - Se hace desde `/collections` o con «Guardar como colección…» en la expansión.
@@ -98,6 +102,8 @@ los diálogos y el botón +.
 - Añadir el secreto `DATABASE_URL` (conexión directa) en GitHub Actions para las
   sincronizaciones diarias.
 - Probar el escáner en el móvil con cartas reales.
+- Poner `ANTHROPIC_API_KEY` en Vercel para «Identificar con IA», y mandar fotos de otras series
+  (Élite, Special One, Vértigo, Zona VIP…) para medir cuántas acierta (D31).
 - Opcional: cambiar la contraseña de Neon, que ha pasado por el chat de la sesión.
 
 ## Siguiente

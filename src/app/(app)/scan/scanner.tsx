@@ -8,6 +8,7 @@ import {
   MoveIcon,
   PlusIcon,
   ScanLineIcon,
+  SparklesIcon,
   XIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -196,6 +197,7 @@ export function Scanner({
   sets,
   initialFixedSet,
   initialPending,
+  aiEnabled,
 }: {
   collections: CollectionOption[];
   locations: LocationOption[];
@@ -203,6 +205,8 @@ export function Scanner({
   initialFixedSet: FixedSet | null;
   /** Cards already waiting in /review. */
   initialPending: number;
+  /** «Identificar con IA» is configured (ANTHROPIC_API_KEY, D31). */
+  aiEnabled: boolean;
 }) {
   const [defaults, setDefaults] = useStickyDefaults();
   // Both optional: scanning just fills the inventory (D23).
@@ -226,6 +230,7 @@ export function Scanner({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [movingSession, setMovingSession] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [identifying, setIdentifying] = useState(false);
   const [torch, setTorch] = useState({ supported: false, on: false });
   const [pendingCount, setPendingCount] = useState(initialPending);
   const [saving, setSaving] = useState(false);
@@ -256,9 +261,11 @@ export function Scanner({
     : null;
   const nameLayout: NameLayout | null = (fixedSetType && NAME_LAYOUTS[fixedSetType]) || null;
 
-  const settings = useRef({ defaults, fixedSet, locations, paused: historyOpen, nameLayout });
+  // Paused while the history is open or the AI is identifying: nothing added behind the user's back.
+  const paused = historyOpen || identifying;
+  const settings = useRef({ defaults, fixedSet, locations, paused, nameLayout });
   useEffect(() => {
-    settings.current = { defaults, fixedSet, locations, paused: historyOpen, nameLayout };
+    settings.current = { defaults, fixedSet, locations, paused, nameLayout };
   });
 
   useEffect(
@@ -620,20 +627,83 @@ export function Scanner({
     }
   }
 
-  /** «Para luego»: a photo of what's in the guide goes to the review queue (/review, D25). */
-  async function saveForLater() {
+  /** What's in the guide as a JPEG, PHOTO_HEIGHT px tall at most: for «Para luego» and the AI. */
+  async function guidePhoto(): Promise<Blob | null> {
     const video = videoRef.current;
     const card = cardInVideo();
-    if (!video || !card) return;
+    if (!video || !card) return null;
+    const canvas = document.createElement("canvas");
+    canvas.height = Math.min(PHOTO_HEIGHT, Math.round(card.h));
+    canvas.width = Math.round((card.w * canvas.height) / card.h);
+    canvas
+      .getContext("2d")
+      ?.drawImage(video, card.x, card.y, card.w, card.h, 0, 0, canvas.width, canvas.height);
+    return new Promise<Blob | null>((done) => canvas.toBlob(done, "image/jpeg", 0.8));
+  }
+
+  /**
+   * «Identificar con IA» (D31): the photo in the guide goes to Claude, and what it reads is
+   * matched against the catalog. One match is added; several are offered, the likeliest first.
+   */
+  async function identifyWithAi() {
+    if (identifying || !cardInVideo()) return;
+    setIdentifying(true);
+    setChoices(null);
+    setStatus("Identificando con IA…");
+    try {
+      const blob = await guidePhoto();
+      if (!blob) throw new Error("No photo");
+      const form = new FormData();
+      form.set("image", blob, "carta.jpg");
+      form.set("fixedSet", JSON.stringify(settings.current.fixedSet));
+      const res = await fetch("/api/scan/identify", { method: "POST", body: form });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = body.error ?? "No se ha podido identificar la carta.";
+        toast.error(message);
+        setStatus(message);
+        return;
+      }
+      const { reading, matches } = body as {
+        reading: { isCard: boolean; name: string } | null;
+        matches: ScanMatch[];
+      };
+      const s = readState.current;
+      if (!reading?.isCard) {
+        setStatus("La IA no ve ninguna carta en el recuadro.");
+        return;
+      }
+      s.lastTitle = reading.name;
+      if (!matches.length) {
+        setStatus(
+          `La IA lee «${reading.name}», pero no está en el catálogo${settings.current.fixedSet ? " de esta expansión" : ""}.`,
+        );
+        return;
+      }
+      if (matches.length === 1) {
+        s.holdId = matches[0].id;
+        s.votes = [];
+        await add(matches[0], null);
+        return;
+      }
+      s.choicesKey = matches.map((m) => m.id).join();
+      setChoices({ matches, lang: null });
+      navigator.vibrate?.(30);
+      setStatus(`La IA lee «${reading.name}». Elige cuál es: la más probable va primero.`);
+    } catch {
+      toast.error("No se ha podido identificar la carta.");
+      setStatus("No se ha podido identificar la carta.");
+    } finally {
+      setIdentifying(false);
+    }
+  }
+
+  /** «Para luego»: a photo of what's in the guide goes to the review queue (/review, D25). */
+  async function saveForLater() {
+    if (!cardInVideo()) return;
     setSaving(true);
     try {
-      const canvas = document.createElement("canvas");
-      canvas.height = Math.min(PHOTO_HEIGHT, Math.round(card.h));
-      canvas.width = Math.round((card.w * canvas.height) / card.h);
-      canvas
-        .getContext("2d")
-        ?.drawImage(video, card.x, card.y, card.w, card.h, 0, 0, canvas.width, canvas.height);
-      const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, "image/jpeg", 0.8));
+      const blob = await guidePhoto();
       if (!blob) throw new Error("No photo");
 
       const { defaults } = settings.current;
@@ -1124,17 +1194,25 @@ export function Scanner({
           {location && section && (
             <NextSectionButton locationId={location.id} sectionId={section.id} className="w-full" />
           )}
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            disabled={saving}
-            onClick={saveForLater}
-          >
-            <ClockIcon />
-            {saving ? "Guardando…" : "¿No la reconoce? Para luego"}
-            {pendingCount > 0 && <span className="text-muted-foreground tabular-nums">({pendingCount})</span>}
-          </Button>
+          <div className={cn("grid gap-2", aiEnabled && "grid-cols-2")}>
+            {aiEnabled && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={identifying}
+                aria-busy={identifying}
+                onClick={identifyWithAi}
+              >
+                <SparklesIcon />
+                {identifying ? "Identificando…" : "Identificar con IA"}
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" disabled={saving} onClick={saveForLater}>
+              <ClockIcon />
+              {saving ? "Guardando…" : aiEnabled ? "Para luego" : "¿No la reconoce? Para luego"}
+              {pendingCount > 0 && <span className="text-muted-foreground tabular-nums">({pendingCount})</span>}
+            </Button>
+          </div>
 
           <button
             type="button"

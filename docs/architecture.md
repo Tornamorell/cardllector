@@ -182,6 +182,8 @@ Importa el repo desde vercel.com. Detecta Next.js solo. Variables de entorno (Pr
 | `DATABASE_URL` | La cadena **pooled** de Neon |
 | `BETTER_AUTH_SECRET` | Uno nuevo, distinto del local: `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | La URL de producción, por ejemplo `https://cardllector.vercel.app` |
+| `ANTHROPIC_API_KEY` | Opcional: activa «Identificar con IA» en el escáner (D31). Sin ella, el botón no sale |
+| `AI_IDENTIFY_DAILY_LIMIT` | Opcional: identificaciones con IA por usuario cada 24 horas (150 por defecto) |
 
 En *Settings → Functions*, pon la región `fra1`, la misma zona que Neon.
 

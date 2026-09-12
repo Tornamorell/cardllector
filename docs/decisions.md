@@ -86,6 +86,8 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - Pantalla completa con panel de acabado y cantidad.
   - Sigue siendo gratis y en el dispositivo. Si aun así no basta, las opciones siguientes son
     reconocimiento por imagen o IA como respaldo, y las dos requieren decisión del usuario.
+- **Actualización (2026-09-12):** el usuario elige la IA como respaldo, con un botón y no
+  para cada carta. El OCR sigue siendo la vía principal (D31).
 
 ## D07 · Idioma por copia; precio de la edición inglesa — 2026-09-11 · provisional
 
@@ -541,3 +543,39 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - la app se abra a más gente: moderación, quién puede cambiar una foto y los derechos de
     publicar fotos de cartas de Panini;
   - o el espacio en Neon apriete.
+
+## D31 · Identificar con IA como respaldo del escáner — 2026-09-12 · provisional
+
+- **Contexto:**
+  - El OCR no puede con el fútbol. Cada serie de Megacracks tiene un diseño distinto: el
+    nombre va en vertical en la base y abajo a la derecha en la Élite.
+  - Leer la carta entera sin saber dónde mirar no funciona. Medido: solo «YAMAL» en una Élite
+    Power, y nada en la base.
+  - Escanear por delante y por detrás es «un suplicio», según el usuario.
+  - D06 descartó la IA por el coste. Con esto delante, el usuario la prefiere.
+- **Decisión:**
+  - Botón «Identificar con IA» en el escáner, junto a «Para luego». El OCR, gratis y en el
+    dispositivo, sigue siendo la vía principal.
+  - Claude Sonnet 5 (`claude-sonnet-5`): una llamada por carta con la foto del recuadro (JPEG
+    de 560 px) y salida estructurada. No es un agente.
+  - Al modelo se le dice el álbum y se le dan sus series como lista cerrada. En Magic y
+    Pokémon se le piden nombre, número y código de expansión.
+  - La IA solo lee; qué carta es lo decide el catálogo (`lookupReading`). La serie ordena las
+    candidatas, pero nunca descarta ninguna.
+  - La clave (`ANTHROPIC_API_KEY`) solo está en el servidor. Sin ella, el botón no sale.
+  - Límite de 150 identificaciones por usuario cada 24 horas (`AI_IDENTIFY_DAILY_LIMIT`). Cada
+    llamada se apunta en `ai_identifications` con su coste. Además, el tope de gasto de la
+    consola de Anthropic.
+  - Coste: unos 1 200 tokens de entrada y 50 de salida, unos 0,003 $ por carta (3 $ cada mil).
+- **Descartado** (medido con dos fotos, una base y una Élite Power):
+  - Haiku 4.5: más barato (0,0012 $), pero falló las dos series y dijo que la base no era una
+    carta.
+  - Opus 5: más caro (0,007–0,014 $), y falló la serie de la base.
+  - Identificar sola cada carta que el OCR no lee: más gasto y llamadas sin querer. Se puede
+    añadir con un interruptor si el botón se queda corto.
+  - Una posición de nombre por cada diseño de serie: funciona (86 % en la Élite), pero hay que
+    calibrar cada diseño de cada álbum.
+  - Reconocimiento por imagen: necesita una foto de referencia por carta. Más adelante, con las
+    fotos compartidas (D30).
+- **Revisar cuando:** se mida con más series (solo hay dos fotos probadas), si el gasto sube, o
+  si un modelo más barato acierta igual.

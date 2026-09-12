@@ -123,6 +123,24 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
   - **Foto compartida:** al añadir una carta sin imagen de catálogo (fútbol, algunas de
     Pokémon), el escáner guarda en segundo plano la foto del recuadro (300×419) como imagen de
     esa carta para todos, si aún no tiene ninguna (D30).
+  - **Identificar con IA** (D31), junto a «Para luego», solo si está configurada
+    `ANTHROPIC_API_KEY`:
+    - Manda la foto del recuadro (JPEG de 560 px) a `POST /api/scan/identify`, que se la pasa a
+      Claude Sonnet 5 y le pide un JSON con un formato cerrado (`src/lib/scan/identify.ts`):
+      - en los álbumes de fútbol: nombre, equipo, número y serie, elegida de las series del
+        álbum;
+      - en el resto: nombre, número y código de expansión.
+    - La respuesta se cruza con el catálogo (`lookupReading`). La IA nunca decide sola qué
+      carta es:
+      - en fútbol, las fichas del jugador en el álbum, con la serie que ha visto primero;
+      - en Magic y Pokémon, la edición con ese número y ese nombre, o las ediciones de ese
+        nombre.
+    - Si sale una carta, se añade. Si salen varias, se elige, con la más probable primero.
+    - La lectura se pausa mientras identifica.
+    - Unos 3 s y 0,003 $ por carta. Cada llamada se apunta en `ai_identifications`, con un
+      límite de 150 cada 24 horas (`AI_IDENTIFY_DAILY_LIMIT`).
+    - Medido el 2026-09-12 con dos Megacracks (una base y una Élite Power): Sonnet 5 acertó el
+      jugador y la serie en las dos; Haiku 4.5 y Opus 5 fallaron alguna serie.
   - «Ver lo que lee» muestra la última franja procesada y el texto de Tesseract.
 - **PWA:** manifest, iconos y `appleWebApp`. Añadida a la pantalla de inicio, se abre sin la barra
   del navegador. Aún no hay service worker.

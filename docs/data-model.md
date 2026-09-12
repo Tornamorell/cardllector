@@ -85,6 +85,7 @@ El valor histórico de lo que tienes de una colección no se guarda: se puede re
 | Tabla | Una fila por | Notas |
 | --- | --- | --- |
 | `pending_scans` | carta guardada con «Para luego» en el escáner | Foto del recuadro (`image`, JPEG en `bytea`, 50–100 KB), lo que leyó el OCR (`read_text`), el nombre leído del título (`guess`, para rellenar la búsqueda) y los ajustes de la sesión (acabado, estado, idioma, ubicación y colección). Se borra al añadirla o descartarla en `/review` (D25). |
+| `ai_identifications` | llamada a «Identificar con IA» | Modelo, tokens de entrada y salida, coste en dólares, lo que leyó la IA (`reading`, JSON) y cuántas cartas encajaron. Sirve para el límite de 24 horas y para ver el gasto. No guarda la foto (D31). |
 
 `date` es la fecha de los datos de precio (el `updated_at` del fichero de Scryfall), no la de la
 ejecución. `snapshotPrices()` es idempotente: repetirla en la misma fecha sobrescribe ese día.
