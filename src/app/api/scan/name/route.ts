@@ -5,7 +5,7 @@ import { lookupByName } from "@/lib/queries/scan";
 
 const body = z.object({
   name: z.string().min(2).max(80),
-  fixedSet: z.object({ game: z.enum(["mtg", "pokemon"]), code: z.string().max(20) }).nullish(),
+  fixedSet: z.object({ game: z.enum(["mtg", "pokemon", "sports"]), code: z.string().max(20) }).nullish(),
 });
 
 /** Scanner fallback: printings matching an OCR'd card title (fuzzy). */

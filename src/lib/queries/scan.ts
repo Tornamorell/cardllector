@@ -10,6 +10,7 @@ export type ScanMatch = {
   setName: string;
   collectorNumber: string;
   imageSmall: string | null;
+  rarity: string | null;
   finishes: string[];
   priceEur: number | null;
   priceEurFoil: number | null;
@@ -18,7 +19,7 @@ export type ScanMatch = {
 
 const COLUMNS = `
   c.id, c.game, c.name, c.set_code as "setCode", s.name as "setName",
-  c.collector_number as "collectorNumber", c.image_small as "imageSmall", c.finishes,
+  c.collector_number as "collectorNumber", c.image_small as "imageSmall", c.rarity, c.finishes,
   c.price_eur::float8 as "priceEur", c.price_eur_foil::float8 as "priceEurFoil",
   s.printed_total as "printedTotal"`;
 
@@ -87,6 +88,30 @@ export async function lookupScan(
 const NAME_SIMILARITY_SURE = 0.6;
 const NAME_SIMILARITY_MIN = 0.45;
 const NAME_MARGIN = 0.1;
+/** In an album, how far below the best match a card's name may be and still be offered. */
+const ALBUM_NAME_WINDOW = 0.35;
+
+/**
+ * Football albums print the name, not a number, on the front, and a player has several cards
+ * in the same album (base, Élite and its Power parallel, Special One…), sometimes with the
+ * name spelt differently ("Lamin Yamal"). So: every card of the album whose name is close to
+ * the best match, or contains what was read, for the user to pick (D29).
+ */
+async function lookupInAlbum(q: string, album: { game: string; code: string }) {
+  const { rows } = await pool.query<{ best: number | null }>(
+    `select max(similarity(c.search_name, $1))::float8 as best
+     from catalog_cards c
+     where c.game = $2 and lower(c.set_code) = lower($3)`,
+    [q, album.game, album.code],
+  );
+  const best = rows[0]?.best ?? 0;
+  if (best < NAME_SIMILARITY_MIN) return [];
+  return find(
+    `c.game = $2 and lower(c.set_code) = lower($3)
+     and (similarity(c.search_name, $1) >= $4 or c.search_name like '%' || $1 || '%')`,
+    [q, album.game, album.code, Math.max(NAME_SIMILARITY_MIN, best - ALBUM_NAME_WINDOW)],
+  );
+}
 
 /**
  * Fallback when the collector line can't be read: the card whose English or Spanish name best
@@ -98,6 +123,7 @@ export async function lookupByName(
 ): Promise<ScanMatch[]> {
   const q = normalizeForSearch(name);
   if (q.replace(/[^a-z]/g, "").length < 4) return [];
+  if (fixedSet?.game === "sports") return lookupInAlbum(q, fixedSet);
 
   // OCR tends to put a junk word before the title ("and Hoppip", "fi Lightning Bolt", from the
   // Pokémon stage badge or the frame): also try without it, and keep the best match. (Dropping

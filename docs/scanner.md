@@ -106,6 +106,18 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
         cantidades por montón).
       - **Terminar sesión:** pone el historial y el total a cero, y las cartas se quedan donde
         se añadieron. Se puede deshacer.
+  - **Álbumes de fútbol** (D29):
+    - Las Megacracks no llevan número por delante, y el nombre del jugador va en vertical, en
+      blanco sobre una franja negra a la derecha.
+    - Con el álbum como **expansión fija**, el escáner lee esa franja en lugar de la esquina,
+      que es la zona marcada en amarillo: la gira, la pasa a grises e invierte los colores
+      (`NAME_LAYOUTS` por línea de producto, en `src/lib/scan/geometry.ts`).
+    - Busca el nombre solo en el álbum (`lookupInAlbum`) y ofrece todas las fichas del
+      jugador (base, Élite, Power, Special One…), la más sencilla primero, para tocar la tuya.
+      Solo se escanea por delante, que es también la foto compartida.
+    - Medido con una base de 2025-26: «LAMINE YAMAL», con un 78 % de confianza. Falta
+      probarlo con cartas reales de las series especiales, que pueden llevar el nombre en otro
+      sitio.
   - **Foto compartida:** al añadir una carta sin imagen de catálogo (fútbol, algunas de
     Pokémon), el escáner guarda en segundo plano la foto del recuadro (300×419) como imagen de
     esa carta para todos, si aún no tiene ninguna (D30).

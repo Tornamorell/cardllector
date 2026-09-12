@@ -498,8 +498,14 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - Las bajas conservan «(Baja)» en el nombre.
   - Sin imágenes: un marcador con el número (`label` en `CardThumb` y `HoloCard`).
   - `oracle_id = sports:<nombre>` agrupa todas las fichas de un jugador, como en D19.
+  - **Escáner, solo por delante:** las Megacracks no llevan número por delante y escanear
+    las dos caras es un suplicio. Con el álbum como expansión fija, se lee el nombre de la
+    franja vertical (`NAME_LAYOUTS` por línea de producto) y se ofrecen las fichas del jugador
+    en ese álbum, la más sencilla primero (`scanner.md`).
 - **Descartado:**
   - Extraer las listas de CromosRepes de forma automática.
+  - Leer el número por detrás: obliga a dar la vuelta a cada carta, y la foto compartida
+    tiene que ser la cara delantera.
   - Buscar imágenes de forma automática (D. «Fútbol» en la hoja de ruta).
 - **Revisar cuando:** CromosRepes ofrezca exportación, o se quiera importar también lo que
   tiene el usuario a partir de sus faltas y repes. Sus marcas vienen en el mismo texto, pero no

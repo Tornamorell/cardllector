@@ -6,8 +6,13 @@ import type { CatalogGameId, SetTypeFilter } from "@/lib/games";
 
 /** Every set with cards, newest first — for pickers such as the scanner's fixed-set mode. */
 export async function setOptions() {
-  const result = await db.execute<{ game: CatalogGameId; code: string; name: string }>(sql`
-    select game, code, name
+  const result = await db.execute<{
+    game: CatalogGameId;
+    code: string;
+    name: string;
+    setType: string | null;
+  }>(sql`
+    select game, code, name, set_type as "setType"
     from sets
     where card_count > 0
     order by released_at desc nulls last, name

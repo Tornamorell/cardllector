@@ -31,15 +31,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FINISH_LABELS, formatEur, placeLabel } from "@/lib/format";
-import { gameById } from "@/lib/games";
+import { gameById, rarityLabel, rarityRank } from "@/lib/games";
 import type { ScanMatch } from "@/lib/queries/scan";
 import {
   INFO_STRIP,
+  NAME_LAYOUTS,
   TITLE_STRIP,
   coverTransform,
   guideIn,
   stripRect,
   toVideo,
+  type NameLayout,
   type Rect,
 } from "@/lib/scan/geometry";
 import { numberVariants, parseCollectorLine, parseTitle, type CollectorLine } from "@/lib/scan/parse";
@@ -60,13 +62,14 @@ import { useScanSession } from "./scan-session";
 
 type OcrWorker = import("tesseract.js").Worker;
 type Psm = import("tesseract.js").PSM;
-type SetOption = { game: string; code: string; name: string };
+type SetOption = { game: string; code: string; name: string; setType?: string | null };
 type FixedSet = { game: string; code: string };
 type Entry = SessionEntry;
 
 // Tuning knobs (docs/scanner.md).
 const INFO_HEIGHT = 140; // px of the info strip fed to Tesseract
 const TITLE_HEIGHT = 90; // px of the title strip
+const NAME_HEIGHT = 120; // px of an album's sideways name, once upright
 const TICK_MS = 250; // pause between reads
 const VOTES_NEEDED = 2; // a read must repeat this many times…
 const VOTE_WINDOW = 6; // …among the last reads (not necessarily consecutive)
@@ -110,6 +113,62 @@ function captureRegion(source: CanvasImageSource, r: Rect, canvas: HTMLCanvasEle
     d[i] = d[i + 1] = d[i + 2] = v;
   }
   ctx.putImageData(img, 0, 0);
+}
+
+/**
+ * Crops `r` of `source` for a name printed sideways (Megacracks): turned upright by `rotate`
+ * degrees clockwise, `height` px tall, grey and contrast-stretched, and inverted for light text
+ * on a dark band (NameLayout).
+ */
+function captureName(
+  source: CanvasImageSource,
+  r: Rect,
+  canvas: HTMLCanvasElement,
+  height: number,
+  rotate: 0 | 90 | -90,
+  invert: boolean,
+) {
+  const turned = rotate !== 0;
+  const scale = height / (turned ? r.w : r.h);
+  canvas.width = Math.max(1, Math.round((turned ? r.h : r.w) * scale));
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return;
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate((rotate * Math.PI) / 180);
+  ctx.drawImage(source, r.x, r.y, r.w, r.h, (-r.w * scale) / 2, (-r.h * scale) / 2, r.w * scale, r.h * scale);
+  ctx.restore();
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = img.data;
+  let min = 255;
+  let max = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    d[i] = g;
+    if (g < min) min = g;
+    if (g > max) max = g;
+  }
+  const range = Math.max(1, max - min);
+  for (let i = 0; i < d.length; i += 4) {
+    const v = ((d[i] - min) * 255) / range;
+    d[i] = d[i + 1] = d[i + 2] = invert ? 255 - v : v;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+/** A choice's caption: the series for football cards (Élite, Power…), else the set's name. */
+function choiceCaption(m: ScanMatch) {
+  const game = gameById(m.game);
+  return game && !game.hasMarketPrices && m.rarity ? rarityLabel(game, m.rarity) : m.setName;
+}
+
+/** Several cards of one player (football albums): the plainest first, as rarities rank them. */
+function byRarity(matches: ScanMatch[]) {
+  return [...matches].sort((a, b) => {
+    const game = gameById(a.game);
+    return game ? rarityRank(game, a.rarity) - rarityRank(game, b.rarity) : 0;
+  });
 }
 
 let audio: AudioContext | null = null;
@@ -200,9 +259,15 @@ export function Scanner({
     cache: new Map<string, ScanMatch[]>(),
   });
   // The read loop is async and long-lived: it reads the latest settings from here.
-  const settings = useRef({ defaults, fixedSet, locations, paused: historyOpen });
+  // Albums that print the name sideways and no number on the front (Megacracks): read that.
+  const fixedSetType = fixedSet
+    ? sets.find((s) => s.game === fixedSet.game && s.code === fixedSet.code)?.setType
+    : null;
+  const nameLayout: NameLayout | null = (fixedSetType && NAME_LAYOUTS[fixedSetType]) || null;
+
+  const settings = useRef({ defaults, fixedSet, locations, paused: historyOpen, nameLayout });
   useEffect(() => {
-    settings.current = { defaults, fixedSet, locations, paused: historyOpen };
+    settings.current = { defaults, fixedSet, locations, paused: historyOpen, nameLayout };
   });
 
   useEffect(
@@ -344,6 +409,34 @@ export function Scanner({
     await add(match, lang);
   }
 
+  /**
+   * For albums with the name, not a number, on the front (D29): read the name where the album
+   * prints it and offer the player's cards in the album, the plainest first.
+   */
+  async function readPrintedName(
+    video: HTMLVideoElement,
+    card: Rect,
+    canvas: HTMLCanvasElement,
+    layout: NameLayout,
+  ) {
+    const s = readState.current;
+    captureName(video, stripRect(card, layout.strip), canvas, NAME_HEIGHT, layout.rotate, layout.invert);
+    const text = await ocr(canvas, "title");
+    setLastText(`nombre: ${text.trim() || "—"}`);
+    const name = parseTitle(text);
+    if (name) s.lastTitle = name;
+    const matches = name ? await lookupName(name) : [];
+    if (name && matches.length) {
+      s.empty = 0;
+      setStatus(`Leyendo «${name}»…`);
+      if (vote(`n:${matches.map((m) => m.id).sort().join()}`) >= VOTES_NEEDED) {
+        await resolve(byRarity(matches), null, `Leído «${name}»`);
+      }
+    } else {
+      noRead();
+    }
+  }
+
   async function tick() {
     if (!runningRef.current) return;
     // Looking at the history: don't add cards behind the user's back.
@@ -358,6 +451,11 @@ export function Scanner({
       const s = readState.current;
       s.tick++;
       try {
+        if (settings.current.nameLayout) {
+          await readPrintedName(video, card, canvas, settings.current.nameLayout);
+          if (runningRef.current) setTimeout(tick, TICK_MS);
+          return;
+        }
         captureRegion(video, stripRect(card, INFO_STRIP), canvas, INFO_HEIGHT);
         const text = await ocr(canvas, "info");
         const line = parseCollectorLine(text);
@@ -679,6 +777,21 @@ export function Scanner({
       const canvas = photoCanvasRef.current!;
       // A photo of one card, cropped to it: the whole image is the card.
       const card = { x: 0, y: 0, w: bitmap.width, h: bitmap.height };
+      const layout = settings.current.nameLayout;
+      if (layout) {
+        captureName(bitmap, stripRect(card, layout.strip), canvas, NAME_HEIGHT, layout.rotate, layout.invert);
+        const read = await ocr(canvas, "title");
+        setLastText(`nombre: ${read.trim() || "—"}`);
+        const name = parseTitle(read);
+        const found = name ? await lookupName(name) : [];
+        if (!found.length) {
+          setStatus("No he podido leer el nombre. Recorta la foto a la carta, por delante, y prueba otra vez.");
+          return;
+        }
+        setChoices({ matches: byRarity(found), lang: null });
+        setStatus(`Leído «${name}»: confirma la carta.`);
+        return;
+      }
       captureRegion(bitmap, stripRect(card, INFO_STRIP), canvas, INFO_HEIGHT);
       const text = await ocr(canvas, "info");
       const line = parseCollectorLine(text);
@@ -750,7 +863,7 @@ export function Scanner({
   );
   const current = entries[0] ?? null;
   const guide = stage ? guideIn({ x: 0, y: 0, w: stage.w, h: stage.h }) : null;
-  const strip = guide ? stripRect(guide, INFO_STRIP) : null;
+  const strip = guide ? stripRect(guide, nameLayout?.strip ?? INFO_STRIP) : null;
   const fixedCode = fixedSet?.code.toUpperCase();
 
   return (
@@ -1013,9 +1126,17 @@ export function Scanner({
                 {choices.matches.map((m) => (
                   <li key={m.id} className="w-20 shrink-0">
                     <button type="button" onClick={() => choose(m)} className="w-full text-left text-[10px]">
-                      <CardThumb src={m.imageSmall} alt={m.name} size="md" className="w-full!" />
+                      <CardThumb
+                        src={m.imageSmall}
+                        alt={m.name}
+                        label={`#${m.collectorNumber}`}
+                        size="md"
+                        className="w-full!"
+                      />
                       <p className="mt-1 truncate text-white/80">
-                        {m.setCode.toUpperCase()} #{m.collectorNumber}
+                        {gameById(m.game)?.hasMarketPrices === false
+                          ? choiceCaption(m)
+                          : `${m.setCode.toUpperCase()} #${m.collectorNumber}`}
                       </p>
                     </button>
                   </li>
@@ -1032,8 +1153,9 @@ export function Scanner({
             />
           ) : (
             <p className="py-3 text-center text-sm text-white/70">
-              Encaja la carta en el recuadro. La esquina de abajo a la izquierda (el número) tiene que
-              quedar dentro del marco amarillo.
+              {nameLayout
+                ? "Encaja la carta por delante. El nombre del jugador, en la franja de la derecha, tiene que quedar dentro del marco amarillo."
+                : "Encaja la carta en el recuadro. La esquina de abajo a la izquierda (el número) tiene que quedar dentro del marco amarillo."}
             </p>
           )}
 
@@ -1247,10 +1369,16 @@ function ChoicesGrid({
               onClick={() => onChoose(m)}
               className="hover:bg-muted w-full space-y-1 rounded-md p-1 text-left text-xs"
             >
-              <CardThumb src={m.imageSmall} alt={m.name} size="md" className="w-full!" />
+              <CardThumb
+                src={m.imageSmall}
+                alt={m.name}
+                label={`#${m.collectorNumber}`}
+                size="md"
+                className="w-full!"
+              />
               <p className="truncate font-medium">{m.name}</p>
               <p className="text-muted-foreground truncate">
-                {m.setName} · #{m.collectorNumber}
+                {choiceCaption(m)} · #{m.collectorNumber}
               </p>
             </button>
           </li>

@@ -10,7 +10,7 @@ const body = z.object({
     setCodes: z.array(z.string().max(8)).max(8),
     lang: z.string().max(3).nullable(),
   }),
-  fixedSet: z.object({ game: z.enum(["mtg", "pokemon"]), code: z.string().max(20) }).nullish(),
+  fixedSet: z.object({ game: z.enum(["mtg", "pokemon", "sports"]), code: z.string().max(20) }).nullish(),
 });
 
 /** Validates a parsed OCR read against the catalog. Called a few times per second. */

@@ -31,6 +31,25 @@ export const INFO_STRIP = { x0: 0.02, x1: 0.5, y0: 0.895, y1: 0.99 };
 /** Title line: the fallback when the info strip can't be read. */
 export const TITLE_STRIP = { x0: 0.04, x1: 0.76, y0: 0.025, y1: 0.1 };
 
+/**
+ * Where an album prints the player's name on the front, for albums with no collector number
+ * there (D29), and how to read it: turned upright (degrees clockwise) and inverted when it's
+ * light text on a dark band, which Tesseract reads far better as dark on light.
+ */
+export type NameLayout = {
+  strip: { x0: number; x1: number; y0: number; y1: number };
+  rotate: 0 | 90 | -90;
+  invert: boolean;
+};
+
+/**
+ * By product line (sets.set_type). Megacracks: the name runs up the right edge, white on a
+ * black band (measured on a 2025-26 base card: "LAMINE YAMAL" read at 78 % confidence).
+ */
+export const NAME_LAYOUTS: Record<string, NameLayout> = {
+  megacracks: { strip: { x0: 0.87, x1: 0.945, y0: 0.17, y1: 0.68 }, rotate: 90, invert: true },
+};
+
 export function stripRect(card: Rect, strip = INFO_STRIP): Rect {
   return {
     x: card.x + card.w * strip.x0,
