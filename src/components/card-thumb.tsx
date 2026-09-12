@@ -35,6 +35,8 @@ export function CardThumb({
       style={{ width }}
       data-foil={foil || undefined}
     >
+      {/* Absolutely positioned: the frame's height comes from aspect-ratio, and Safari doesn't
+          always resolve a percentage height against it (the image came out cropped). */}
       {src ? (
         <Image
           src={src}
@@ -43,10 +45,10 @@ export function CardThumb({
           height={height}
           unoptimized
           priority={priority}
-          className="block h-full w-full object-cover"
+          className="absolute inset-0 block h-full w-full object-cover"
         />
       ) : (
-        <span className="bg-muted block h-full w-full" aria-hidden />
+        <span className="bg-muted absolute inset-0 block" aria-hidden />
       )}
     </span>
   );

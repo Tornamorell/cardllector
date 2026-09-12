@@ -75,6 +75,14 @@ siendo los de shadcn por si algún día se añade un selector de tema.
 ## Piezas
 
 - `src/components/card-thumb.tsx`: carta con sombra; `foil` añade la película.
+  - El marco no encoge en filas flexibles (`flex: none`), y la imagen lo llena en posición
+    absoluta. Así se evita el recorte que hacía Safari en iOS.
+- `src/components/items-table-view.tsx`: las cartas de Mis cartas y de las ubicaciones.
+  - En el móvil es una lista de fichas: miniatura, nombre, etiquetas, cantidad, total y el menú
+    ⋯, todo a la vista.
+  - Desde `md` es una tabla.
+  - Una tabla ancha en el móvil escondía los detalles tras un desplazamiento lateral que no se
+    veía.
 - `src/components/card-fan.tsx`: cartas en abanico.
 - `src/components/holo-card.tsx`: la carta grande que se inclina.
 - `src/components/rarity-mark.tsx` y `rarityTier()` en `src/lib/games.ts`: rombo del color de la

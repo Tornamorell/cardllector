@@ -6,7 +6,7 @@ import { useState } from "react";
 import { AddFilteredToCollection } from "@/components/add-filtered-to-collection";
 import { CardThumb } from "@/components/card-thumb";
 import type { CollectionOption } from "@/components/collection-picker";
-import { ItemActions, QuantityControl } from "@/components/item-actions";
+import { ItemActions, QuantityControl, type ActionItem } from "@/components/item-actions";
 import type { LocationOption } from "@/components/location-picker";
 import { MoveDialog } from "@/components/move-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -23,11 +23,16 @@ import { formatEur, formatInt, placeLabel } from "@/lib/format";
 import { finishLabel } from "@/lib/games";
 import { gradeLabel } from "@/lib/grading";
 import type { InventoryItem } from "@/lib/queries/items";
+import { cn } from "@/lib/utils";
+
+type Context = "inventory" | "location";
 
 /**
  * Stacks of the inventory, selectable: ticking rows brings up a bar to move them elsewhere or
- * list them in a collection (D28). In the full inventory each row shows where it is; on a
- * location's own page, only its divider.
+ * list them in a collection (D28). Phones get a list with everything in view — a wide table
+ * there hid the details and the menu behind a sideways scroll nobody noticed; from `md` up,
+ * the table. In the full inventory each row shows where it is; on a location's page, only its
+ * divider.
  */
 export function ItemsTableView({
   rows,
@@ -36,7 +41,7 @@ export function ItemsTableView({
   collections,
 }: {
   rows: InventoryItem[];
-  context: "inventory" | "location";
+  context: Context;
   locations: LocationOption[];
   collections: CollectionOption[];
 }) {
@@ -47,6 +52,7 @@ export function ItemsTableView({
   const allChosen = rows.length > 0 && chosen.length === rows.length;
   const copies = chosen.reduce((n, r) => n + r.quantity, 0);
   const clear = () => setSelected(new Set());
+  const toggleAll = () => setSelected(allChosen ? new Set() : new Set(rows.map((r) => r.id)));
   const toggle = (id: string) =>
     setSelected((current) => {
       const next = new Set(current);
@@ -55,9 +61,81 @@ export function ItemsTableView({
       return next;
     });
 
+  const checkbox = (item: InventoryItem, className?: string) => (
+    <input
+      type="checkbox"
+      className={cn("accent-primary size-4 align-middle", className)}
+      checked={selected.has(item.id)}
+      onChange={() => toggle(item.id)}
+      aria-label={`Seleccionar ${item.card?.name ?? "carta"}`}
+    />
+  );
+  const actions = (item: InventoryItem) => (
+    <ItemActions locations={locations} collections={collections} item={actionItem(item)} />
+  );
+
   return (
     <>
-      <div className="bg-card overflow-x-auto rounded-xl border">
+      {/* Phones */}
+      <ul className="bg-card divide-y rounded-xl border md:hidden">
+        <li className="text-muted-foreground flex items-center gap-3 px-3 py-2 text-sm">
+          <input
+            type="checkbox"
+            className="accent-primary size-4"
+            checked={allChosen}
+            onChange={toggleAll}
+            aria-label="Seleccionar todas"
+          />
+          Seleccionar todas
+        </li>
+        {rows.map((item) => (
+          <li
+            key={item.id}
+            className={cn("flex gap-3 px-3 py-3", selected.has(item.id) && "bg-muted/60")}
+          >
+            {checkbox(item, "mt-1 shrink-0")}
+            {item.card?.id && (
+              <Link href={`/cards/${item.card.id}`} className="shrink-0" tabIndex={-1} aria-hidden>
+                <CardThumb src={item.card.imageSmall} alt="" size="sm" foil={item.finish !== "nonfoil"} />
+              </Link>
+            )}
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex items-start gap-1">
+                <div className="min-w-0 flex-1">
+                  {item.card?.id ? (
+                    <Link href={`/cards/${item.card.id}`} className="line-clamp-2 font-medium">
+                      {item.card.name}
+                    </Link>
+                  ) : (
+                    <span className="text-muted-foreground">Sin catálogo</span>
+                  )}
+                  <p className="text-muted-foreground truncate text-xs">
+                    {item.card?.setCode?.toUpperCase()} #{item.card?.collectorNumber}
+                    {item.card?.setName && ` · ${item.card.setName}`}
+                  </p>
+                </div>
+                <div className="-mt-1 -mr-1">{actions(item)}</div>
+              </div>
+              <Details item={item} context={context} />
+              <div className="flex items-center justify-between gap-2">
+                <QuantityControl itemId={item.id} quantity={item.quantity} />
+                <p className="text-right text-sm tabular-nums">
+                  {item.quantity > 1 && (
+                    <span className="text-muted-foreground">{formatEur(item.unitPriceEur)} · </span>
+                  )}
+                  <span className="text-primary font-semibold">{total(item)}</span>
+                  {item.estimatedValueEur != null && (
+                    <span className="text-muted-foreground block text-[11px]">estimado</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* Tablets and up */}
+      <div className="bg-card hidden overflow-x-auto rounded-xl border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -66,7 +144,7 @@ export function ItemsTableView({
                   type="checkbox"
                   className="accent-primary size-4 align-middle"
                   checked={allChosen}
-                  onChange={() => setSelected(allChosen ? new Set() : new Set(rows.map((r) => r.id)))}
+                  onChange={toggleAll}
                   aria-label="Seleccionar todas"
                 />
               </TableHead>
@@ -81,15 +159,7 @@ export function ItemsTableView({
           <TableBody>
             {rows.map((item) => (
               <TableRow key={item.id} data-state={selected.has(item.id) ? "selected" : undefined}>
-                <TableCell>
-                  <input
-                    type="checkbox"
-                    className="accent-primary size-4 align-middle"
-                    checked={selected.has(item.id)}
-                    onChange={() => toggle(item.id)}
-                    aria-label={`Seleccionar ${item.card?.name ?? "carta"}`}
-                  />
-                </TableCell>
+                <TableCell>{checkbox(item)}</TableCell>
                 <TableCell>
                   {item.card?.id ? (
                     <Link href={`/cards/${item.card.id}`} className="flex items-center gap-3">
@@ -112,35 +182,7 @@ export function ItemsTableView({
                   )}
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap items-center gap-1 text-xs">
-                    {item.gradingCompany && (
-                      // A slab label: light on dark, unlike every other badge.
-                      <Badge
-                        className="bg-foreground text-background font-semibold"
-                        title={item.certNumber ? `Certificado ${item.certNumber}` : undefined}
-                      >
-                        {gradeLabel(item.gradingCompany, item.grade)}
-                      </Badge>
-                    )}
-                    {item.finish !== "nonfoil" && (
-                      <Badge className="foil-badge">{finishLabel(item.card?.game, item.finish)}</Badge>
-                    )}
-                    <Badge variant="outline">{item.condition}</Badge>
-                    <Badge variant="outline" className="uppercase">
-                      {item.language}
-                    </Badge>
-                    {context === "inventory" && item.location?.id && (
-                      <Link
-                        href={`/locations/${item.location.id}`}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        {placeLabel(item.location.name, item.section?.name)}
-                      </Link>
-                    )}
-                    {context === "location" && item.section?.id && (
-                      <span className="text-muted-foreground">Separador {item.section.name}</span>
-                    )}
-                  </div>
+                  <Details item={item} context={context} />
                 </TableCell>
                 <TableCell>
                   <QuantityControl itemId={item.id} quantity={item.quantity} />
@@ -152,33 +194,9 @@ export function ItemsTableView({
                   )}
                 </TableCell>
                 <TableCell className="text-primary text-right font-semibold tabular-nums">
-                  {item.unitPriceEur == null ? "—" : formatEur(item.unitPriceEur * item.quantity)}
+                  {total(item)}
                 </TableCell>
-                <TableCell>
-                  <ItemActions
-                    locations={locations}
-                    collections={collections}
-                    item={{
-                      id: item.id,
-                      catalogCardId: item.card?.id ?? null,
-                      game: item.card?.game ?? null,
-                      name: item.card?.name ?? "Carta",
-                      quantity: item.quantity,
-                      finish: item.finish,
-                      condition: item.condition,
-                      language: item.language,
-                      locationId: item.locationId,
-                      sectionId: item.sectionId,
-                      notes: item.notes,
-                      purchasePriceEur: item.purchasePriceEur,
-                      estimatedValueEur: item.estimatedValueEur,
-                      gradingCompany: item.gradingCompany,
-                      grade: item.grade,
-                      certNumber: item.certNumber,
-                      finishes: item.card?.finishes ?? [],
-                    }}
-                  />
-                </TableCell>
+                <TableCell>{actions(item)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -225,4 +243,64 @@ export function ItemsTableView({
       )}
     </>
   );
+}
+
+const total = (item: InventoryItem) =>
+  item.unitPriceEur == null ? "—" : formatEur(item.unitPriceEur * item.quantity);
+
+/** Grading, finish, condition, language and where it is, as small labels. */
+function Details({ item, context }: { item: InventoryItem; context: Context }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1 text-xs">
+      {item.gradingCompany && (
+        // A slab label: light on dark, unlike every other badge.
+        <Badge
+          className="bg-foreground text-background font-semibold"
+          title={item.certNumber ? `Certificado ${item.certNumber}` : undefined}
+        >
+          {gradeLabel(item.gradingCompany, item.grade)}
+        </Badge>
+      )}
+      {item.finish !== "nonfoil" && (
+        <Badge className="foil-badge">{finishLabel(item.card?.game, item.finish)}</Badge>
+      )}
+      <Badge variant="outline">{item.condition}</Badge>
+      <Badge variant="outline" className="uppercase">
+        {item.language}
+      </Badge>
+      {context === "inventory" && item.location?.id && (
+        <Link
+          href={`/locations/${item.location.id}`}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          {placeLabel(item.location.name, item.section?.name)}
+        </Link>
+      )}
+      {context === "location" && item.section?.id && (
+        <span className="text-muted-foreground">Separador {item.section.name}</span>
+      )}
+    </div>
+  );
+}
+
+function actionItem(item: InventoryItem): ActionItem {
+  return {
+    id: item.id,
+    catalogCardId: item.card?.id ?? null,
+    game: item.card?.game ?? null,
+    name: item.card?.name ?? "Carta",
+    quantity: item.quantity,
+    finish: item.finish,
+    condition: item.condition,
+    language: item.language,
+    locationId: item.locationId,
+    sectionId: item.sectionId,
+    notes: item.notes,
+    purchasePriceEur: item.purchasePriceEur,
+    estimatedValueEur: item.estimatedValueEur,
+    gradingCompany: item.gradingCompany,
+    grade: item.grade,
+    certNumber: item.certNumber,
+    finishes: item.card?.finishes ?? [],
+  };
 }

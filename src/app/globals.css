@@ -186,6 +186,8 @@
   .card-frame {
     position: relative;
     display: inline-block;
+    /* Never squeezed by a flex row: a narrower frame crops the card. */
+    flex: none;
     aspect-ratio: 63 / 88;
     max-width: 100%;
     overflow: hidden;
