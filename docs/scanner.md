@@ -91,6 +91,15 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     La cola se resuelve en `/review`, a la que se llega con el enlace «N por revisar» del
     escáner y de Mis cartas. Cada foto sale con la búsqueda rellenada con ese nombre, y la carta
     se añade con los ajustes guardados.
+  - **Historial y total de la sesión:**
+    - Arriba a la derecha, «12 · 34,50 €»: cartas y valor de la sesión, con el precio de cada
+      acabado en el momento de leerla. Las copias sin precio se cuentan aparte.
+    - Al tocarlo se abre el historial: hora, carta, expansión, acabado, valor y −/+. Mientras
+      está abierto, la lectura se pausa.
+    - La sesión se guarda en el dispositivo (`scan-session.ts`, localStorage), así que no se
+      pierde si recargas, se bloquea el móvil o cierras la cámara.
+    - «Empezar sesión nueva», que se puede deshacer, pone el historial y el total a cero. Las
+      cartas no se tocan.
   - «Ver lo que lee» muestra la última franja procesada y el texto de Tesseract.
 - **PWA:** manifest, iconos y `appleWebApp`. Añadida a la pantalla de inicio, se abre sin la barra
   del navegador. Aún no hay service worker.

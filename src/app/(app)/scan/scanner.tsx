@@ -40,25 +40,24 @@ import {
   type Rect,
 } from "@/lib/scan/geometry";
 import { numberVariants, parseCollectorLine, parseTitle, type CollectorLine } from "@/lib/scan/parse";
+import {
+  entryUnitPrice,
+  sessionTotals,
+  type Finish,
+  type SessionEntry,
+} from "@/lib/scan/session";
 import { normalizeForSearch } from "@/lib/search/normalize";
 import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 import { cn } from "@/lib/utils";
 import { addItem, changeFinish, changeQuantity } from "../inventory/actions";
 import { savePendingScan } from "../review/actions";
+import { useScanSession } from "./scan-session";
 
 type OcrWorker = import("tesseract.js").Worker;
 type Psm = import("tesseract.js").PSM;
 type SetOption = { game: string; code: string; name: string };
 type FixedSet = { game: string; code: string };
-type Finish = "nonfoil" | "foil" | "etched";
-type Entry = {
-  key: string;
-  itemId: string;
-  match: ScanMatch;
-  lang: string | null;
-  count: number;
-  finish: Finish;
-};
+type Entry = SessionEntry;
 
 // Tuning knobs (docs/scanner.md).
 const INFO_HEIGHT = 140; // px of the info strip fed to Tesseract
@@ -81,8 +80,7 @@ const describe = (line: CollectorLine) =>
     .filter(Boolean)
     .join(" ");
 
-const priceFor = (m: ScanMatch, finish: Finish) =>
-  finish === "nonfoil" ? m.priceEur : finish === "foil" ? m.priceEurFoil : null;
+const clock = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" });
 
 /** Crops `rect` of `source` into `canvas` at `height` px, as contrast-stretched grayscale. */
 function captureRegion(source: CanvasImageSource, r: Rect, canvas: HTMLCanvasElement, height: number) {
@@ -168,7 +166,9 @@ export function Scanner({
   const [lastText, setLastText] = useState("");
   const [showDebug, setShowDebug] = useState(false);
   const [choices, setChoices] = useState<{ matches: ScanMatch[]; lang: string | null } | null>(null);
-  const [entries, setEntries] = useState<Entry[]>([]);
+  // The session survives reloads and closing the camera (scan-session.ts).
+  const [entries, setEntries] = useScanSession();
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [torch, setTorch] = useState({ supported: false, on: false });
   const [pendingCount, setPendingCount] = useState(initialPending);
@@ -194,9 +194,9 @@ export function Scanner({
     cache: new Map<string, ScanMatch[]>(),
   });
   // The read loop is async and long-lived: it reads the latest settings from here.
-  const settings = useRef({ defaults, fixedSet, locations });
+  const settings = useRef({ defaults, fixedSet, locations, paused: historyOpen });
   useEffect(() => {
-    settings.current = { defaults, fixedSet, locations };
+    settings.current = { defaults, fixedSet, locations, paused: historyOpen };
   });
 
   useEffect(
@@ -340,6 +340,11 @@ export function Scanner({
 
   async function tick() {
     if (!runningRef.current) return;
+    // Looking at the history: don't add cards behind the user's back.
+    if (settings.current.paused) {
+      setTimeout(tick, TICK_MS);
+      return;
+    }
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const card = cardInVideo();
@@ -412,7 +417,10 @@ export function Scanner({
       setEntries((list) => {
         const [top, ...rest] = list;
         if (top?.itemId === r.itemId) return [{ ...top, count: top.count + 1 }, ...rest];
-        return [{ key: crypto.randomUUID(), itemId: r.itemId, match, lang, count: 1, finish }, ...list];
+        return [
+          { key: crypto.randomUUID(), itemId: r.itemId, match, lang, count: 1, finish, addedAt: Date.now() },
+          ...list,
+        ];
       });
       setStatus(
         r.advancedFrom && r.section
@@ -519,6 +527,17 @@ export function Scanner({
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Clears the history and the running total; the cards stay in the inventory. Undoable. */
+  function newSession() {
+    const previous = entries;
+    setEntries([]);
+    setHistoryOpen(false);
+    readState.current.holdId = null;
+    toast("Sesión nueva: el historial y el total empiezan de cero. Tus cartas no se tocan.", {
+      action: { label: "Deshacer", onClick: () => setEntries(previous) },
+    });
   }
 
   // --- Camera ---------------------------------------------------------------
@@ -641,7 +660,10 @@ export function Scanner({
 
   // --- Render ---------------------------------------------------------------
 
-  const total = entries.reduce((n, e) => n + e.count, 0);
+  const totals = sessionTotals(entries);
+  const totalsText =
+    `${totals.cards} ${totals.cards === 1 ? "carta" : "cartas"}, ${formatEur(totals.valueEur)}` +
+    (totals.unpriced ? ` (${totals.unpriced} sin precio)` : "");
   const current = entries[0] ?? null;
   const guide = stage ? guideIn({ x: 0, y: 0, w: stage.w, h: stage.h }) : null;
   const strip = guide ? stripRect(guide, INFO_STRIP) : null;
@@ -738,48 +760,26 @@ export function Scanner({
         <section className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-medium">
-              En esta sesión: {total} {total === 1 ? "carta" : "cartas"}
+              En esta sesión: {totalsText}
             </h2>
-            <AddFilteredToCollection
-              collections={collections}
-              filter={{ itemIds: entries.map((e) => e.itemId) }}
-              label="Añadir la sesión a una colección"
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <AddFilteredToCollection
+                collections={collections}
+                filter={{ itemIds: entries.map((e) => e.itemId) }}
+                label="Añadir la sesión a una colección"
+              />
+              <Button variant="ghost" size="sm" onClick={newSession}>
+                Empezar sesión nueva
+              </Button>
+            </div>
           </div>
-          <ul className="divide-y rounded-md border">
-            {entries.map((e) => (
-              <li key={e.key} className="flex items-center gap-3 px-3 py-2">
-                <CardThumb src={e.match.imageSmall} alt="" size="xs" foil={e.finish !== "nonfoil"} />
-                <div className="min-w-0 flex-1 text-sm">
-                  <p className="truncate font-medium">{e.match.name}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {e.match.setCode.toUpperCase()} #{e.match.collectorNumber} ·{" "}
-                    {(gameById(e.match.game)?.finishLabels ?? FINISH_LABELS)[e.finish]}
-                    {e.lang && ` · ${e.lang.toUpperCase()}`}
-                  </p>
-                </div>
-                <span className="w-8 text-center text-sm tabular-nums">×{e.count}</span>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={busy}
-                  onClick={() => minusOne(e)}
-                  aria-label="Quitar una"
-                >
-                  <MinusIcon />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={busy}
-                  onClick={() => plusOne(e)}
-                  aria-label="Otra copia"
-                >
-                  <PlusIcon />
-                </Button>
-              </li>
-            ))}
-          </ul>
+          <SessionList
+            entries={entries}
+            busy={busy}
+            onMinus={minusOne}
+            onPlus={plusOne}
+            tone="page"
+          />
         </section>
       )}
 
@@ -830,9 +830,15 @@ export function Scanner({
               <FlashlightIcon />
             </Button>
           )}
-          <span className="rounded-full bg-white/15 px-2.5 py-1 text-sm tabular-nums" aria-label="Cartas escaneadas">
-            {total}
-          </span>
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((open) => !open)}
+            aria-expanded={historyOpen}
+            aria-label={`Esta sesión: ${totalsText}. Ver el historial`}
+            className="rounded-full bg-white/15 px-3 py-1 text-sm tabular-nums hover:bg-white/25"
+          >
+            {totals.cards} · <span className="text-primary font-semibold">{formatEur(totals.valueEur)}</span>
+          </button>
         </div>
 
         <div ref={stageRef} className="relative z-10 flex-1">
@@ -855,6 +861,43 @@ export function Scanner({
           >
             {status}
           </p>
+
+          {historyOpen && (
+            <div className="absolute inset-0 z-20 flex flex-col bg-neutral-950/95">
+              <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-2">
+                <div className="min-w-0">
+                  <p className="font-semibold">Esta sesión</p>
+                  <p className="text-sm text-white/70">{totalsText}</p>
+                  <p className="text-xs text-white/50">La lectura está en pausa mientras miras.</p>
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => setHistoryOpen(false)}>
+                  Seguir escaneando
+                </Button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                {entries.length ? (
+                  <SessionList
+                    entries={entries}
+                    busy={busy}
+                    onMinus={minusOne}
+                    onPlus={plusOne}
+                    tone="overlay"
+                  />
+                ) : (
+                  <p className="px-4 py-8 text-center text-sm text-white/60">
+                    Aún no has añadido nada en esta sesión.
+                  </p>
+                )}
+              </div>
+              {entries.length > 0 && (
+                <div className="px-4 py-2 text-center">
+                  <button type="button" className="text-xs text-white/60 underline" onClick={newSession}>
+                    Empezar sesión nueva
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="relative z-10 space-y-3 rounded-t-2xl bg-neutral-950/95 px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
@@ -953,7 +996,7 @@ function CurrentCard({
   const { match } = entry;
   const labels = gameById(match.game)?.finishLabels ?? FINISH_LABELS;
   const finishes = FINISH_ORDER.filter((f) => match.finishes.includes(f));
-  const price = priceFor(match, entry.finish);
+  const price = entryUnitPrice(entry);
 
   return (
     <div className="space-y-3">
@@ -1013,6 +1056,73 @@ function CurrentCard({
         </div>
       )}
     </div>
+  );
+}
+
+/** The session's history, newest first: when, what, its value, and −/+ to fix counts. */
+function SessionList({
+  entries,
+  busy,
+  onMinus,
+  onPlus,
+  tone,
+}: {
+  entries: Entry[];
+  busy: boolean;
+  onMinus: (e: Entry) => void;
+  onPlus: (e: Entry) => void;
+  /** "overlay" inside the full-screen camera, "page" on the scan page. */
+  tone: "page" | "overlay";
+}) {
+  const overlay = tone === "overlay";
+  const muted = overlay ? "text-white/60" : "text-muted-foreground";
+  const buttonClass = overlay ? "text-white hover:bg-white/15 hover:text-white" : undefined;
+  return (
+    <ul className={cn("divide-y", overlay ? "divide-white/10" : "rounded-md border")}>
+      {entries.map((e) => {
+        const unit = entryUnitPrice(e);
+        return (
+          <li key={e.key} className="flex items-center gap-3 px-3 py-2">
+            <CardThumb src={e.match.imageSmall} alt="" size="xs" foil={e.finish !== "nonfoil"} />
+            <div className="min-w-0 flex-1 text-sm">
+              <p className="truncate font-medium">{e.match.name}</p>
+              <p className={cn("truncate text-xs", muted)}>
+                {e.addedAt ? `${clock.format(e.addedAt)} · ` : ""}
+                {e.match.setCode.toUpperCase()} #{e.match.collectorNumber} ·{" "}
+                {(gameById(e.match.game)?.finishLabels ?? FINISH_LABELS)[e.finish]}
+                {e.lang && ` · ${e.lang.toUpperCase()}`}
+              </p>
+            </div>
+            <span className="text-right text-sm tabular-nums">
+              <span className="text-primary block font-semibold">
+                {unit == null ? "—" : formatEur(unit * e.count)}
+              </span>
+              {e.count > 1 && <span className={cn("block text-xs", muted)}>×{e.count}</span>}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className={buttonClass}
+              disabled={busy}
+              onClick={() => onMinus(e)}
+              aria-label="Quitar una"
+            >
+              <MinusIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className={buttonClass}
+              disabled={busy}
+              onClick={() => onPlus(e)}
+              aria-label="Otra copia"
+            >
+              <PlusIcon />
+            </Button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

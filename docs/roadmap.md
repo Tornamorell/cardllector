@@ -48,6 +48,9 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Las cinco cartas que más han subido y bajado.
   - En la ficha de carta, el histórico de precio de cada acabado.
   - Aparecen cuando hay al menos dos días de precios guardados.
+- **Historial y total de la sesión en el escáner:**
+  - «12 · 34,50 €» arriba, y el historial de lo añadido al tocarlo.
+  - Se guarda en el dispositivo hasta que empiezas una sesión nueva.
 - **Separadores y mover cartas** (D28):
   - Ubicaciones con separadores de N cartas, con nombre y capacidad editables.
   - Modo automático, que pasa al siguiente y avisa, o manual, con «Siguiente separador».
