@@ -29,8 +29,8 @@ import {
   finishFor,
 } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { FINISH_LABELS, formatEur, placeLabel } from "@/lib/format";
+import { SetPicker, type SetOption } from "@/components/set-picker";
 import { gameById, rarityLabel, rarityRank } from "@/lib/games";
 import type { ScanMatch } from "@/lib/queries/scan";
 import {
@@ -62,7 +62,6 @@ import { useScanSession } from "./scan-session";
 
 type OcrWorker = import("tesseract.js").Worker;
 type Psm = import("tesseract.js").PSM;
-type SetOption = { game: string; code: string; name: string; setType?: string | null };
 type FixedSet = { game: string; code: string };
 type Entry = SessionEntry;
 
@@ -80,8 +79,6 @@ const INFO_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/•. ";
 const TITLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',- ";
 const FINISH_ORDER: Finish[] = ["nonfoil", "foil", "etched"];
 
-const setLabel = (s: SetOption) =>
-  `${s.code.toUpperCase()} · ${s.name} (${gameById(s.game)?.shortName ?? s.game})`;
 
 const describe = (line: CollectorLine) =>
   [line.setCodes[0], line.total ? `${line.number}/${line.total}` : line.number, line.lang?.toUpperCase()]
@@ -217,12 +214,6 @@ export function Scanner({
   const follow = useEntryResult();
 
   const [fixedSet, setFixedSet] = useState<FixedSet | null>(initialFixedSet);
-  const [fixedInput, setFixedInput] = useState(() => {
-    const s =
-      initialFixedSet &&
-      sets.find((o) => o.game === initialFixedSet.game && o.code === initialFixedSet.code);
-    return s ? setLabel(s) : "";
-  });
   const [running, setRunning] = useState(false);
   const [starting, setStarting] = useState(false);
   const [stage, setStage] = useState<{ w: number; h: number } | null>(null);
@@ -880,36 +871,7 @@ export function Scanner({
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-muted-foreground">Expansión fija</span>
-          <Input
-            list="scan-sets"
-            value={fixedInput}
-            onChange={(e) => {
-              setFixedInput(e.target.value);
-              const s = sets.find((o) => setLabel(o) === e.target.value);
-              setFixedSet(s ? { game: s.game, code: s.code } : null);
-            }}
-            placeholder="Opcional"
-            className="max-w-sm"
-            aria-label="Expansión fija"
-          />
-          <datalist id="scan-sets">
-            {sets.map((s) => (
-              <option key={`${s.game}:${s.code}`} value={setLabel(s)} />
-            ))}
-          </datalist>
-          {fixedSet && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => {
-                setFixedSet(null);
-                setFixedInput("");
-              }}
-              aria-label="Quitar expansión fija"
-            >
-              <XIcon />
-            </Button>
-          )}
+          <SetPicker sets={sets} value={fixedSet} onChange={setFixedSet} />
         </div>
         <p className="text-muted-foreground text-xs">
           Con una expansión fija basta con leer el número o el nombre: ideal para una caja de la misma

@@ -66,8 +66,10 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     separador físico. En la parte de arriba se ve «Caja 1 › 3 (87/100)», y en el panel de abajo
     está el botón «Siguiente separador».
   - Acabado, estado e idioma por defecto.
-  - Expansión fija (opcional). También se entra con ella desde la página de la expansión:
-    «Escanear esta expansión», `/scan?set=mtg:m10`.
+  - Expansión fija (opcional), con un buscador por nombre o código (`SetPicker`). Los álbumes
+    de fútbol salen primero, y dentro de cada juego, las expansiones más recientes. También se
+    entra con ella desde la página de la expansión: «Escanear esta expansión»,
+    `/scan?set=mtg:m10`.
   - Botón **Foto**, para probar sin cámara.
   - La lista de la sesión, con «Añadir la sesión a una colección», y «¿No la reconoce? Búscala a
     mano», que abre el alta rápida.

@@ -11,8 +11,11 @@ export async function setOptions() {
     code: string;
     name: string;
     setType: string | null;
+    iconUri: string | null;
+    releasedAt: string | null;
   }>(sql`
-    select game, code, name, set_type as "setType"
+    select game, code, name, set_type as "setType", icon_uri as "iconUri",
+           released_at::text as "releasedAt"
     from sets
     where card_count > 0
     order by released_at desc nulls last, name
