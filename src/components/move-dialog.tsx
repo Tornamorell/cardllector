@@ -20,25 +20,28 @@ import { formatInt, placeLabel } from "@/lib/format";
 import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 
 /**
- * Moves stacks to another location and divider (D28). It starts on the session's location,
- * the usual destination ("these go to Caja 1"). With a single stack of several copies, you can
- * move just some of them.
+ * Moves stacks — whole, or some of their copies — to another location and divider (D28). It
+ * starts on the session's location, the usual destination ("these go to Caja 1"). A single
+ * whole stack of several copies can be moved in part.
  */
 export function MoveDialog({
-  itemIds,
+  stacks,
   title,
+  description = "Si en el destino ya hay copias iguales, se juntan en el mismo montón.",
   maxCount,
   locations,
   onClose,
   onMoved,
 }: {
-  itemIds: string[];
+  stacks: Array<{ itemId: string; count?: number }>;
   title: string;
-  /** Copies in the stack, when moving a single one. */
+  description?: string;
+  /** Copies in the stack, when moving a single whole one: offers moving just some. */
   maxCount?: number;
   locations: LocationOption[];
   onClose: () => void;
-  onMoved?: () => void;
+  /** Where each stack's moved copies ended up (they may join another stack). */
+  onMoved?: (destinations: Record<string, string>) => void;
 }) {
   const [defaults] = useStickyDefaults();
   const sectionsOf = (id: string | null) => locations.find((l) => l.id === id)?.sections ?? [];
@@ -49,16 +52,15 @@ export function MoveDialog({
   const [count, setCount] = useState(maxCount ?? 1);
   const [pending, startTransition] = useTransition();
   const sections = sectionsOf(locationId);
-  const partial = itemIds.length === 1 && (maxCount ?? 1) > 1;
+  const partial = stacks.length === 1 && stacks[0].count == null && (maxCount ?? 1) > 1;
 
   function move() {
     startTransition(async () => {
       try {
         const r = await moveItems({
-          itemIds,
+          stacks: partial ? [{ itemId: stacks[0].itemId, count }] : stacks,
           locationId,
           sectionId: sections.length ? sectionId : null,
-          ...(partial && { count }),
         });
         const place = placeLabel(r.locationName, r.sectionName) ?? "sin ubicación";
         toast.success(
@@ -66,7 +68,7 @@ export function MoveDialog({
             ? `${formatInt(r.moved)} ${r.moved === 1 ? "carta movida" : "cartas movidas"} a ${place}`
             : `Ya estaban en ${place}`,
         );
-        onMoved?.();
+        onMoved?.(r.destinations);
         onClose();
       } catch {
         toast.error("No se han podido mover las cartas.");
@@ -79,9 +81,7 @@ export function MoveDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>
-            Si en el destino ya hay copias iguales, se juntan en el mismo montón.
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3 [&_select]:w-full">
           <div className="grid gap-1.5">

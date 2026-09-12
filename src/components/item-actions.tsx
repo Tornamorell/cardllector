@@ -144,7 +144,7 @@ export function ItemActions({
       {dialog === "edit" && <EditDialog item={item} locations={locations} onClose={close} />}
       {dialog === "move" && (
         <MoveDialog
-          itemIds={[item.id]}
+          stacks={[{ itemId: item.id }]}
           title={`Mover ${item.name}`}
           maxCount={item.quantity}
           locations={locations}

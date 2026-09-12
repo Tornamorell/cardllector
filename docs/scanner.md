@@ -98,8 +98,14 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
       está abierto, la lectura se pausa.
     - La sesión se guarda en el dispositivo (`scan-session.ts`, localStorage), así que no se
       pierde si recargas, se bloquea el móvil o cierras la cámara.
-    - «Empezar sesión nueva», que se puede deshacer, pone el historial y el total a cero. Las
-      cartas no se tocan.
+    - Lo escaneado ya está en Mis cartas. Al acabar, en la página del escáner o al pie del
+      historial, hay tres opciones:
+      - **A una colección:** lista esas ediciones en una colección.
+      - **A una ubicación:** mueve solo las copias de la sesión, no las que ya tenía un montón
+        al que se sumó una lectura, a la ubicación y separador que elijas (`moveItems` con
+        cantidades por montón).
+      - **Terminar sesión:** pone el historial y el total a cero, y las cartas se quedan donde
+        se añadieron. Se puede deshacer.
   - «Ver lo que lee» muestra la última franja procesada y el texto de Tesseract.
 - **PWA:** manifest, iconos y `appleWebApp`. Añadida a la pantalla de inicio, se abre sin la barra
   del navegador. Aún no hay service worker.

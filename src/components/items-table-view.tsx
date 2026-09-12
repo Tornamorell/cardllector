@@ -234,7 +234,7 @@ export function ItemsTableView({
       )}
       {moving && (
         <MoveDialog
-          itemIds={chosen.map((r) => r.id)}
+          stacks={chosen.map((r) => ({ itemId: r.id }))}
           title={`Mover ${formatInt(copies)} ${copies === 1 ? "carta" : "cartas"}`}
           locations={locations}
           onClose={() => setMoving(false)}

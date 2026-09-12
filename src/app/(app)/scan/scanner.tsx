@@ -5,6 +5,7 @@ import {
   FlashlightIcon,
   ImageUpIcon,
   MinusIcon,
+  MoveIcon,
   PlusIcon,
   ScanLineIcon,
   XIcon,
@@ -17,6 +18,7 @@ import { CardThumb } from "@/components/card-thumb";
 import type { CollectionOption } from "@/components/collection-picker";
 import { EntryTarget, targetFor, useEntryResult } from "@/components/entry-target";
 import type { LocationOption } from "@/components/location-picker";
+import { MoveDialog } from "@/components/move-dialog";
 import { QuickAdd } from "@/components/quick-add";
 import { NextSectionButton, sectionFill } from "@/components/section-picker";
 import {
@@ -169,6 +171,7 @@ export function Scanner({
   // The session survives reloads and closing the camera (scan-session.ts).
   const [entries, setEntries] = useScanSession();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [movingSession, setMovingSession] = useState(false);
   const [busy, setBusy] = useState(false);
   const [torch, setTorch] = useState({ supported: false, on: false });
   const [pendingCount, setPendingCount] = useState(initialPending);
@@ -529,15 +532,23 @@ export function Scanner({
     }
   }
 
-  /** Clears the history and the running total; the cards stay in the inventory. Undoable. */
-  function newSession() {
+  /**
+   * Ends the session without doing anything else with it: clears the history and the running
+   * total. The cards stay where they were added. Undoable.
+   */
+  function endSession() {
     const previous = entries;
     setEntries([]);
     setHistoryOpen(false);
     readState.current.holdId = null;
-    toast("Sesión nueva: el historial y el total empiezan de cero. Tus cartas no se tocan.", {
+    toast("Sesión terminada. Las cartas siguen en Mis cartas, donde las añadiste.", {
       action: { label: "Deshacer", onClick: () => setEntries(previous) },
     });
+  }
+
+  /** After moving the session, its lines point at the stacks their copies ended up in. */
+  function followMove(destinations: Record<string, string>) {
+    setEntries((list) => list.map((e) => ({ ...e, itemId: destinations[e.itemId] ?? e.itemId })));
   }
 
   // --- Camera ---------------------------------------------------------------
@@ -664,6 +675,40 @@ export function Scanner({
   const totalsText =
     `${totals.cards} ${totals.cards === 1 ? "carta" : "cartas"}, ${formatEur(totals.valueEur)}` +
     (totals.unpriced ? ` (${totals.unpriced} sin precio)` : "");
+  // The session's own copies per stack: moving the session moves these, never older copies a
+  // stack already had when a scan joined it.
+  const sessionStacks = [
+    ...entries.reduce(
+      (acc, e) => acc.set(e.itemId, (acc.get(e.itemId) ?? 0) + e.count),
+      new Map<string, number>(),
+    ),
+  ].map(([itemId, count]) => ({ itemId, count }));
+
+  /** What to do with the session at the end: list it, store it somewhere, or just end it. */
+  const sessionActions = (tone: "page" | "overlay") => (
+    <div className="flex flex-wrap items-center gap-2">
+      <AddFilteredToCollection
+        collections={collections}
+        filter={{ itemIds: sessionStacks.map((s) => s.itemId) }}
+        label="A una colección"
+      />
+      <Button
+        variant={tone === "overlay" ? "secondary" : "outline"}
+        size="sm"
+        onClick={() => setMovingSession(true)}
+      >
+        <MoveIcon />A una ubicación
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={tone === "overlay" ? "text-white hover:bg-white/15 hover:text-white" : undefined}
+        onClick={endSession}
+      >
+        Terminar sesión
+      </Button>
+    </div>
+  );
   const current = entries[0] ?? null;
   const guide = stage ? guideIn({ x: 0, y: 0, w: stage.w, h: stage.h }) : null;
   const strip = guide ? stripRect(guide, INFO_STRIP) : null;
@@ -752,6 +797,17 @@ export function Scanner({
       </div>
       <canvas ref={photoCanvasRef} className="hidden" />
 
+      {movingSession && (
+        <MoveDialog
+          stacks={sessionStacks}
+          title="Guardar la sesión en una ubicación"
+          description={`Se mueven solo las ${totals.cards} ${totals.cards === 1 ? "carta" : "cartas"} de esta sesión. Si en el destino ya hay copias iguales, se juntan.`}
+          locations={locations}
+          onClose={() => setMovingSession(false)}
+          onMoved={followMove}
+        />
+      )}
+
       {!running && choices && (
         <ChoicesGrid matches={choices.matches} onChoose={choose} onDismiss={() => setChoices(null)} />
       )}
@@ -759,19 +815,14 @@ export function Scanner({
       {entries.length > 0 && (
         <section className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-medium">
-              En esta sesión: {totalsText}
-            </h2>
-            <div className="flex flex-wrap items-center gap-2">
-              <AddFilteredToCollection
-                collections={collections}
-                filter={{ itemIds: entries.map((e) => e.itemId) }}
-                label="Añadir la sesión a una colección"
-              />
-              <Button variant="ghost" size="sm" onClick={newSession}>
-                Empezar sesión nueva
-              </Button>
+            <div>
+              <h2 className="text-sm font-medium">En esta sesión: {totalsText}</h2>
+              <p className="text-muted-foreground text-xs">
+                Ya están en Mis cartas. Al acabar, añádelas a una colección, guárdalas en una
+                ubicación o termina sin más.
+              </p>
             </div>
+            {sessionActions("page")}
           </div>
           <SessionList
             entries={entries}
@@ -890,11 +941,7 @@ export function Scanner({
                 )}
               </div>
               {entries.length > 0 && (
-                <div className="px-4 py-2 text-center">
-                  <button type="button" className="text-xs text-white/60 underline" onClick={newSession}>
-                    Empezar sesión nueva
-                  </button>
-                </div>
+                <div className="border-t border-white/10 px-4 py-3">{sessionActions("overlay")}</div>
               )}
             </div>
           )}

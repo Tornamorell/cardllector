@@ -379,17 +379,20 @@ export async function changeFinish(itemId: string, count: number, finish: Finish
 }
 
 const moveInput = z.object({
-  itemIds: z.array(z.uuid()).min(1).max(1000),
+  /** Stacks to move: whole, or just `count` of their copies (a scan session's own copies). */
+  stacks: z
+    .array(z.object({ itemId: z.uuid(), count: z.number().int().min(1).max(999).optional() }))
+    .min(1)
+    .max(1000),
   locationId: z.uuid().nullable(),
   sectionId: z.uuid().nullable(),
-  /** With a single stack: how many of its copies to move (all of them by default). */
-  count: z.number().int().min(1).max(999).optional(),
 });
 
 /**
- * Moves stacks — or `count` copies of one — to a location and divider. Plain copies join an
- * identical stack already there; graded or specially valued ones stay apart. Capacity isn't
- * enforced: a move is deliberate (D28).
+ * Moves stacks — whole, or some of their copies — to a location and divider. Plain copies join
+ * an identical stack already there; graded or specially valued ones stay apart. Capacity isn't
+ * enforced: a move is deliberate (D28). Returns where each stack's moved copies ended up, so a
+ * client holding stack ids (the scanner's session) can follow them.
  */
 export async function moveItems(input: z.input<typeof moveInput>) {
   const user = await requireUser();
@@ -400,17 +403,27 @@ export async function moveItems(input: z.input<typeof moveInput>) {
   if (data.sectionId && !section) throw new Error("Separador no encontrado");
   const to = { locationId: location?.id ?? null, sectionId: section?.id ?? null };
 
+  // A stack may come more than once (a session that scanned the same card twice): add up.
+  const wanted = new Map<string, number | "all">();
+  for (const { itemId, count } of data.stacks) {
+    const before = wanted.get(itemId);
+    wanted.set(itemId, before === "all" || count == null ? "all" : (before ?? 0) + count);
+  }
   const stacks = await db
     .select()
     .from(items)
-    .where(and(eq(items.ownerId, user.id), inArray(items.id, data.itemIds)));
-  if (data.count && stacks.length !== 1) throw new Error("Solo se mueve una cantidad de un montón");
+    .where(and(eq(items.ownerId, user.id), inArray(items.id, [...wanted.keys()])));
 
   let moved = 0;
+  const destinations: Record<string, string> = {};
   await db.transaction(async (tx) => {
     for (const item of stacks) {
-      if (item.locationId === to.locationId && item.sectionId === to.sectionId) continue;
-      const n = Math.min(data.count ?? item.quantity, item.quantity);
+      if (item.locationId === to.locationId && item.sectionId === to.sectionId) {
+        destinations[item.id] = item.id;
+        continue;
+      }
+      const want = wanted.get(item.id);
+      const n = want === "all" || want == null ? item.quantity : Math.min(want, item.quantity);
       moved += n;
       const plain = !item.gradingCompany && item.estimatedValueEur == null;
       const [same] = plain
@@ -430,39 +443,51 @@ export async function moveItems(input: z.input<typeof moveInput>) {
         if (same) {
           await joinSame(n);
           await tx.delete(items).where(eq(items.id, item.id));
+          destinations[item.id] = same.id;
         } else {
           await tx.update(items).set(to).where(eq(items.id, item.id));
+          destinations[item.id] = item.id;
         }
       } else {
         await tx.update(items).set({ quantity: item.quantity - n }).where(eq(items.id, item.id));
         if (same) {
           await joinSame(n);
+          destinations[item.id] = same.id;
         } else {
-          await tx.insert(items).values({
-            ownerId: item.ownerId,
-            catalogCardId: item.catalogCardId,
-            quantity: n,
-            finish: item.finish,
-            condition: item.condition,
-            language: item.language,
-            ...to,
-            gradingCompany: item.gradingCompany,
-            grade: item.grade,
-            certNumber: item.certNumber,
-            estimatedValueEur: item.estimatedValueEur,
-            purchasePriceEur: item.purchasePriceEur,
-            purchasedAt: item.purchasedAt,
-            notes: item.notes,
-            attributes: item.attributes,
-            source: item.source,
-          });
+          const [inserted] = await tx
+            .insert(items)
+            .values({
+              ownerId: item.ownerId,
+              catalogCardId: item.catalogCardId,
+              quantity: n,
+              finish: item.finish,
+              condition: item.condition,
+              language: item.language,
+              ...to,
+              gradingCompany: item.gradingCompany,
+              grade: item.grade,
+              certNumber: item.certNumber,
+              estimatedValueEur: item.estimatedValueEur,
+              purchasePriceEur: item.purchasePriceEur,
+              purchasedAt: item.purchasedAt,
+              notes: item.notes,
+              attributes: item.attributes,
+              source: item.source,
+            })
+            .returning({ id: items.id });
+          destinations[item.id] = inserted.id;
         }
       }
     }
   });
 
   refresh();
-  return { moved, locationName: location?.name ?? null, sectionName: section?.name ?? null };
+  return {
+    moved,
+    destinations,
+    locationName: location?.name ?? null,
+    sectionName: section?.name ?? null,
+  };
 }
 
 const toCollectionInput = z.object({
