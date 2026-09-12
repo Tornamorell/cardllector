@@ -15,6 +15,7 @@ import { collectionOptions } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
+import { SaveSetAsCollection } from "./save-as-collection";
 
 const OWNED_FILTERS = { all: "Todas", have: "Tengo", missing: "Me faltan" } as const;
 const SORTS = { number: "Número", price: "Precio", name: "Nombre" } as const;
@@ -70,6 +71,8 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
         owned: ofRarity.filter((c) => c.owned > 0).length,
       };
     });
+
+  const activeRarity = rarities.find((r) => r.value === rarity) ?? null;
 
   let shown = cards.filter(
     (c) =>
@@ -132,12 +135,22 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
             showLabel={false}
             className="w-full sm:ml-auto sm:w-56"
           />
-          <Link
-            href={`/scan?set=${game.id}:${encodeURIComponent(set.code)}`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            Escanear esta expansión
-          </Link>
+          <div className="flex flex-wrap gap-2 sm:justify-end">
+            <SaveSetAsCollection
+              game={game.id}
+              setCode={set.code}
+              setTitle={set.name}
+              total={cards.length}
+              rarity={activeRarity ? { value: activeRarity.value, label: activeRarity.label, count: activeRarity.total } : null}
+              collections={collections}
+            />
+            <Link
+              href={`/scan?set=${game.id}:${encodeURIComponent(set.code)}`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Escanear esta expansión
+            </Link>
+          </div>
         </div>
       </div>
 

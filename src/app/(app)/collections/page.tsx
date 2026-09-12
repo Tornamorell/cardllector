@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProgressMeter } from "@/components/progress-meter";
-import { SubmitButton } from "@/components/submit-button";
-import { Input } from "@/components/ui/input";
 import { formatEur, formatInt } from "@/lib/format";
+import { setOptions } from "@/lib/queries/catalog";
 import { listCollections } from "@/lib/queries/collections";
 import { requireUser } from "@/lib/session";
-import { createCollection } from "./actions";
+import { NewCollectionForm } from "./new-collection-form";
 
 export const metadata: Metadata = { title: "Colecciones" };
 
 export default async function CollectionsPage() {
   const user = await requireUser();
-  const collections = await listCollections(user.id);
+  const [collections, sets] = await Promise.all([listCollections(user.id), setOptions()]);
 
   return (
     <div className="space-y-6">
@@ -24,10 +23,7 @@ export default async function CollectionsPage() {
             quieres conseguir. Cada una te dice qué tienes, qué te falta y cuánto costaría completarla.
           </p>
         </div>
-        <form action={createCollection} className="flex gap-2">
-          <Input name="name" placeholder="Nueva colección…" required maxLength={80} aria-label="Nombre" />
-          <SubmitButton pendingText="Creando…">Crear</SubmitButton>
-        </form>
+        <NewCollectionForm sets={sets} />
       </div>
 
       {!collections.length ? (

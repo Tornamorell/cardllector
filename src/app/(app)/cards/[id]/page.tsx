@@ -168,6 +168,11 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
                       <>
                         , <strong>{gradeLabel(s.gradingCompany, s.grade)}</strong>
                         {s.certNumber && ` (certificado ${s.certNumber})`}
+                        {s.marketPriceEur != null && (
+                          <span className="text-muted-foreground" title="Precio de Cardmarket sin gradear">
+                            , raw {formatEur(s.marketPriceEur)}
+                          </span>
+                        )}
                       </>
                     )}
                     {s.estimatedValueEur != null && (

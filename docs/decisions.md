@@ -318,6 +318,14 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     es una edición concreta.
 - **Revisar cuando:** se quieran entradas por carta en lugar de por edición, por acabado ("lo
   quiero en foil") o colecciones generadas (una expansión entera).
+- **Actualización (2026-09-12):** una colección se puede llenar con una expansión entera, o solo
+  con una de sus rarezas. Se añade una de cada edición y siguen siendo entradas normales, no una
+  colección "viva" que cambie si la expansión cambia. Se hace de dos formas:
+  - al crearla en `/collections`;
+  - con «Guardar como colección…» en la página de la expansión, para una nueva o para una que
+    ya existe.
+
+  Con los álbumes de fútbol servirá igual.
 
 ## D24 · Evolución del valor: la gráfica incluye tus altas; "cambio por precios", no — 2026-09-11 · provisional
 
@@ -413,6 +421,9 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - Subnotas de BGS (centrado, esquinas…) como campos propios: de momento van en las notas.
 - **Revisar cuando:** aparezca una fuente gratuita de precios de gradeadas, o haga falta ver
   el histórico de valor de una copia concreta.
+- **Actualización (2026-09-12):** en las gradeadas se ve también el precio **raw**, el de
+  Cardmarket sin gradear, junto al valor estimado. Aparece en Mis cartas, en las ubicaciones y
+  en la ficha, para comparar.
 
 ## D28 · Separadores dentro de las ubicaciones, y mover cartas — 2026-09-12 · provisional
 

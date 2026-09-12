@@ -125,9 +125,7 @@ export function ItemsTableView({
                     <span className="text-muted-foreground">{formatEur(item.unitPriceEur)} · </span>
                   )}
                   <span className="text-primary font-semibold">{total(item)}</span>
-                  {item.estimatedValueEur != null && (
-                    <span className="text-muted-foreground block text-[11px]">estimado</span>
-                  )}
+                  <PriceNote item={item} />
                 </p>
               </div>
             </div>
@@ -190,9 +188,7 @@ export function ItemsTableView({
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatEur(item.unitPriceEur)}
-                  {item.estimatedValueEur != null && (
-                    <span className="text-muted-foreground block text-[11px]">estimado</span>
-                  )}
+                  <PriceNote item={item} />
                 </TableCell>
                 <TableCell className="text-primary text-right font-semibold tabular-nums">
                   {total(item)}
@@ -248,6 +244,35 @@ export function ItemsTableView({
 
 const total = (item: InventoryItem) =>
   item.unitPriceEur == null ? "—" : formatEur(item.unitPriceEur * item.quantity);
+
+/**
+ * Under the price: "estimado" when it's the user's own value, and for graded copies the raw
+ * price (Cardmarket's, ungraded) to compare against (D27).
+ */
+function PriceNote({ item }: { item: InventoryItem }) {
+  const raw =
+    item.gradingCompany && item.marketPriceEur != null ? (
+      <span title="Precio de Cardmarket de la carta sin gradear">raw {formatEur(item.marketPriceEur)}</span>
+    ) : null;
+  if (item.estimatedValueEur != null) {
+    return (
+      <span className="text-muted-foreground block text-[11px]">
+        estimado{raw && <> · {raw}</>}
+      </span>
+    );
+  }
+  if (item.gradingCompany) {
+    return (
+      <span
+        className="text-muted-foreground block text-[11px]"
+        title="Es el precio sin gradear: pon un valor estimado en Editar"
+      >
+        raw
+      </span>
+    );
+  }
+  return null;
+}
 
 /** Grading, finish, condition, language and where it is, as small labels. */
 function Details({ item, context }: { item: InventoryItem; context: Context }) {

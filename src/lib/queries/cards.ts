@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { cardNames, catalogCards, items, locations, sets } from "@/db/schema";
+import { unitPriceEurSql } from "@/lib/collection/pricing";
 
 const printingColumns = {
   id: catalogCards.id,
@@ -71,6 +72,8 @@ export async function getOwnedStacks(ownerId: string, oracleId: string) {
       grade: items.grade,
       certNumber: items.certNumber,
       estimatedValueEur: items.estimatedValueEur,
+      /** Cardmarket's price for the finish: "raw" for a graded copy. */
+      marketPriceEur: sql<number | null>`${unitPriceEurSql}::float8`,
       locationId: locations.id,
       locationName: locations.name,
       printingId: catalogCards.id,

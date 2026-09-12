@@ -48,6 +48,10 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Las cinco cartas que más han subido y bajado.
   - En la ficha de carta, el histórico de precio de cada acabado.
   - Aparecen cuando hay al menos dos días de precios guardados.
+- **Colecciones desde una expansión:**
+  - Se crean llenas con una expansión entera, o con una de sus rarezas.
+  - Se hace desde `/collections` o con «Guardar como colección…» en la expansión.
+  - En las gradeadas se ve el precio raw junto al estimado.
 - **Historial y total de la sesión en el escáner:**
   - «12 · 34,50 €» arriba, y el historial de lo añadido al tocarlo.
   - Se guarda en el dispositivo hasta que terminas la sesión.
@@ -157,8 +161,8 @@ Lo principal está hecho (ver "Hecho", D24). Falta:
   - Antes de empezar, preguntar qué álbum concreto tiene el usuario y si son cromos o cartas.
 - Importar CSV de ManaBox y otras apps.
 - Filtro por expansión dentro de una colección y de Mis cartas.
-- Colecciones con entradas de "cualquier edición" o por acabado, y colecciones generadas (una
-  expansión entera) (D23).
+- Colecciones con entradas de "cualquier edición" o por acabado, o creadas pegando una lista de
+  nombres (D23).
 - Detección automática del contorno de la carta en el escáner (OpenCV.js).
 - Abrir la app a otros usuarios (D14).
 

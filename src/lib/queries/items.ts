@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, exists, isNull, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db/client";
 import { cardNames, catalogCards, items, locationSections, locations, sets } from "@/db/schema";
-import { itemValueEurSql } from "@/lib/collection/pricing";
+import { itemValueEurSql, unitPriceEurSql } from "@/lib/collection/pricing";
 import { normalizeForSearch } from "@/lib/search/normalize";
 
 /** Copies, value and unpriced copies, over `items` left-joined to `catalog_cards`. */
@@ -100,6 +100,8 @@ export async function listItems(
       createdAt: items.createdAt,
       /** Per copy: the estimate if set, else the market price (D27). */
       unitPriceEur: sql<number | null>`${itemValueEurSql}::float8`,
+      /** Cardmarket's price for the finish, ignoring any estimate: "raw" for graded copies. */
+      marketPriceEur: sql<number | null>`${unitPriceEurSql}::float8`,
       location: { id: locations.id, name: locations.name },
       sectionId: items.sectionId,
       section: { id: locationSections.id, name: locationSections.name },
