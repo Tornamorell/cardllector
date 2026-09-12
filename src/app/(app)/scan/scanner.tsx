@@ -54,6 +54,8 @@ import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 import { cn } from "@/lib/utils";
 import { addItem, changeFinish, changeQuantity } from "../inventory/actions";
 import { savePendingScan } from "../review/actions";
+import { saveCardPhoto } from "../cards/photo-actions";
+import { cardPhotoBlob } from "@/lib/card-photo";
 import { useScanSession } from "./scan-session";
 
 type OcrWorker = import("tesseract.js").Worker;
@@ -413,6 +415,8 @@ export function Scanner({
       });
       // Forgets a deleted target; on a full divider, tells the user to put the next one in.
       if (!follow(r)) return;
+      // A card without a catalog image: the one in the guide becomes everyone's (D30).
+      if (!match.imageSmall) void contributePhoto(match.id);
       beep();
       navigator.vibrate?.(60);
       setChoices(null);
@@ -491,6 +495,40 @@ export function Scanner({
     readState.current.holdId = match.id;
     readState.current.choicesKey = "";
     void add(match, lang);
+  }
+
+  /**
+   * Shares a photo of the card in the guide for a card the catalog has no image for, unless
+   * someone already did (D30). Runs in the background: a failure only means no photo yet.
+   */
+  async function contributePhoto(catalogCardId: string) {
+    try {
+      const video = videoRef.current;
+      const card = cardInVideo();
+      if (!video || !card) return;
+      const blob = await cardPhotoBlob(video, card);
+      if (!blob) return;
+      const form = new FormData();
+      form.set("image", blob, "carta.jpg");
+      form.set("catalogCardId", catalogCardId);
+      form.set("source", "scan");
+      form.set("onlyIfMissing", "1");
+      const r = await saveCardPhoto(form);
+      if (!r.saved || !r.url) return;
+      const url = r.url;
+      // The session and the lookup cache show it from now on.
+      setEntries((list) =>
+        list.map((e) =>
+          e.match.id === catalogCardId ? { ...e, match: { ...e.match, imageSmall: url } } : e,
+        ),
+      );
+      for (const matches of readState.current.cache.values()) {
+        for (const m of matches) if (m.id === catalogCardId) m.imageSmall = url;
+      }
+      toast.success("Foto guardada para esta carta: la verán todos.");
+    } catch {
+      // No photo this time; the next scan of this card will try again.
+    }
   }
 
   /** «Para luego»: a photo of what's in the guide goes to the review queue (/review, D25). */

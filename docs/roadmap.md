@@ -53,6 +53,8 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Liga 2025-26 Megacracks (717 fichas), importado de la lista de CromosRepes con
     `npm run import:album`.
   - Series como rarezas y marcador con el número en lugar de imagen.
+  - **Fotos compartidas** (D30): el escáner guarda la foto de las cartas sin imagen para
+    todos, y en la ficha se puede añadir o cambiar.
 - **Colecciones desde una expansión:**
   - Se crean llenas con una expansión entera, o con una de sus rarezas.
   - Se hace desde `/collections` o con «Guardar como colección…» en la expansión.

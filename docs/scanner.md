@@ -106,6 +106,9 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
         cantidades por montón).
       - **Terminar sesión:** pone el historial y el total a cero, y las cartas se quedan donde
         se añadieron. Se puede deshacer.
+  - **Foto compartida:** al añadir una carta sin imagen de catálogo (fútbol, algunas de
+    Pokémon), el escáner guarda en segundo plano la foto del recuadro (300×419) como imagen de
+    esa carta para todos, si aún no tiene ninguna (D30).
   - «Ver lo que lee» muestra la última franja procesada y el texto de Tesseract.
 - **PWA:** manifest, iconos y `appleWebApp`. Añadida a la pantalla de inicio, se abre sin la barra
   del navegador. Aún no hay service worker.

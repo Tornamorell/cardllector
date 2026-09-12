@@ -305,3 +305,21 @@ export const pendingScans = pgTable(
   },
   (t) => [index("pending_scans_owner_idx").on(t.ownerId, t.createdAt)],
 );
+
+// ---------------------------------------------------------------------------
+// Shared photos of cards the catalog has no image for (football, some Pokémon), taken by
+// whoever scans or photographs them first (D30). Everyone sees them: they're catalog, not
+// inventory. catalog_cards.image_* point at /api/card-photos/<id>.
+// ---------------------------------------------------------------------------
+
+export const catalogCardPhotos = pgTable("catalog_card_photos", {
+  catalogCardId: uuid("catalog_card_id")
+    .primaryKey()
+    .references(() => catalogCards.id, { onDelete: "cascade" }),
+  /** A card-shaped JPEG, 300×419 px. */
+  image: bytea("image").notNull(),
+  contributedBy: text("contributed_by").references(() => user.id, { onDelete: "set null" }),
+  /** "scan" (taken by the scanner) or "upload" (from the card page). */
+  source: text("source").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});

@@ -43,6 +43,7 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 | `/collections`, `/collections/[id]` | Tus colecciones: listas de ediciones con la cantidad que quieres de cada una. Se ve lo que tienes y lo que te falta, lo que vale lo que tienes y lo que costaría completarla. Filtros: todas, tengo y me faltan. Se pueden crear llenas con una expansión entera o una de sus rarezas: aquí mismo, o con «Guardar como colección…» en la página de la expansión. |
 | `/locations`, `/locations/[id]` | Ubicaciones físicas: qué hay en cada una y cuánto vale. `/locations/none` muestra las copias sin ubicación. Una ubicación puede tener separadores (Opciones › Separadores). Se ven como fichas con lo lleno que está cada uno, y filtran con `?section=<id>` o `?section=none` (D28). |
 | `/search` | Búsqueda por nombre, en inglés o en español. |
+| `/api/card-photos/[id]` | La foto compartida de una carta sin imagen de catálogo (D30). Pide sesión y se guarda en caché un año, porque la URL lleva la versión. |
 | `/scan` | Escáner con la cámara: lee el número y el código de expansión de la carta y la añade a tus cartas, en la ubicación y la colección de la sesión si las has elegido. `?set=mtg:m10` arranca en modo expansión fija. Detalles en `docs/scanner.md`. |
 | `/review` | **Por revisar:** las cartas que guardaste con «Para luego» en el escáner, con su foto (servida por `/api/pending-scans/[id]`, solo para su dueño) y una búsqueda para identificarlas y añadirlas (D25). |
 

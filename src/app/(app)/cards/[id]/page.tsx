@@ -25,7 +25,9 @@ import { priceHistory } from "@/lib/queries/value";
 import { requireUser } from "@/lib/session";
 import { ValueChart } from "@/components/value-chart";
 import { cn } from "@/lib/utils";
+import { isCardPhoto } from "@/lib/card-photo";
 import { AddCopy } from "./add-copy";
+import { CardPhotoButton } from "./card-photo-button";
 import { WantInCollection } from "./want-in-collection";
 
 async function load(id: string) {
@@ -91,12 +93,23 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
         />
       )}
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
-        <HoloCard
-          src={printing.imageNormal}
-          alt={printing.name}
-          label={`#${printing.collectorNumber}`}
-          foil={printing.finishes.includes("foil") && !printing.finishes.includes("nonfoil")}
-        />
+        <div className="space-y-2">
+          <HoloCard
+            src={printing.imageNormal}
+            alt={printing.name}
+            label={`#${printing.collectorNumber}`}
+            foil={printing.finishes.includes("foil") && !printing.finishes.includes("nonfoil")}
+          />
+          {/* No catalog image: anyone can share a photo of theirs (D30). */}
+          {(!printing.imageNormal || isCardPhoto(printing.imageNormal)) && (
+            <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+              <CardPhotoButton catalogCardId={printing.id} hasPhoto={!!printing.imageNormal} />
+              <span className="text-muted-foreground text-xs">
+                {printing.imageNormal ? "Foto de un coleccionista" : "Sin imagen: la tuya la verán todos"}
+              </span>
+            </div>
+          )}
+        </div>
 
         <div className="space-y-5">
           <div className="space-y-1">

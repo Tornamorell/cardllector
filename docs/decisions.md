@@ -500,3 +500,34 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
 - **Revisar cuando:** CromosRepes ofrezca exportación, o se quiera importar también lo que
   tiene el usuario a partir de sus faltas y repes. Sus marcas vienen en el mismo texto, pero no
   dicen con seguridad qué tiene.
+
+## D30 · Fotos compartidas para las cartas sin imagen — 2026-09-12 · provisional
+
+- **Contexto:**
+  - El fútbol (D29) no tiene imágenes, y en Pokémon faltan unas 1 500.
+  - No hay una fuente de imágenes que se pueda usar (derechos, condiciones de los buscadores).
+  - El usuario quiere que la foto de una carta que alguien escanee se guarde para todos: algo
+    colaborativo.
+- **Decisión:**
+  - Tabla `catalog_card_photos`: una foto por carta (JPEG de 300×419, unos 30 KB), quién la
+    aportó y de dónde viene (`scan` o `upload`).
+  - Es catálogo, no inventario: la ven todos los usuarios.
+  - **Escáner:** al añadir una carta sin imagen, guarda en segundo plano la foto del recuadro,
+    si la carta aún no tiene ninguna.
+  - **Ficha de la carta:** «Añadir foto» o «Cambiar foto», con la cámara o la galería, recortada
+    con la forma de la carta desde el centro.
+  - Nunca sustituye una imagen del catálogo (Scryfall, TCGdex). Un escaneo no reemplaza una
+    foto que ya aportó alguien; «Cambiar foto» sí.
+  - `catalog_cards.image_*` apuntan a `/api/card-photos/<id>?v=<fecha>`: pide sesión y se
+    guarda en caché un año, porque la fecha cambia la URL.
+  - Las sincronizaciones reescriben esas columnas, así que `upsertCatalogCards` vuelve a
+    enlazar las fotos después de cada lote (`restorePhotoUrls()`).
+  - Espacio: unos 20 MB por álbum entero. Se vigila el medio GB de Neon, y si aprieta se pasan
+    a un almacenamiento de ficheros como Cloudflare R2.
+- **Descartado:**
+  - Fotos privadas de cada usuario: el usuario prefiere compartirlas.
+  - Imágenes de terceros.
+- **Revisar cuando:**
+  - la app se abra a más gente: moderación, quién puede cambiar una foto y los derechos de
+    publicar fotos de cartas de Panini;
+  - o el espacio en Neon apriete.

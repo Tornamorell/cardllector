@@ -3,6 +3,7 @@ import type { PgTable } from "drizzle-orm/pg-core";
 import { db, pool } from "@/db/client";
 import { catalogCards, sets } from "@/db/schema";
 import type { CatalogCardRow, PrintedNameRow, SetRow } from "@/lib/scryfall/map";
+import { restorePhotoUrls } from "./photos";
 
 /** `SET col = excluded.col` for every given column, for ON CONFLICT DO UPDATE. */
 function excluded<T extends PgTable>(table: T, keys: Array<keyof T["$inferInsert"]>) {
@@ -101,6 +102,8 @@ export async function upsertCatalogCards(rows: CatalogCardRow[]) {
         "pricesUpdatedAt",
       ]),
     });
+  // The batch may have blanked the image of cards someone photographed (D30).
+  await restorePhotoUrls();
 }
 
 /**
