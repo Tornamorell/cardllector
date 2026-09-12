@@ -1,12 +1,13 @@
 "use server";
 
-import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { catalogCards, collections, items, locations } from "@/db/schema";
 import { addToCollection } from "@/lib/collections/entries";
 import { CONDITIONS } from "@/lib/format";
+import { nextSection, ownedSection, sectionCount } from "@/lib/locations/sections";
 import { itemFilters } from "@/lib/queries/items";
 import { requireUser } from "@/lib/session";
 
@@ -24,7 +25,7 @@ async function ownedItem(userId: string, itemId: string) {
 
 async function ownedLocation(userId: string, locationId: string) {
   const [row] = await db
-    .select({ id: locations.id, name: locations.name })
+    .select({ id: locations.id, name: locations.name, autoAdvance: locations.autoAdvance })
     .from(locations)
     .where(and(eq(locations.id, locationId), eq(locations.ownerId, userId)));
   return row ?? null;
@@ -56,6 +57,7 @@ function sameStack(
     condition: Condition;
     language: string;
     locationId: string | null;
+    sectionId: string | null;
   },
 ) {
   return and(
@@ -65,6 +67,7 @@ function sameStack(
     eq(items.condition, s.condition),
     eq(items.language, s.language),
     s.locationId ? eq(items.locationId, s.locationId) : isNull(items.locationId),
+    s.sectionId ? eq(items.sectionId, s.sectionId) : isNull(items.sectionId),
     isNull(items.gradingCompany),
     isNull(items.estimatedValueEur),
   );
@@ -75,6 +78,11 @@ const stackFields = z.object({
   condition: z.enum(CONDITIONS),
   language: z.string().min(2).max(3),
   locationId: z
+    .uuid()
+    .nullish()
+    .transform((v) => v ?? null),
+  /** A divider of that location (D28). */
+  sectionId: z
     .uuid()
     .nullish()
     .transform((v) => v ?? null),
@@ -105,9 +113,13 @@ export type AddItemResult =
       merged: boolean;
       locationName: string | null;
       collectionName: string | null;
+      /** The divider the copies went into, and how full it is now. */
+      section: { id: string; name: string; count: number; capacity: number | null } | null;
+      /** Auto mode: the divider that was full, when the copies went into the next one. */
+      advancedFrom: string | null;
     }
-  // A remembered location/collection was deleted: the client should forget it.
-  | { ok: false; error: "location_not_found" | "collection_not_found" };
+  // A remembered location/divider/collection was deleted: the client should forget it.
+  | { ok: false; error: "location_not_found" | "section_not_found" | "collection_not_found" };
 
 /**
  * Adds copies of a printing to the inventory (merging into an identical stack) and, if asked,
@@ -121,6 +133,22 @@ export async function addItem(input: AddItemInput): Promise<AddItemResult> {
   if (data.locationId && !location) return { ok: false, error: "location_not_found" };
   const collection = data.collectionId ? await ownedCollection(user.id, data.collectionId) : null;
   if (data.collectionId && !collection) return { ok: false, error: "collection_not_found" };
+  let section = data.sectionId ? await ownedSection(user.id, data.sectionId, data.locationId) : null;
+  if (data.sectionId && !section) return { ok: false, error: "section_not_found" };
+
+  // Auto mode: a full divider hands over to the next one (created if needed); the client tells
+  // the user to put the physical divider in (D28).
+  let advancedFrom: string | null = null;
+  if (
+    section &&
+    location?.autoAdvance &&
+    section.capacity != null &&
+    (await sectionCount(section.id)) >= section.capacity
+  ) {
+    advancedFrom = section.name;
+    section = await nextSection(location.id, section.id);
+  }
+  const target = { ...data, sectionId: section?.id ?? null };
 
   const [card] = await db
     .select({ name: catalogCards.name, setCode: catalogCards.setCode, number: catalogCards.collectorNumber })
@@ -128,7 +156,7 @@ export async function addItem(input: AddItemInput): Promise<AddItemResult> {
     .where(eq(catalogCards.id, data.catalogCardId));
   if (!card) throw new Error("Carta no encontrada en el catálogo");
 
-  const [existing] = await db.select({ id: items.id }).from(items).where(sameStack(user.id, data)).limit(1);
+  const [existing] = await db.select({ id: items.id }).from(items).where(sameStack(user.id, target)).limit(1);
 
   let quantity: number;
   let itemId: string;
@@ -151,6 +179,7 @@ export async function addItem(input: AddItemInput): Promise<AddItemResult> {
         condition: data.condition,
         language: data.language,
         locationId: data.locationId,
+        sectionId: target.sectionId,
         source: data.source,
       })
       .returning({ id: items.id });
@@ -171,6 +200,15 @@ export async function addItem(input: AddItemInput): Promise<AddItemResult> {
     merged: !!existing,
     locationName: location?.name ?? null,
     collectionName: collection?.name ?? null,
+    section: section
+      ? {
+          id: section.id,
+          name: section.name,
+          count: await sectionCount(section.id),
+          capacity: section.capacity,
+        }
+      : null,
+    advancedFrom,
   };
 }
 
@@ -211,6 +249,9 @@ export async function updateItem(itemId: string, input: UpdateItemInput) {
   const { grading, ...fields } = updateItemInput.parse(input);
   if (fields.locationId && !(await ownedLocation(user.id, fields.locationId))) {
     throw new Error("Ubicación no encontrada");
+  }
+  if (fields.sectionId && !(await ownedSection(user.id, fields.sectionId, fields.locationId))) {
+    throw new Error("Separador no encontrado");
   }
   const gradingColumns = {
     gradingCompany: grading?.company ?? null,
@@ -267,6 +308,7 @@ export async function splitItem(itemId: string, count: number) {
       condition: item.condition,
       language: item.language,
       locationId: item.locationId,
+      sectionId: item.sectionId,
       gradingCompany: item.gradingCompany,
       grade: item.grade,
       certNumber: item.certNumber,
@@ -325,6 +367,7 @@ export async function changeFinish(itemId: string, count: number, finish: Finish
         condition: item.condition,
         language: item.language,
         locationId: item.locationId,
+        sectionId: item.sectionId,
         source: item.source,
       })
       .returning({ id: items.id });
@@ -335,10 +378,99 @@ export async function changeFinish(itemId: string, count: number, finish: Finish
   return { itemId: targetId };
 }
 
+const moveInput = z.object({
+  itemIds: z.array(z.uuid()).min(1).max(1000),
+  locationId: z.uuid().nullable(),
+  sectionId: z.uuid().nullable(),
+  /** With a single stack: how many of its copies to move (all of them by default). */
+  count: z.number().int().min(1).max(999).optional(),
+});
+
+/**
+ * Moves stacks — or `count` copies of one — to a location and divider. Plain copies join an
+ * identical stack already there; graded or specially valued ones stay apart. Capacity isn't
+ * enforced: a move is deliberate (D28).
+ */
+export async function moveItems(input: z.input<typeof moveInput>) {
+  const user = await requireUser();
+  const data = moveInput.parse(input);
+  const location = data.locationId ? await ownedLocation(user.id, data.locationId) : null;
+  if (data.locationId && !location) throw new Error("Ubicación no encontrada");
+  const section = data.sectionId ? await ownedSection(user.id, data.sectionId, data.locationId) : null;
+  if (data.sectionId && !section) throw new Error("Separador no encontrado");
+  const to = { locationId: location?.id ?? null, sectionId: section?.id ?? null };
+
+  const stacks = await db
+    .select()
+    .from(items)
+    .where(and(eq(items.ownerId, user.id), inArray(items.id, data.itemIds)));
+  if (data.count && stacks.length !== 1) throw new Error("Solo se mueve una cantidad de un montón");
+
+  let moved = 0;
+  await db.transaction(async (tx) => {
+    for (const item of stacks) {
+      if (item.locationId === to.locationId && item.sectionId === to.sectionId) continue;
+      const n = Math.min(data.count ?? item.quantity, item.quantity);
+      moved += n;
+      const plain = !item.gradingCompany && item.estimatedValueEur == null;
+      const [same] = plain
+        ? await tx
+            .select({ id: items.id })
+            .from(items)
+            .where(and(sameStack(user.id, { ...item, ...to }), ne(items.id, item.id)))
+            .limit(1)
+        : [];
+      const joinSame = (copies: number) =>
+        tx
+          .update(items)
+          .set({ quantity: sql`${items.quantity} + ${copies}` })
+          .where(eq(items.id, same!.id));
+
+      if (n === item.quantity) {
+        if (same) {
+          await joinSame(n);
+          await tx.delete(items).where(eq(items.id, item.id));
+        } else {
+          await tx.update(items).set(to).where(eq(items.id, item.id));
+        }
+      } else {
+        await tx.update(items).set({ quantity: item.quantity - n }).where(eq(items.id, item.id));
+        if (same) {
+          await joinSame(n);
+        } else {
+          await tx.insert(items).values({
+            ownerId: item.ownerId,
+            catalogCardId: item.catalogCardId,
+            quantity: n,
+            finish: item.finish,
+            condition: item.condition,
+            language: item.language,
+            ...to,
+            gradingCompany: item.gradingCompany,
+            grade: item.grade,
+            certNumber: item.certNumber,
+            estimatedValueEur: item.estimatedValueEur,
+            purchasePriceEur: item.purchasePriceEur,
+            purchasedAt: item.purchasedAt,
+            notes: item.notes,
+            attributes: item.attributes,
+            source: item.source,
+          });
+        }
+      }
+    }
+  });
+
+  refresh();
+  return { moved, locationName: location?.name ?? null, sectionName: section?.name ?? null };
+}
+
 const toCollectionInput = z.object({
   collectionId: z.uuid(),
   /** A location id, null for copies without location, or absent for any. */
   locationId: z.uuid().nullable().optional(),
+  /** A divider id, null for copies outside any divider, or absent for any. */
+  sectionId: z.uuid().nullable().optional(),
   q: z.string().max(80).optional(),
   itemIds: z.array(z.uuid()).max(1000).optional(),
 });
@@ -354,8 +486,11 @@ export async function addInventoryToCollection(input: z.input<typeof toCollectio
   const collection = await ownedCollection(user.id, data.collectionId);
   if (!collection) throw new Error("Colección no encontrada");
 
-  const scope =
-    data.locationId === undefined ? { ownerId: user.id } : { ownerId: user.id, locationId: data.locationId };
+  const scope = {
+    ownerId: user.id,
+    ...(data.locationId !== undefined && { locationId: data.locationId }),
+    ...(data.sectionId !== undefined && { sectionId: data.sectionId }),
+  };
   const filters = [...itemFilters(scope, data.q), isNotNull(items.catalogCardId)];
   if (data.itemIds?.length) filters.push(inArray(items.id, data.itemIds));
 

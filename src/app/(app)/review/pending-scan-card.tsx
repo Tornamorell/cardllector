@@ -11,6 +11,7 @@ import {
   finishFor,
 } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
+import { placeLabel } from "@/lib/format";
 import { gameById, type Finish } from "@/lib/games";
 import type { PendingScan } from "@/lib/queries/pending-scans";
 import { discardPendingScan, resolvePendingScan } from "./actions";
@@ -62,7 +63,7 @@ export function PendingScanCard({ scan }: { scan: PendingScan }) {
   }
 
   const target = [
-    scan.location ? `en ${scan.location.name}` : "sin ubicación",
+    scan.location ? `en ${placeLabel(scan.location.name, scan.section?.name)}` : "sin ubicación",
     scan.collection && `y en «${scan.collection.name}»`,
   ]
     .filter(Boolean)

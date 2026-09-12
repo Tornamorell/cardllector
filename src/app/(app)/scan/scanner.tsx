@@ -15,9 +15,10 @@ import { toast } from "sonner";
 import { AddFilteredToCollection } from "@/components/add-filtered-to-collection";
 import { CardThumb } from "@/components/card-thumb";
 import type { CollectionOption } from "@/components/collection-picker";
-import { EntryTarget } from "@/components/entry-target";
+import { EntryTarget, targetFor, useEntryResult } from "@/components/entry-target";
 import type { LocationOption } from "@/components/location-picker";
 import { QuickAdd } from "@/components/quick-add";
+import { NextSectionButton, sectionFill } from "@/components/section-picker";
 import {
   ConditionSelect,
   FinishSelect,
@@ -26,7 +27,7 @@ import {
 } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FINISH_LABELS, formatEur } from "@/lib/format";
+import { FINISH_LABELS, formatEur, placeLabel } from "@/lib/format";
 import { gameById } from "@/lib/games";
 import type { ScanMatch } from "@/lib/queries/scan";
 import {
@@ -147,7 +148,11 @@ export function Scanner({
   const [defaults, setDefaults] = useStickyDefaults();
   // Both optional: scanning just fills the inventory (D23).
   const collectionName = collections.find((c) => c.id === defaults.entryCollectionId)?.name ?? null;
-  const locationName = locations.find((l) => l.id === defaults.lastLocationId)?.name ?? null;
+  const location = locations.find((l) => l.id === defaults.lastLocationId) ?? null;
+  const locationName = location?.name ?? null;
+  const target = targetFor(defaults, locations);
+  const section = location?.sections?.find((s) => s.id === target.sectionId) ?? null;
+  const follow = useEntryResult();
 
   const [fixedSet, setFixedSet] = useState<FixedSet | null>(initialFixedSet);
   const [fixedInput, setFixedInput] = useState(() => {
@@ -189,9 +194,9 @@ export function Scanner({
     cache: new Map<string, ScanMatch[]>(),
   });
   // The read loop is async and long-lived: it reads the latest settings from here.
-  const settings = useRef({ defaults, fixedSet });
+  const settings = useRef({ defaults, fixedSet, locations });
   useEffect(() => {
-    settings.current = { defaults, fixedSet };
+    settings.current = { defaults, fixedSet, locations };
   });
 
   useEffect(
@@ -383,18 +388,8 @@ export function Scanner({
 
   // --- Adding and adjusting --------------------------------------------------
 
-  /** A remembered location/collection was deleted elsewhere: forget it and say so. */
-  function forgetMissing(error: "location_not_found" | "collection_not_found") {
-    setDefaults(error === "location_not_found" ? { lastLocationId: null } : { entryCollectionId: null });
-    toast.error(
-      error === "location_not_found"
-        ? "La ubicación elegida ya no existe. Elige otra."
-        : "La colección elegida ya no existe. Elige otra.",
-    );
-  }
-
   async function add(match: ScanMatch, lang: string | null) {
-    const { defaults } = settings.current;
+    const { defaults, locations } = settings.current;
     const finish = finishFor(defaults.finish, match.finishes) as Finish;
     try {
       const r = await addItem({
@@ -404,14 +399,11 @@ export function Scanner({
         condition: defaults.condition,
         // The card's own language code, when printed, beats the session default.
         language: lang ?? defaults.language,
-        locationId: defaults.lastLocationId,
-        collectionId: defaults.entryCollectionId,
+        ...targetFor(defaults, locations),
         source: "scan",
       });
-      if (!r.ok) {
-        forgetMissing(r.error);
-        return;
-      }
+      // Forgets a deleted target; on a full divider, tells the user to put the next one in.
+      if (!follow(r)) return;
       beep();
       navigator.vibrate?.(60);
       setChoices(null);
@@ -422,7 +414,11 @@ export function Scanner({
         if (top?.itemId === r.itemId) return [{ ...top, count: top.count + 1 }, ...rest];
         return [{ key: crypto.randomUUID(), itemId: r.itemId, match, lang, count: 1, finish }, ...list];
       });
-      setStatus(`✓ ${match.name}`);
+      setStatus(
+        r.advancedFrom && r.section
+          ? `Separador «${r.advancedFrom}» lleno: pon el «${r.section.name}»`
+          : `✓ ${match.name}`,
+      );
     } catch {
       toast.error("No se ha podido añadir la carta.");
     }
@@ -441,18 +437,17 @@ export function Scanner({
 
   const plusOne = (e: Entry) =>
     mutate(async () => {
-      const { defaults } = settings.current;
+      const { defaults, locations } = settings.current;
       const r = await addItem({
-        collectionId: defaults.entryCollectionId,
         catalogCardId: e.match.id,
         quantity: 1,
         finish: e.finish,
         condition: defaults.condition,
         language: e.lang ?? defaults.language,
-        locationId: defaults.lastLocationId,
+        ...targetFor(defaults, locations),
         source: "scan",
       });
-      if (!r.ok) throw new Error(r.error);
+      if (!follow(r)) return;
       setEntries((list) =>
         list.map((x) => (x.key === e.key ? { ...x, itemId: r.itemId, count: x.count + 1 } : x)),
       );
@@ -510,8 +505,10 @@ export function Scanner({
       form.set("finish", defaults.finish);
       form.set("condition", defaults.condition);
       form.set("language", defaults.language);
-      form.set("locationId", defaults.lastLocationId ?? "");
-      form.set("collectionId", defaults.entryCollectionId ?? "");
+      const target = targetFor(defaults, settings.current.locations);
+      form.set("locationId", target.locationId ?? "");
+      form.set("sectionId", target.sectionId ?? "");
+      form.set("collectionId", target.collectionId ?? "");
       const r = await savePendingScan(form);
       setPendingCount(r.pending);
       beep();
@@ -812,7 +809,10 @@ export function Scanner({
             <XIcon />
           </Button>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-medium">{locationName ?? "Sin ubicación"}</p>
+            <p className="truncate text-sm font-medium">
+              {placeLabel(locationName, section && `${section.name} (${sectionFill(section)})`) ??
+                "Sin ubicación"}
+            </p>
             <p className="truncate text-xs text-white/70">
               {collectionName ? `y en «${collectionName}»` : "Sin colección"}
               {fixedCode && `, solo ${fixedCode}`}
@@ -908,6 +908,9 @@ export function Scanner({
             </p>
           )}
 
+          {location && section && (
+            <NextSectionButton locationId={location.id} sectionId={section.id} className="w-full" />
+          )}
           <Button
             variant="secondary"
             size="sm"

@@ -9,6 +9,12 @@ export function formatInt(value: number): string {
   return int.format(value);
 }
 
+/** "Caja 1 › 3": a location and, if any, the divider inside it (D28). */
+export function placeLabel(location: string | null | undefined, section?: string | null): string | null {
+  if (!location) return null;
+  return section ? `${location} › ${section}` : location;
+}
+
 export const LANGUAGES: Record<string, string> = {
   es: "Español",
   en: "Inglés",

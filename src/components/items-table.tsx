@@ -1,147 +1,23 @@
 import Link from "next/link";
-import { CardThumb } from "@/components/card-thumb";
 import type { CollectionOption } from "@/components/collection-picker";
-import { ItemActions, QuantityControl } from "@/components/item-actions";
+import { ItemsTableView } from "@/components/items-table-view";
 import type { LocationOption } from "@/components/location-picker";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatEur } from "@/lib/format";
-import { finishLabel } from "@/lib/games";
-import { gradeLabel } from "@/lib/grading";
 import { ITEM_SORTS, type InventoryItem, type ItemSort } from "@/lib/queries/items";
 import { cn } from "@/lib/utils";
 
 /**
- * Stacks of the inventory. In the full inventory each row shows its location; on a location's
- * own page it doesn't need to.
+ * Stacks of the inventory (the selectable table lives in ItemsTableView, a client component).
+ * This module also holds the server-side helpers pages use: toolbar, pagination, params.
  */
-export function ItemsTable({
-  rows,
-  context,
-  locations,
-  collections,
-}: {
+export function ItemsTable(props: {
   rows: InventoryItem[];
   context: "inventory" | "location";
   locations: LocationOption[];
   collections: CollectionOption[];
 }) {
-  return (
-    <div className="bg-card overflow-x-auto rounded-xl border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Carta</TableHead>
-            <TableHead>Detalles</TableHead>
-            <TableHead className="text-center">Cantidad</TableHead>
-            <TableHead className="text-right">Precio</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="w-10" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>
-                {item.card?.id ? (
-                  <Link href={`/cards/${item.card.id}`} className="flex items-center gap-3">
-                    <CardThumb
-                      src={item.card.imageSmall}
-                      alt=""
-                      size="xs"
-                      foil={item.finish !== "nonfoil"}
-                    />
-                    <div className="min-w-0">
-                      <p className="font-medium hover:underline">{item.card.name}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {item.card.setCode?.toUpperCase()} #{item.card.collectorNumber}
-                        {item.card.setName && ` · ${item.card.setName}`}
-                      </p>
-                    </div>
-                  </Link>
-                ) : (
-                  <span className="text-muted-foreground">Sin catálogo</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap items-center gap-1 text-xs">
-                  {item.gradingCompany && (
-                    // A slab label: light on dark, unlike every other badge.
-                    <Badge
-                      className="bg-foreground text-background font-semibold"
-                      title={item.certNumber ? `Certificado ${item.certNumber}` : undefined}
-                    >
-                      {gradeLabel(item.gradingCompany, item.grade)}
-                    </Badge>
-                  )}
-                  {item.finish !== "nonfoil" && (
-                    <Badge className="foil-badge">{finishLabel(item.card?.game, item.finish)}</Badge>
-                  )}
-                  <Badge variant="outline">{item.condition}</Badge>
-                  <Badge variant="outline" className="uppercase">
-                    {item.language}
-                  </Badge>
-                  {context === "inventory" && item.location?.id && (
-                    <Link
-                      href={`/locations/${item.location.id}`}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      {item.location.name}
-                    </Link>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <QuantityControl itemId={item.id} quantity={item.quantity} />
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatEur(item.unitPriceEur)}
-                {item.estimatedValueEur != null && (
-                  <span className="text-muted-foreground block text-[11px]">estimado</span>
-                )}
-              </TableCell>
-              <TableCell className="text-primary text-right font-semibold tabular-nums">
-                {item.unitPriceEur == null ? "—" : formatEur(item.unitPriceEur * item.quantity)}
-              </TableCell>
-              <TableCell>
-                <ItemActions
-                  locations={locations}
-                  collections={collections}
-                  item={{
-                    id: item.id,
-                    catalogCardId: item.card?.id ?? null,
-                    game: item.card?.game ?? null,
-                    name: item.card?.name ?? "Carta",
-                    quantity: item.quantity,
-                    finish: item.finish,
-                    condition: item.condition,
-                    language: item.language,
-                    locationId: item.locationId,
-                    notes: item.notes,
-                    purchasePriceEur: item.purchasePriceEur,
-                    estimatedValueEur: item.estimatedValueEur,
-                    gradingCompany: item.gradingCompany,
-                    grade: item.grade,
-                    certNumber: item.certNumber,
-                    finishes: item.card?.finishes ?? [],
-                  }}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
+  return <ItemsTableView {...props} />;
 }
 
 export type HrefFor = (patch: Record<string, string | number | undefined>) => string;

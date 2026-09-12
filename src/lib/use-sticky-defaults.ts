@@ -13,6 +13,8 @@ export interface StickyDefaults {
   condition: (typeof CONDITIONS)[number];
   language: string;
   lastLocationId: string | null;
+  /** The divider of that location entries go behind (D28). */
+  lastSectionId: string | null;
   lastSetCode: string | null;
   /** Optional: also list what's entered in this collection (D23). Null = no collection. */
   entryCollectionId: string | null;
@@ -23,6 +25,7 @@ const DEFAULTS: StickyDefaults = {
   condition: "NM",
   language: "es",
   lastLocationId: null,
+  lastSectionId: null,
   lastSetCode: null,
   entryCollectionId: null,
 };

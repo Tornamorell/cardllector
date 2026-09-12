@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   customType,
   date,
@@ -142,9 +143,34 @@ export const locations = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
+    // Dividers inside the box (D28): the capacity new ones get (null = no limit), and whether
+    // entering a copy into a full divider moves on to the next one by itself.
+    sectionCapacity: integer("section_capacity"),
+    autoAdvance: boolean("auto_advance").notNull().default(true),
     ...timestamps,
   },
   (t) => [uniqueIndex("locations_owner_name_uq").on(t.ownerId, sql`lower(${t.name})`)],
+);
+
+// A divider inside a location ("Caja 1 › 3"), e.g. every N cards in a box of thousands (D28).
+export const locationSections = pgTable(
+  "location_sections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    locationId: uuid("location_id")
+      .notNull()
+      .references(() => locations.id, { onDelete: "cascade" }),
+    // Order inside the box; new dividers go last.
+    position: integer("position").notNull(),
+    name: text("name").notNull(),
+    // Copies it holds; null = no limit.
+    capacity: integer("capacity"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("location_sections_position_uq").on(t.locationId, t.position),
+    check("location_sections_capacity_positive", sql`${t.capacity} is null or ${t.capacity} > 0`),
+  ],
 );
 
 // The inventory: stacks of identical physical copies the user owns. Adding a copy identical to
@@ -175,6 +201,8 @@ export const items = pgTable(
     purchasePriceEur: money("purchase_price_eur"),
     purchasedAt: date("purchased_at"),
     locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
+    // A divider of that location, when it has them (D28).
+    sectionId: uuid("section_id").references(() => locationSections.id, { onDelete: "set null" }),
     notes: text("notes"),
     // Free-form details for games without a catalog (player, team, parallel, /numbered…).
     attributes: jsonb("attributes").$type<Record<string, string>>(),
@@ -184,6 +212,7 @@ export const items = pgTable(
   (t) => [
     index("items_catalog_card_idx").on(t.catalogCardId),
     index("items_location_idx").on(t.locationId),
+    index("items_section_idx").on(t.sectionId),
     index("items_owner_idx").on(t.ownerId),
     check("items_quantity_positive", sql`${t.quantity} > 0`),
   ],
@@ -270,6 +299,7 @@ export const pendingScans = pgTable(
     condition: cardCondition("condition").notNull(),
     language: text("language").notNull(),
     locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
+    sectionId: uuid("section_id").references(() => locationSections.id, { onDelete: "set null" }),
     collectionId: uuid("collection_id").references(() => collections.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

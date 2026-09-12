@@ -13,9 +13,16 @@ import {
 import { formatEur, formatInt } from "@/lib/format";
 import { collectionOptions } from "@/lib/queries/collections";
 import { listItems } from "@/lib/queries/items";
-import { getLocation, locationOptions, unlocatedSummary } from "@/lib/queries/locations";
+import {
+  getLocation,
+  listSections,
+  locationOptions,
+  unlocatedSummary,
+  unsectionedCount,
+} from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { LocationSettings } from "./location-settings";
+import { SectionsPanel } from "./sections-panel";
 
 export const metadata: Metadata = { title: "Ubicación" };
 
@@ -26,6 +33,8 @@ async function load(ownerId: string, id: string) {
       id: null,
       name: "Sin ubicación",
       description: "Copias que aún no tienen un sitio asignado.",
+      sectionCapacity: null,
+      autoAdvance: false,
       ...(await unlocatedSummary(ownerId)),
     };
   }
@@ -39,15 +48,29 @@ export default async function LocationPage({ params, searchParams }: PageProps<"
   const user = await requireUser();
   const { id } = await params;
   const location = await load(user.id, id);
-  const { q, sort, page } = parseItemParams(await searchParams);
+  const sp = await searchParams;
+  const { q, sort, page } = parseItemParams(sp);
+
+  const [sections, unsectioned] = location.id
+    ? await Promise.all([listSections(location.id), unsectionedCount(location.id)])
+    : [[], 0];
+  // ?section=<divider id> or ?section=none (copies outside any divider).
+  const rawSection = typeof sp.section === "string" ? sp.section : undefined;
+  const sectionId =
+    rawSection === "none" ? null : sections.some((s) => s.id === rawSection) ? rawSection : undefined;
+  const sectionParam = sectionId === null ? "none" : sectionId;
 
   const [{ rows, hasMore }, locations, collections] = await Promise.all([
-    listItems({ ownerId: user.id, locationId: location.id }, { q, sort, page }),
+    listItems(
+      { ownerId: user.id, locationId: location.id, ...(sectionId !== undefined && { sectionId }) },
+      { q, sort, page },
+    ),
     locationOptions(user.id),
     collectionOptions(user.id),
   ]);
 
-  const href = hrefBuilder({ q, sort: sort === "value" ? undefined : sort });
+  const href = hrefBuilder({ q, sort: sort === "value" ? undefined : sort, section: sectionParam });
+  const filtered = !!q || sectionId !== undefined;
 
   return (
     <div className="space-y-6">
@@ -67,7 +90,14 @@ export default async function LocationPage({ params, searchParams }: PageProps<"
           )}
         </div>
         {location.id && (
-          <LocationSettings id={location.id} name={location.name} description={location.description} />
+          <LocationSettings
+            id={location.id}
+            name={location.name}
+            description={location.description}
+            sectionCount={sections.length}
+            sectionCapacity={location.sectionCapacity}
+            autoAdvance={location.autoAdvance}
+          />
         )}
       </div>
 
@@ -79,11 +109,34 @@ export default async function LocationPage({ params, searchParams }: PageProps<"
         </p>
       </div>
 
-      <ItemsToolbar q={q} sort={sort} href={href} hidden={{ sort: sort === "value" ? undefined : sort }} />
+      {location.id &&
+        (sections.length > 0 ? (
+          <SectionsPanel
+            locationId={location.id}
+            sections={sections}
+            unsectioned={unsectioned}
+            activeSectionId={sectionId}
+            capacity={location.sectionCapacity}
+            autoAdvance={location.autoAdvance}
+          />
+        ) : (
+          location.cardCount > 0 && (
+            <p className="text-muted-foreground text-sm">
+              ¿Es una caja grande? En Opciones › Separadores puedes dividirla en tramos de N cartas.
+            </p>
+          )
+        ))}
+
+      <ItemsToolbar
+        q={q}
+        sort={sort}
+        href={href}
+        hidden={{ sort: sort === "value" ? undefined : sort, section: sectionParam }}
+      />
 
       {!rows.length ? (
         <p className="text-muted-foreground py-8 text-center text-sm">
-          {q
+          {filtered
             ? "Nada coincide con este filtro."
             : "Aquí no hay cartas todavía. Elige esta ubicación al añadir o escanear."}
         </p>
@@ -92,7 +145,11 @@ export default async function LocationPage({ params, searchParams }: PageProps<"
           <div className="flex justify-end">
             <AddFilteredToCollection
               collections={collections}
-              filter={{ locationId: location.id, ...(q && { q }) }}
+              filter={{
+                locationId: location.id,
+                ...(sectionId !== undefined && { sectionId }),
+                ...(q && { q }),
+              }}
               label="Añadir estas cartas a una colección"
             />
           </div>

@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, exists, isNull, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db/client";
-import { cardNames, catalogCards, items, locations, sets } from "@/db/schema";
+import { cardNames, catalogCards, items, locationSections, locations, sets } from "@/db/schema";
 import { itemValueEurSql } from "@/lib/collection/pricing";
 import { normalizeForSearch } from "@/lib/search/normalize";
 
@@ -35,6 +35,8 @@ export interface ItemScope {
   ownerId: string;
   /** A location id, `null` for copies without location, or undefined for any. */
   locationId?: string | null;
+  /** A divider id, `null` for copies outside any divider, or undefined for any. */
+  sectionId?: string | null;
 }
 
 /**
@@ -45,6 +47,9 @@ export function itemFilters(scope: ItemScope, q?: string): SQL[] {
   const filters: SQL[] = [eq(items.ownerId, scope.ownerId)];
   if (scope.locationId !== undefined) {
     filters.push(scope.locationId ? eq(items.locationId, scope.locationId) : isNull(items.locationId));
+  }
+  if (scope.sectionId !== undefined) {
+    filters.push(scope.sectionId ? eq(items.sectionId, scope.sectionId) : isNull(items.sectionId));
   }
   const needle = q ? normalizeForSearch(q) : "";
   if (needle) {
@@ -96,6 +101,8 @@ export async function listItems(
       /** Per copy: the estimate if set, else the market price (D27). */
       unitPriceEur: sql<number | null>`${itemValueEurSql}::float8`,
       location: { id: locations.id, name: locations.name },
+      sectionId: items.sectionId,
+      section: { id: locationSections.id, name: locationSections.name },
       card: {
         id: catalogCards.id,
         game: catalogCards.game,
@@ -110,6 +117,7 @@ export async function listItems(
     })
     .from(items)
     .leftJoin(locations, eq(locations.id, items.locationId))
+    .leftJoin(locationSections, eq(locationSections.id, items.sectionId))
     .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
     .leftJoin(sets, and(eq(sets.game, catalogCards.game), eq(sets.code, catalogCards.setCode)))
     .where(and(...itemFilters(scope, q)))

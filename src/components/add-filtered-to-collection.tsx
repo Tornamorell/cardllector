@@ -25,7 +25,7 @@ export function AddFilteredToCollection({
   label,
 }: {
   collections: CollectionOption[];
-  filter: { locationId?: string | null; q?: string; itemIds?: string[] };
+  filter: { locationId?: string | null; sectionId?: string | null; q?: string; itemIds?: string[] };
   label: string;
 }) {
   const [open, setOpen] = useState(false);

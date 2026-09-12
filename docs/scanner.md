@@ -61,6 +61,10 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
 - **Antes de empezar:**
   - Ubicación y colección, las dos opcionales (`EntryTarget`, D23). Sin ninguna, lo escaneado
     entra en Mis cartas sin ubicación.
+  - Si la ubicación tiene separadores (D28), también el separador. En modo automático, cuando
+    se llena, lo siguiente va al separador siguiente, con aviso y vibración para que pongas el
+    separador físico. En la parte de arriba se ve «Caja 1 › 3 (87/100)», y en el panel de abajo
+    está el botón «Siguiente separador».
   - Acabado, estado e idioma por defecto.
   - Expansión fija (opcional). También se entra con ella desde la página de la expansión:
     «Escanear esta expansión», `/scan?set=mtg:m10`.

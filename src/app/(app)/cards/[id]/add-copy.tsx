@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import type { CollectionOption } from "@/components/collection-picker";
-import { EntryTarget } from "@/components/entry-target";
+import { EntryTarget, targetFor, useEntryResult } from "@/components/entry-target";
 import type { LocationOption } from "@/components/location-picker";
 import {
   ConditionSelect,
@@ -13,6 +13,7 @@ import {
   finishFor,
 } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
+import { placeLabel } from "@/lib/format";
 import type { Finish } from "@/lib/games";
 import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 import { addItem } from "../../inventory/actions";
@@ -32,6 +33,7 @@ export function AddCopy({
   collections: CollectionOption[];
 }) {
   const [defaults, setDefaults] = useStickyDefaults();
+  const follow = useEntryResult();
   const [quantity, setQuantity] = useState(1);
   const [pending, startTransition] = useTransition();
   const finish = finishFor(defaults.finish, finishes);
@@ -45,18 +47,14 @@ export function AddCopy({
           finish,
           condition: defaults.condition,
           language: defaults.language,
-          locationId: defaults.lastLocationId,
-          collectionId: defaults.entryCollectionId,
+          ...targetFor(defaults, locations),
         });
-        if (!r.ok) {
-          setDefaults(r.error === "location_not_found" ? { lastLocationId: null } : { entryCollectionId: null });
-          toast.error("La ubicación o colección elegida ya no existe. Elige otra.");
-          return;
-        }
+        if (!follow(r)) return;
+        const place = placeLabel(r.locationName, r.section?.name);
         toast.success(`${r.name} añadida a tus cartas`, {
           description: [
             r.merged && `Ahora tienes ${r.quantity} en ese montón.`,
-            r.locationName && `En ${r.locationName}.`,
+            place && `En ${place}.`,
             r.collectionName && `También en «${r.collectionName}».`,
           ]
             .filter(Boolean)

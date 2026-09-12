@@ -12,6 +12,8 @@ import {
 } from "@/app/(app)/inventory/actions";
 import { CollectionPicker, type CollectionOption } from "@/components/collection-picker";
 import { LocationPicker, type LocationOption } from "@/components/location-picker";
+import { MoveDialog } from "@/components/move-dialog";
+import { SectionPicker, currentSectionId } from "@/components/section-picker";
 import {
   ConditionSelect,
   FinishSelect,
@@ -87,6 +89,7 @@ export interface ActionItem {
   condition: (typeof CONDITIONS)[number];
   language: string;
   locationId: string | null;
+  sectionId: string | null;
   notes: string | null;
   purchasePriceEur: number | null;
   estimatedValueEur: number | null;
@@ -105,7 +108,9 @@ export function ItemActions({
   locations: LocationOption[];
   collections: CollectionOption[];
 }) {
-  const [dialog, setDialog] = useState<"edit" | "collection" | "split" | "delete" | null>(null);
+  const [dialog, setDialog] = useState<
+    "edit" | "move" | "collection" | "split" | "delete" | null
+  >(null);
   const close = () => setDialog(null);
 
   return (
@@ -120,6 +125,7 @@ export function ItemActions({
           <DropdownMenuItem onClick={() => setDialog("edit")}>
             {item.gradingCompany ? "Editar" : "Editar o marcar gradeada"}
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setDialog("move")}>Mover…</DropdownMenuItem>
           {item.catalogCardId && (
             <DropdownMenuItem onClick={() => setDialog("collection")}>
               Añadir a una colección
@@ -136,6 +142,15 @@ export function ItemActions({
 
       {/* Mounted only while open, so each opening starts from the current values. */}
       {dialog === "edit" && <EditDialog item={item} locations={locations} onClose={close} />}
+      {dialog === "move" && (
+        <MoveDialog
+          itemIds={[item.id]}
+          title={`Mover ${item.name}`}
+          maxCount={item.quantity}
+          locations={locations}
+          onClose={close}
+        />
+      )}
       {dialog === "collection" && (
         <CollectionDialog item={item} collections={collections} onClose={close} />
       )}
@@ -169,6 +184,7 @@ function EditDialog({
     condition: item.condition,
     language: item.language,
     locationId: item.locationId,
+    sectionId: item.sectionId,
     purchasePriceEur: asText(item.purchasePriceEur),
     estimatedValueEur: asText(item.estimatedValueEur),
     notes: item.notes ?? "",
@@ -180,6 +196,8 @@ function EditDialog({
   });
   const [pending, startTransition] = useTransition();
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
+  const sectionsOf = (id: string | null) => locations.find((l) => l.id === id)?.sections ?? [];
+  const sections = sectionsOf(form.locationId);
   // Grading one copy of several splits it off into its own row (see updateItem).
   const splitting = form.graded && !item.gradingCompany && item.quantity > 1;
 
@@ -194,6 +212,7 @@ function EditDialog({
           condition: form.condition,
           language: form.language,
           locationId: form.locationId,
+          sectionId: sections.length ? form.sectionId : null,
           purchasePriceEur: parseNumber(form.purchasePriceEur),
           estimatedValueEur: parseNumber(form.estimatedValueEur),
           notes: form.notes,
@@ -258,9 +277,22 @@ function EditDialog({
                 id="edit-location"
                 value={form.locationId}
                 locations={locations}
-                onChange={(locationId) => set({ locationId })}
+                onChange={(locationId) =>
+                  set({ locationId, sectionId: currentSectionId(sectionsOf(locationId)) })
+                }
               />
             </Field>
+            {sections.length > 0 && (
+              <Field label="Separador" htmlFor="edit-section">
+                <SectionPicker
+                  id="edit-section"
+                  value={form.sectionId}
+                  sections={sections}
+                  allowNone
+                  onChange={(sectionId) => set({ sectionId })}
+                />
+              </Field>
+            )}
             <Field label="Precio de compra (€/u)" htmlFor="edit-price">
               <Input
                 id="edit-price"

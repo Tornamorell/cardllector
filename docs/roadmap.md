@@ -48,6 +48,11 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Las cinco cartas que más han subido y bajado.
   - En la ficha de carta, el histórico de precio de cada acabado.
   - Aparecen cuando hay al menos dos días de precios guardados.
+- **Separadores y mover cartas** (D28):
+  - Ubicaciones con separadores de N cartas, con nombre y capacidad editables.
+  - Modo automático, que pasa al siguiente y avisa, o manual, con «Siguiente separador».
+  - Selección múltiple en las tablas y «Mover a…» ubicación y separador. «Mover…» en el menú
+    de una carta permite mover solo algunas copias.
 - **Cartas gradeadas** (D27):
   - Empresa, nota y certificado en «Editar». Se muestran como la etiqueta «PSA 10».
   - Valor estimado por copia, que cuenta en lugar del precio de Cardmarket.

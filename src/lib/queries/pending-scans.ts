@@ -1,6 +1,6 @@
 import { and, asc, count, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { collections, locations, pendingScans } from "@/db/schema";
+import { collections, locationSections, locations, pendingScans } from "@/db/schema";
 
 export async function pendingScanCount(ownerId: string) {
   const [row] = await db
@@ -22,10 +22,12 @@ export async function listPendingScans(ownerId: string) {
       language: pendingScans.language,
       createdAt: pendingScans.createdAt,
       location: { id: locations.id, name: locations.name },
+      section: { id: locationSections.id, name: locationSections.name },
       collection: { id: collections.id, name: collections.name },
     })
     .from(pendingScans)
     .leftJoin(locations, eq(locations.id, pendingScans.locationId))
+    .leftJoin(locationSections, eq(locationSections.id, pendingScans.sectionId))
     .leftJoin(collections, eq(collections.id, pendingScans.collectionId))
     .where(eq(pendingScans.ownerId, ownerId))
     .orderBy(asc(pendingScans.createdAt));

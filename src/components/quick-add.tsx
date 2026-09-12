@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { CardPickerRow } from "@/components/card-picker-row";
+import { addItem } from "@/app/(app)/inventory/actions";
 import { CardSearchBox, useCardPicker } from "@/components/card-picker";
+import { CardPickerRow } from "@/components/card-picker-row";
 import type { CollectionOption } from "@/components/collection-picker";
-import { EntryTarget } from "@/components/entry-target";
+import { EntryTarget, targetFor, useEntryResult } from "@/components/entry-target";
 import type { LocationOption } from "@/components/location-picker";
 import {
   ConditionSelect,
@@ -15,13 +16,14 @@ import {
   finishFor,
 } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
+import { placeLabel } from "@/lib/format";
 import { gameById } from "@/lib/games";
 import { useStickyDefaults } from "@/lib/use-sticky-defaults";
-import { addItem } from "@/app/(app)/inventory/actions";
 
 /**
  * Keyboard-first entry into the inventory: type a name → Enter picks the card → Enter adds it
- * with the remembered location, optional collection, finish, condition and language.
+ * with the remembered location (and divider), optional collection, finish, condition and
+ * language.
  */
 export function QuickAdd({
   locations,
@@ -31,6 +33,7 @@ export function QuickAdd({
   collections: CollectionOption[];
 }) {
   const [defaults, setDefaults] = useStickyDefaults();
+  const follow = useEntryResult();
   const picker = useCardPicker(defaults.lastSetCode);
   const [quantity, setQuantity] = useState(1);
   const [pending, startTransition] = useTransition();
@@ -47,22 +50,14 @@ export function QuickAdd({
           finish,
           condition: defaults.condition,
           language: defaults.language,
-          locationId: defaults.lastLocationId,
-          collectionId: defaults.entryCollectionId,
+          ...targetFor(defaults, locations),
         });
-        if (!r.ok) {
-          setDefaults(r.error === "location_not_found" ? { lastLocationId: null } : { entryCollectionId: null });
-          toast.error(
-            r.error === "location_not_found"
-              ? "La ubicación elegida ya no existe. Elige otra."
-              : "La colección elegida ya no existe. Elige otra.",
-          );
-          return;
-        }
+        if (!follow(r)) return;
+        const place = placeLabel(r.locationName, r.section?.name);
         toast.success(`${r.name} · ${r.setCode.toUpperCase()} #${r.number}`, {
           description: [
             r.merged ? `Ahora tienes ${r.quantity}` : `Añadida ×${quantity}`,
-            r.locationName && `en ${r.locationName}`,
+            place && `en ${place}`,
             r.collectionName && `y en «${r.collectionName}»`,
           ]
             .filter(Boolean)

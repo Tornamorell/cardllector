@@ -28,7 +28,8 @@ El esquema está en `src/db/schema.ts` (Drizzle), y las migraciones en `drizzle/
 | Tabla | Una fila por |
 | --- | --- |
 | `items` | **montón** de tus cartas: copias idénticas de una edición, con `owner_id`, `quantity` y, opcionalmente, `location_id` |
-| `locations` | ubicación física del usuario ("Caja 1", "Carpeta roja"). El nombre es único por usuario, sin distinguir mayúsculas. |
+| `locations` | ubicación física del usuario ("Caja 1", "Carpeta roja"). El nombre es único por usuario, sin distinguir mayúsculas. `section_capacity` y `auto_advance` configuran sus separadores (D28). |
+| `location_sections` | separador dentro de una ubicación ("Caja 1 › 3"): `position` (orden), `name` y `capacity` (vacía = sin límite). Un montón puede estar en uno con `items.section_id`. |
 | `collections` | colección del usuario (`owner_id`): una lista con nombre, como «Pokédex de Hoenn» |
 | `collection_cards` | (colección, edición): una entrada de la lista, con la `quantity` que quieres (1 por defecto) |
 
@@ -42,8 +43,8 @@ cuando tienes al menos las copias que quieres.
 La ubicación es independiente de todo lo demás (D20). Borrar una ubicación deja sus montones con
 `location_id = null`. Borrar una colección borra sus entradas y deja tus cartas como estaban.
 
-Qué hace idénticas dos copias: mismo dueño, edición, `finish`, `condition`, `language` y
-`location_id`, y sin gradear. Al añadir una copia idéntica a un montón existente, sube su
+Qué hace idénticas dos copias: mismo dueño, edición, `finish`, `condition`, `language`,
+`location_id` y `section_id`, y sin gradear ni valor estimado. Al añadir una copia idéntica a un montón existente, sube su
 `quantity` en lugar de crearse otra fila (`addItem()` en `src/app/(app)/inventory/actions.ts`).
 "Dividir montón" separa copias en una fila nueva, para poder cambiarles el estado o la ubicación.
 

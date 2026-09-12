@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import { collections, locations, pendingScans } from "@/db/schema";
 import { CONDITIONS } from "@/lib/format";
+import { ownedSection } from "@/lib/locations/sections";
 import { requireUser } from "@/lib/session";
 import { addItem, type AddItemResult } from "../inventory/actions";
 
@@ -27,6 +28,7 @@ const saveInput = z.object({
   readText: z.string().max(2000).nullable(),
   guess: z.string().max(200).nullable(),
   locationId: z.uuid().nullable(),
+  sectionId: z.uuid().nullable(),
   collectionId: z.uuid().nullable(),
 });
 
@@ -51,6 +53,7 @@ export async function savePendingScan(form: FormData): Promise<{ pending: number
     readText: field("readText"),
     guess: field("guess"),
     locationId: field("locationId"),
+    sectionId: field("sectionId"),
     collectionId: field("collectionId"),
   });
 
@@ -74,6 +77,9 @@ export async function savePendingScan(form: FormData): Promise<{ pending: number
         .where(and(eq(collections.id, data.collectionId), eq(collections.ownerId, user.id)))
     : [];
 
+  const section =
+    location && data.sectionId ? await ownedSection(user.id, data.sectionId, location.id) : null;
+
   await db.insert(pendingScans).values({
     ownerId: user.id,
     image: Buffer.from(await image.arrayBuffer()),
@@ -83,6 +89,7 @@ export async function savePendingScan(form: FormData): Promise<{ pending: number
     condition: data.condition,
     language: data.language,
     locationId: location?.id ?? null,
+    sectionId: section?.id ?? null,
     collectionId: collection?.id ?? null,
   });
   revalidatePath("/", "layout");
@@ -100,7 +107,11 @@ export async function resolvePendingScan(
   const scanId = z.uuid().parse(id);
   const data = resolveInput.parse(input);
   const [scan] = await db
-    .select({ locationId: pendingScans.locationId, collectionId: pendingScans.collectionId })
+    .select({
+      locationId: pendingScans.locationId,
+      sectionId: pendingScans.sectionId,
+      collectionId: pendingScans.collectionId,
+    })
     .from(pendingScans)
     .where(and(eq(pendingScans.id, scanId), eq(pendingScans.ownerId, user.id)));
   if (!scan) throw new Error("Carta por revisar no encontrada");
@@ -110,6 +121,7 @@ export async function resolvePendingScan(
     quantity: 1,
     source: "scan",
     locationId: scan.locationId,
+    sectionId: scan.sectionId,
     collectionId: scan.collectionId,
   });
   if (result.ok) {

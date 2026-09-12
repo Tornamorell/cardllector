@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { addItem } from "@/app/(app)/inventory/actions";
+import { useEntryResult } from "@/components/entry-target";
 import { finishFor } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
+import { placeLabel } from "@/lib/format";
 import { useStickyDefaults } from "@/lib/use-sticky-defaults";
 
 /**
- * "+" on a card image: adds one copy to the inventory with the remembered location, finish,
- * condition and language — and the remembered collection, unless `withCollection` is off
- * (on a collection's own page the card is already listed).
+ * "+" on a card image: adds one copy to the inventory with the remembered location (and
+ * divider), finish, condition and language — and the remembered collection, unless
+ * `withCollection` is off (on a collection's own page the card is already listed).
  */
 export function AddCopyButton({
   printingId,
@@ -25,7 +27,8 @@ export function AddCopyButton({
   name: string;
   withCollection?: boolean;
 }) {
-  const [defaults, setDefaults] = useStickyDefaults();
+  const [defaults] = useStickyDefaults();
+  const follow = useEntryResult();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -45,18 +48,17 @@ export function AddCopyButton({
               finish: finishFor(defaults.finish, finishes),
               condition: defaults.condition,
               language: defaults.language,
+              // The page's EntryTarget keeps the remembered divider valid for this location.
               locationId: defaults.lastLocationId,
+              sectionId: defaults.lastLocationId ? defaults.lastSectionId : null,
               collectionId: withCollection ? defaults.entryCollectionId : null,
             });
-            if (!r.ok) {
-              setDefaults(r.error === "location_not_found" ? { lastLocationId: null } : { entryCollectionId: null });
-              toast.error("La ubicación o colección elegida ya no existe. Elige otra.");
-              return;
-            }
+            if (!follow(r)) return;
+            const place = placeLabel(r.locationName, r.section?.name);
             toast.success(`${r.name} añadida`, {
               description: [
                 r.merged ? `Tienes ${r.quantity}` : undefined,
-                r.locationName && `en ${r.locationName}`,
+                place && `en ${place}`,
                 r.collectionName && `y en «${r.collectionName}»`,
               ]
                 .filter(Boolean)

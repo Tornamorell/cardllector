@@ -249,6 +249,8 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   posición dentro de la caja (página de la carpeta, orden).
 - **Actualización (D23):** las copias ya no pertenecen a ninguna colección. La ubicación sigue
   igual: es un dato opcional de cada montón de tus cartas.
+- **Actualización (D28):** una ubicación puede tener separadores, con capacidad y modo
+  automático, y las cartas se mueven entre ubicaciones y separadores.
 
 ## D21 · Las rarezas se muestran en inglés — 2026-09-11 · provisional
 
@@ -411,3 +413,40 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - Subnotas de BGS (centrado, esquinas…) como campos propios: de momento van en las notas.
 - **Revisar cuando:** aparezca una fuente gratuita de precios de gradeadas, o haga falta ver
   el histórico de valor de una copia concreta.
+
+## D28 · Separadores dentro de las ubicaciones, y mover cartas — 2026-09-12 · provisional
+
+- **Contexto:** las cajas del usuario guardan miles de cartas y pone separadores cada N cartas.
+  Quiere:
+  - un modo automático, pero que se pueda apagar para marcar él cuándo pasa al siguiente;
+  - separadores con nombre y capacidad editables;
+  - mover cartas, o una selección, de un sitio a otro sin esfuerzo.
+- **Decisión:**
+  - Tabla `location_sections` (ubicación, posición, nombre y capacidad) y `items.section_id`.
+    También `pending_scans.section_id`, para que «Para luego» recuerde el separador.
+  - Una ubicación usa separadores si tiene alguno. Se activan en Opciones › Separadores, que
+    crea el 1. Los nuevos se numeran por su posición y se pueden renombrar.
+  - Por ubicación hay dos ajustes: la capacidad de los separadores nuevos
+    (`section_capacity`, vacía = sin límite) y el modo automático (`auto_advance`).
+  - El destino de alta incluye el separador. Por defecto es el último que tiene cartas, y se
+    recuerda como la ubicación.
+  - **Modo automático:** si el separador está lleno (copias ≥ capacidad), `addItem` pone la
+    carta en el siguiente, y lo crea si no existe. El cliente avisa con «Separador 3 lleno: pon
+    el separador 4», con vibración.
+  - **«Siguiente separador»** avanza a mano en cualquier modo, desde los formularios de alta y
+    desde el escáner.
+  - El separador forma parte de la identidad del montón: la misma carta en dos separadores son
+    dos montones.
+  - **Mover:**
+    - Casillas en las tablas de cartas y «Mover a…» elige ubicación y separador.
+    - «Mover…» en el menú de una carta permite elegir cuántas copias.
+    - Las copias normales se juntan con un montón igual en el destino; las gradeadas y las que
+      tienen valor propio, no.
+    - Al mover no se comprueba la capacidad, porque mover es a propósito.
+  - Borrar un separador, o quitar los separadores, deja sus cartas en la ubicación, sin
+    separador.
+- **Descartado:**
+  - Ubicaciones anidadas genéricas (estantería → caja → separador): son más flexibles, pero
+    complican todos los selectores, y hoy solo hacen falta separadores dentro de una ubicación.
+  - Deducir el separador por la posición de la carta en la caja: no guardamos el orden físico.
+- **Revisar cuando:** haga falta más de un nivel, o la posición exacta dentro de un separador.

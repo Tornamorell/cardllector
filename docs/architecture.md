@@ -41,7 +41,7 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 | `/cards/[id]` | Una edición concreta: precio, histórico de precio (si la tienes) y el resto de sus ediciones. Desde aquí se añaden copias a tus cartas y se apunta la edición en una colección, la tengas o no. Enseña dónde tienes cada copia y en qué colecciones está. |
 | `/inventory` | **Mis cartas:** todas tus copias, con alta rápida desde el teclado, filtro por ubicación (`?loc=<id>` o `?loc=none`) y búsqueda. «Añadir a una colección» mete en una lista todo lo que se ve con esos filtros. |
 | `/collections`, `/collections/[id]` | Tus colecciones: listas de ediciones con la cantidad que quieres de cada una. Se ve lo que tienes y lo que te falta, lo que vale lo que tienes y lo que costaría completarla. Filtros: todas, tengo y me faltan. |
-| `/locations`, `/locations/[id]` | Ubicaciones físicas: qué hay en cada una y cuánto vale. `/locations/none` muestra las copias sin ubicación. |
+| `/locations`, `/locations/[id]` | Ubicaciones físicas: qué hay en cada una y cuánto vale. `/locations/none` muestra las copias sin ubicación. Una ubicación puede tener separadores (Opciones › Separadores). Se ven como fichas con lo lleno que está cada uno, y filtran con `?section=<id>` o `?section=none` (D28). |
 | `/search` | Búsqueda por nombre, en inglés o en español. |
 | `/scan` | Escáner con la cámara: lee el número y el código de expansión de la carta y la añade a tus cartas, en la ubicación y la colección de la sesión si las has elegido. `?set=mtg:m10` arranca en modo expansión fija. Detalles en `docs/scanner.md`. |
 | `/review` | **Por revisar:** las cartas que guardaste con «Para luego» en el escáner, con su foto (servida por `/api/pending-scans/[id]`, solo para su dueño) y una búsqueda para identificarlas y añadirlas (D25). |
@@ -51,10 +51,19 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 Los formularios de alta comparten el selector `EntryTarget` (`src/components/entry-target.tsx`),
 que tiene dos partes:
 
-- **Guardar en:** la ubicación.
+- **Guardar en:** la ubicación y, si tiene separadores, el separador, con el botón «Siguiente
+  separador».
 - **Y en la colección:** la colección, opcional.
 
-Las dos se recuerdan en el dispositivo (`useStickyDefaults`).
+Todo se recuerda en el dispositivo (`useStickyDefaults`). `useEntryResult()` aplica la respuesta
+de `addItem`:
+
+- olvida un destino que ya no existe;
+- sigue el paso automático al siguiente separador y avisa de que hay que ponerlo.
+
+En las tablas de cartas, las casillas seleccionan montones. Una barra abajo permite moverlos a
+otra ubicación y separador, o añadirlos a una colección. «Mover…», en el menú de cada carta,
+mueve solo algunas copias (`moveItems`, D28).
 
 La búsqueda de los formularios de alta (`useCardPicker`, `/api/search`) acepta dos cosas:
 

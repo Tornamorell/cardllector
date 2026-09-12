@@ -8,11 +8,18 @@ import { createLocation } from "@/app/(app)/locations/actions";
 import { selectClass } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { SectionOption } from "@/lib/queries/locations";
 import { cn } from "@/lib/utils";
 
 const NEW = "__new__";
 
-export type LocationOption = { id: string; name: string };
+export type LocationOption = {
+  id: string;
+  name: string;
+  /** Dividers inside it, in order (D28); none for a location without them. */
+  sections?: SectionOption[];
+  autoAdvance?: boolean;
+};
 
 /**
  * Location select with "+ Nueva ubicación…" inline, so "I'm starting on box 1" doesn't
