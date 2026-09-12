@@ -12,7 +12,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 Personal trading-card collection tracker (Magic now, Pokémon next, sports later): catalog,
 prices (Cardmarket €), the owner's cards (inventory, with optional physical locations),
-collections as curated want-lists (D23) and value over time. Single user for now. Next.js 16 +
+collections as curated want-lists (D23) and value over time. The owner and a few colleagues, with
+`admin`/`user` roles (D34). Next.js 16 +
 Drizzle + Postgres (Neon in prod, PGlite locally) + Better Auth; catalog data from bulk sources
 synced by GitHub Actions.
 
@@ -41,7 +42,8 @@ sources, decisions and roadmap.
 ## Conventions
 
 - Every page and server action calls `requireUser()` (`src/lib/session.ts`); actions also check
-  ownership of the item, collection or location. `src/proxy.ts` is only an optimistic redirect; `/api/*`
+  ownership of the item, collection or location. Admin-only pages and actions call
+  `requireAdmin()` instead (roles, D34). `src/proxy.ts` is only an optimistic redirect; `/api/*`
   routes check the session themselves and return 401.
 - Never call external catalog APIs (Scryfall, TCGdex…) from a user request path — search and
   scan hit our DB. Source clients live in `src/lib/<source>/`, sync jobs in `scripts/`.
@@ -67,6 +69,6 @@ sources, decisions and roadmap.
 | `npm run sync:scryfall` · `npm run sync:names` | Magic catalog + prices · Spanish names |
 | `npm run sync:pokemon` (`-- --owned-only`) | Pokémon from TCGdex: full ~20 min · only owned prices |
 | `npm run import:album -- <album>` | Football album from `data/albums/<album>.{json,txt}` (D29) |
-| `npm run seed:user -- <email> <password>` | Create the (only) user |
+| `npm run seed:user -- <email> <password> [name] [role]` | Create an account (admin by default); colleagues are created in `/admin` (D34) |
 
 After adding or renaming routes, run `npx next typegen` so `PageProps<"/route">` types exist.

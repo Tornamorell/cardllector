@@ -1,6 +1,9 @@
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "./auth";
+import { isAdmin } from "./roles";
+
+export { isAdmin } from "./roles";
 
 /** Returns the signed-in user or redirects to /login. Use in every page and action. */
 export async function requireUser() {
@@ -9,11 +12,9 @@ export async function requireUser() {
   return session.user;
 }
 
-/** Admins are listed by email in ADMIN_EMAILS (comma-separated). They moderate shared photos (D30). */
-export function isAdmin(user: { email: string }) {
-  const admins = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return admins.includes(user.email.toLowerCase());
+/** The signed-in admin; for anyone else the admin pages don't exist (D34). */
+export async function requireAdmin() {
+  const user = await requireUser();
+  if (!isAdmin(user)) notFound();
+  return user;
 }

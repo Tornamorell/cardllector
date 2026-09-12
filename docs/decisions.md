@@ -530,10 +530,9 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     con la forma de la carta desde el centro.
   - **Actualización (D32):** en los dos casos, la carta se busca en la foto y se endereza, como
     un escaneo. Si no se encuentra, el recorte de antes.
-  - **Actualización (2026-09-12):** los administradores (`ADMIN_EMAILS`) pueden borrar
+  - **Actualización (2026-09-12):** los administradores (rol `admin`, D34) pueden borrar
     cualquier foto desde la ficha («Borrar foto», con confirmación). La carta se queda sin
-    imagen hasta que alguien comparta otra. El resto de usuarios solo puede cambiarlas. No hay
-    roles en la base de datos; si hacen falta más permisos, pasar a un campo de rol.
+    imagen hasta que alguien comparta otra. El resto de usuarios solo puede cambiarlas.
   - Nunca sustituye una imagen del catálogo (Scryfall, TCGdex). Un escaneo no reemplaza una
     foto que ya aportó alguien; «Cambiar foto» sí.
   - `catalog_cards.image_*` apuntan a `/api/card-photos/<id>?v=<fecha>`: pide sesión y se
@@ -646,3 +645,34 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     fuente y se pueden rellenar las fotos antiguas.
 - **Revisar cuando:** con muchas fotos haya falsos positivos entre cartas de la misma serie
   (todas comparten plantilla), o no reconozca cartas brillantes por los reflejos.
+
+## D34 · Roles y cuentas para compartir la app con colegas — 2026-09-12 · provisional
+
+- **Contexto:** el usuario va a compartir Cardllector con colegas. Hasta ahora había una sola
+  cuenta (más una de prueba), el registro estaba cerrado y el administrador salía de una
+  variable de entorno con correos (`ADMIN_EMAILS`), puesta solo para borrar fotos.
+- **Decisión:**
+  - El plugin de administración de Better Auth: `user.role` (`admin` o `user`, por defecto
+    `user`), desactivar cuentas (`banned`: no pueden entrar y se cierran sus sesiones) y sus
+    operaciones de servidor (`createUser`, `setRole`, `banUser`, `unbanUser`), que comprueban
+    el rol de quien las pide.
+  - **El registro sigue cerrado.** Las cuentas las crea un admin en `/admin`, con una contraseña
+    inicial que le pasa a su colega. Ahí también se cambia el rol, se desactiva una cuenta y
+    se ve lo que gasta cada una en IA.
+  - Un admin no puede cambiarse el rol ni desactivarse a sí mismo, para no dejar la app sin
+    admin.
+  - Qué puede un admin: gestionar cuentas y borrar fotos compartidas (D30). Lo demás es igual
+    para todos. Cada uno ve solo sus cartas, colecciones y ubicaciones (`owner_id`); el
+    catálogo y las fotos compartidas son comunes.
+  - Todos pueden usar «Identificar con IA», con el límite de 150 al día por cuenta (D31),
+    pagado con la clave del dueño.
+  - La migración hace admin a la cuenta más antigua (la del dueño, creada con
+    `seed:user`) y `user` al resto. `npm run seed:user` crea admins por defecto.
+- **Descartado:**
+  - `ADMIN_EMAILS`: no escala a más permisos y había que tocar Vercel para cada cambio.
+  - Registro abierto o enlaces de invitación por correo: más trabajo (envío de correos) para
+    unos pocos colegas.
+  - Activar la IA cuenta por cuenta: el usuario prefiere que todos puedan usarla.
+- **Revisar cuando:** haga falta que cada uno cambie su contraseña o la recupere (hoy no hay
+  pantalla para eso), más roles (por ejemplo, quien importe álbumes), o límites de IA por
+  cuenta.

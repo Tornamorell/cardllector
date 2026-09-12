@@ -2,7 +2,9 @@
 
 El esquema está en `src/db/schema.ts` (Drizzle), y las migraciones en `drizzle/`. Las tablas
 `user`, `session`, `account` y `verification` las genera Better Auth (`src/db/auth-schema.ts`, con
-`npx auth@latest generate`).
+`npx auth@latest generate`). Su plugin de administración añade a `user` el rol (`role`: `admin` o
+`user`) y la desactivación (`banned`, `ban_reason`, `ban_expires`), y a `session`,
+`impersonated_by` (D34).
 
 ## Catálogo (solo lo escribe la sincronización)
 

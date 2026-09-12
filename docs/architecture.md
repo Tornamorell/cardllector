@@ -1,8 +1,9 @@
 # Arquitectura
 
-Cardllector es una aplicación personal para registrar colecciones de cartas (de momento, Magic)
-con su precio de mercado y la evolución de su valor. Un solo usuario, aunque los datos llevan
-`owner_id` para poder abrirla a más gente sin rehacer el modelo.
+Cardllector es una aplicación personal para registrar colecciones de cartas (Magic, Pokémon y
+fútbol) con su precio de mercado y la evolución de su valor. La usan su dueño y unos pocos
+colegas: cada uno ve sus cartas (todo lleva `owner_id`), el catálogo y las fotos compartidas son
+comunes, y las cuentas las crea un admin (D34).
 
 ## Piezas
 
@@ -10,7 +11,7 @@ con su precio de mercado y la evolución de su valor. Un solo usuario, aunque lo
 | --- | --- |
 | App | Next.js 16 (App Router) + React 19, desplegada en Vercel. Web y móvil (PWA en la fase 3). |
 | Base de datos | Postgres: Neon en producción, PGlite en local. Esquema y migraciones con Drizzle. |
-| Auth | Better Auth, email + contraseña, registro cerrado (`ALLOW_SIGNUP` solo lo abre el script de alta). |
+| Auth | Better Auth, email + contraseña, registro cerrado (`ALLOW_SIGNUP` solo lo abre el script de alta). Roles `admin` y `user` con su plugin de administración: las cuentas de los demás las crea un admin en `/admin` (D34). |
 | Catálogo y precios | Magic: ficheros bulk diarios de Scryfall. Pokémon: API de TCGdex. Los dos se importan con GitHub Actions (ver `docs/data-sources.md`). |
 
 ```
@@ -36,6 +37,7 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 | --- | --- |
 | `/` | Resumen: lo que valen tus cartas, su evolución (`?period=7`, `30` —por defecto—, `90` o `all`), cuánto ha cambiado el valor por los precios y lo que más ha subido y bajado, el progreso de tus colecciones y tus cartas más valiosas. |
 | `/catalog` | Los juegos: Magic, Pokémon y Fútbol. Los álbumes de fútbol se importan de listas de CromosRepes y no tienen precio de mercado (D29). |
+| `/admin` | Solo admins (`requireAdmin()`, 404 para el resto): crear cuentas, cambiar el rol, desactivar, y lo que gasta cada uno en IA (D34). |
 | `/catalog/[juego]` | Las expansiones del juego, agrupadas por tipo (principales, Commander, especiales, promos), con cuántas cartas tienes de cada una y lo que valen. |
 | `/catalog/[juego]/[expansión]` | Todas las cartas de la expansión en orden de número. Las que no tienes salen en gris. Se filtra por rareza y por "tengo" o "me faltan", y cada carta tiene un botón **+** para añadirla. |
 | `/cards/[id]` | Una edición concreta: precio, histórico de precio (si la tienes) y el resto de sus ediciones. Desde aquí se añaden copias a tus cartas y se apunta la edición en una colección, la tengas o no. Enseña dónde tienes cada copia y en qué colecciones está. |
@@ -184,8 +186,6 @@ Importa el repo desde vercel.com. Detecta Next.js solo. Variables de entorno (Pr
 | `BETTER_AUTH_URL` | La URL de producción, por ejemplo `https://cardllector.vercel.app` |
 | `ANTHROPIC_API_KEY` | Opcional: activa «Identificar con IA» en el escáner (D31). Sin ella, el botón no sale |
 | `AI_IDENTIFY_DAILY_LIMIT` | Opcional: identificaciones con IA por usuario cada 24 horas (150 por defecto) |
-| `ADMIN_EMAILS` | Correos de los administradores, separados por comas: pueden borrar cualquier foto compartida (D30) |
-
 En *Settings → Functions*, pon la región `fra1`, la misma zona que Neon.
 
 - El script `vercel-build` aplica las migraciones **solo** en producción (`VERCEL_ENV=production`),

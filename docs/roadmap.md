@@ -63,6 +63,9 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
     salen con la carta recortada a sus bordes y recta, como un escaneo.
   - **Reconocer por la foto** (D33): una carta con foto compartida se reconoce comparando
     huellas perceptuales en el móvil, aunque no tenga texto legible.
+- **Cuentas para colegas** (D34): roles `admin` y `user`, y `/admin` para crear cuentas,
+  cambiar el rol, desactivarlas y ver el gasto de IA de cada una. Los admins borran fotos
+  compartidas.
 - **Colecciones desde una expansión:**
   - Se crean llenas con una expansión entera, o con una de sus rarezas.
   - Se hace desde `/collections` o con «Guardar como colección…» en la expansión.

@@ -1,14 +1,14 @@
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, ShieldIcon } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
-import { requireUser } from "@/lib/session";
+import { isAdmin, requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { DesktopNav, MobileTabBar } from "./nav-links";
 import { SignOutButton } from "./sign-out-button";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  await requireUser();
+  const user = await requireUser();
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
@@ -26,6 +26,16 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             >
               <SearchIcon />
             </Link>
+            {isAdmin(user) && (
+              <Link
+                href="/admin"
+                className={buttonVariants({ variant: "ghost", size: "icon" })}
+                aria-label="Administración"
+                title="Administración"
+              >
+                <ShieldIcon />
+              </Link>
+            )}
             <SignOutButton />
           </div>
         </div>
