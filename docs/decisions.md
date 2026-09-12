@@ -273,6 +273,10 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
 - **Descartado:** el gris neutro de shadcn tal cual, y los tópicos de las interfaces generadas
   (negro con un único color ácido, degradados decorativos, etiquetas en mayúsculas).
 - **Revisar cuando:** el usuario quiera modo claro o un selector de tema.
+- **Actualización (2026-09-12):** logo **«Abanico»**: tres cartas en la mano, la de delante
+  dorada con el rombo de rareza, con el nombre en Archivo expandida (`src/components/logo.tsx`).
+  Se descartaron «Rombo», una carta inclinada con el rombo, que perdía fuerza a 16 px, y
+  «Carpeta», una página de nueve con un hueco dorado, cuyos huecos se juntaban a 16 px.
 
 ## D19 · "Otras ediciones" de Pokémon agrupadas por nombre — 2026-09-11 · provisional
 

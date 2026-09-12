@@ -1,5 +1,6 @@
 import { SearchIcon } from "lucide-react";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -13,8 +14,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     <div className="flex min-h-full flex-1 flex-col">
       <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
-          <Link href="/" className="font-semibold tracking-tight">
-            Cardllector
+          <Link href="/" className="shrink-0">
+            <Logo />
           </Link>
           <DesktopNav />
           <div className="ml-auto flex items-center gap-1">

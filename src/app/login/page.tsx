@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CardFan } from "@/components/card-fan";
+import { LogoMark } from "@/components/logo";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Entrar" };
@@ -26,7 +27,10 @@ export default function LoginPage() {
         <div className="space-y-4 text-center">
           <CardFan cards={COVER} size="sm" />
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Cardllector</h1>
+            <h1 className="flex items-center justify-center gap-2 text-3xl font-extrabold tracking-tight">
+              <LogoMark className="size-10" />
+              Cardllector
+            </h1>
             <p className="text-muted-foreground text-sm">Entra para ver tu colección.</p>
           </div>
         </div>

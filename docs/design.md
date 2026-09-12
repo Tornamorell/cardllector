@@ -100,4 +100,11 @@ siendo los de shadcn por si algún día se añade un selector de tema.
 - `src/components/holo-card.tsx`: la carta grande que se inclina.
 - `src/components/rarity-mark.tsx` y `rarityTier()` en `src/lib/games.ts`: rombo del color de la
   rareza.
-- `src/app/app-icon.tsx`: el icono de la app, una carta dorada inclinada sobre el tapete.
+- `src/components/logo.tsx`: el logo, **«Abanico»**.
+  - Tres cartas en la mano, la de delante dorada con el rombo de rareza. Recuerda al abanico
+    del Resumen y se reconoce a 16 px.
+  - El nombre va en Archivo expandida (`wdth` 125) y extranegrita.
+  - `<LogoMark>` es el símbolo solo y `<Logo>`, símbolo y nombre para la cabecera y la entrada.
+  - Se eligió el 2026-09-12 entre tres propuestas: Abanico, Rombo y Carpeta.
+- `src/app/app-icon.tsx`: el icono de la app, para el móvil, la instalación y la pestaña. Es el
+  abanico sobre el tapete, con una luz suave arriba a la izquierda.
