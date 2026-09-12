@@ -20,6 +20,7 @@ export function CardThumb({
   className,
   priority,
   foil,
+  label,
 }: {
   src: string | null | undefined;
   alt: string;
@@ -27,6 +28,8 @@ export function CardThumb({
   className?: string;
   priority?: boolean;
   foil?: boolean;
+  /** Shown on the placeholder when there's no image (the number of a football card). */
+  label?: string;
 }) {
   const { width, height } = SIZES[size];
   return (
@@ -48,7 +51,26 @@ export function CardThumb({
           className="absolute inset-0 block h-full w-full object-cover"
         />
       ) : (
-        <span className="bg-muted absolute inset-0 block" aria-hidden />
+        // No image (football cards have none): a card back with its number and, when there's
+        // room, its name.
+        <span
+          className="bg-muted absolute inset-0 flex flex-col items-center justify-center gap-1 p-1.5 text-center"
+          aria-hidden
+        >
+          {label && (
+            <span
+              className={cn(
+                "display text-muted-foreground leading-none font-bold",
+                size === "xs" ? "text-[9px]" : size === "sm" ? "text-xs" : "text-lg",
+              )}
+            >
+              {label}
+            </span>
+          )}
+          {(size === "md" || size === "lg") && (
+            <span className="text-muted-foreground line-clamp-3 text-[10px] leading-tight">{alt}</span>
+          )}
+        </span>
       )}
     </span>
   );

@@ -12,10 +12,13 @@ export function HoloCard({
   src,
   alt,
   foil,
+  label,
 }: {
   src: string | null;
   alt: string;
   foil?: boolean;
+  /** Shown on the placeholder when there's no image (a football card's number). */
+  label?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -60,7 +63,13 @@ export function HoloCard({
             className="block h-full w-full object-cover"
           />
         ) : (
-          <span className="bg-muted block h-full w-full" aria-hidden />
+          <span
+            className="bg-muted absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center"
+            aria-hidden
+          >
+            {label && <span className="display text-muted-foreground text-4xl font-bold">{label}</span>}
+            <span className="text-muted-foreground text-sm">{alt}</span>
+          </span>
         )}
       </div>
     </div>

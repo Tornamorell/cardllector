@@ -5,7 +5,7 @@
  * `game`. Pure data — safe to import from client components.
  */
 
-export type CatalogGameId = "mtg" | "pokemon";
+export type CatalogGameId = "mtg" | "pokemon" | "sports";
 export type Finish = "nonfoil" | "foil" | "etched";
 
 export interface SetGroup {
@@ -22,6 +22,8 @@ export interface GameConfig {
   shortName: string;
   /** False while no catalog source is wired up for the game. */
   available: boolean;
+  /** Whether its source has Cardmarket prices. Without them, only estimated values count (D29). */
+  hasMarketPrices: boolean;
   /** Where catalog and prices come from, for attribution in the UI. */
   sourceName: string;
   /** Cardmarket URL segment: cardmarket.com/es/{category}/Products?idProduct=… */
@@ -45,6 +47,7 @@ export const GAMES: GameConfig[] = [
     name: "Magic: The Gathering",
     shortName: "Magic",
     available: true,
+    hasMarketPrices: true,
     sourceName: "Scryfall",
     cardmarketCategory: "Magic",
     rarities: [
@@ -91,6 +94,7 @@ export const GAMES: GameConfig[] = [
     name: "Pokémon TCG",
     shortName: "Pokémon",
     available: true,
+    hasMarketPrices: true,
     sourceName: "TCGdex",
     cardmarketCategory: "Pokemon",
     // TCGdex rarities, lowercased (see normalizeRarity); labels restore the official casing.
@@ -159,6 +163,47 @@ export const GAMES: GameConfig[] = [
     },
     finishLabels: { nonfoil: "Estándar", foil: "Reverse holo", etched: "Etched" },
   },
+  {
+    // Football card and sticker collections, imported from CromosRepes checklists (D29).
+    id: "sports",
+    slug: "futbol",
+    name: "Fútbol",
+    shortName: "Fútbol",
+    available: true,
+    hasMarketPrices: false,
+    sourceName: "listas de CromosRepes",
+    cardmarketCategory: "",
+    // Each series is a rarity; names as the albums print them. Lowest first.
+    rarities: [
+      { value: "escudo", label: "Escudo" },
+      { value: "básica", label: "Básica" },
+      { value: "bis", label: "BIS" },
+      { value: "nuevo fichaje", label: "Nuevo Fichaje" },
+      { value: "master rookie", label: "Master Rookie" },
+      { value: "flashback", label: "Flashback" },
+      { value: "flashback anthology", label: "Flashback Anthology" },
+      { value: "élite", label: "Élite" },
+      { value: "vértigo", label: "Vértigo" },
+      { value: "zona vip", label: "Zona VIP" },
+      { value: "élite power", label: "Élite Power" },
+      { value: "vértigo power", label: "Vértigo Power" },
+      { value: "zona vip power", label: "Zona VIP Power" },
+      { value: "mega power", label: "Mega Power" },
+      { value: "special one black", label: "Special One Black" },
+      { value: "special one gold", label: "Special One Gold" },
+      { value: "edición limitada", label: "Edición Limitada" },
+      { value: "autógrafo original", label: "Autógrafo Original" },
+      { value: "checklist", label: "Checklist" },
+    ],
+    // set_type holds the product line.
+    setGroups: [
+      { key: "megacracks", label: "Megacracks", types: ["megacracks"] },
+      { key: "adrenalyn", label: "Adrenalyn XL", types: ["adrenalyn"] },
+      { key: "other", label: "Otras", types: "rest" },
+    ],
+    setTypeLabels: { megacracks: "Megacracks", adrenalyn: "Adrenalyn XL" },
+    finishLabels: { nonfoil: "Normal", foil: "Brillo", etched: "Etched" },
+  },
 ];
 
 export function gameBySlug(slug: string): GameConfig | null {
@@ -193,6 +238,11 @@ export type RarityTier = "common" | "uncommon" | "rare" | "mythic" | "special";
  */
 export function rarityTier(rarity: string | null): RarityTier {
   const r = rarity ?? "";
+  // Football series (D29): autographs and gold on top, then the POWER parallels and blacks.
+  if (/autógrafo|special one gold/.test(r)) return "mythic";
+  if (/power|special one black|edición limitada/.test(r)) return "special";
+  if (/élite|vértigo|zona vip|master rookie|flashback/.test(r)) return "rare";
+  if (r === "bis" || r === "nuevo fichaje") return "uncommon";
   if (r === "uncommon") return "uncommon";
   if (r === "mythic" || /secret|hyper|special illustration|gold|crown/.test(r)) return "mythic";
   if (r === "special" || r === "bonus") return "special";

@@ -21,7 +21,8 @@
     "sql": "node --env-file-if-exists=.env.local --import tsx scripts/sql.ts",
     "snapshot:prices": "node --env-file-if-exists=.env.local --import tsx scripts/snapshot-prices.ts",
     "vercel-build": "if [ \"$VERCEL_ENV\" = production ]; then npm run db:migrate; fi && next build",
-    "sync:pokemon": "node --env-file-if-exists=.env.local --import tsx scripts/sync-pokemon.ts"
+    "sync:pokemon": "node --env-file-if-exists=.env.local --import tsx scripts/sync-pokemon.ts",
+    "import:album": "node --env-file-if-exists=.env.local --import tsx scripts/import-album.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

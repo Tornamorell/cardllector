@@ -94,6 +94,7 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
         <HoloCard
           src={printing.imageNormal}
           alt={printing.name}
+          label={`#${printing.collectorNumber}`}
           foil={printing.finishes.includes("foil") && !printing.finishes.includes("nonfoil")}
         />
 
@@ -122,25 +123,34 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
             </p>
           </div>
 
-          <dl className="grid max-w-md grid-cols-3 gap-3">
-            <Price label={finishLabel(printing.game, "nonfoil")} value={printing.priceEur} />
-            <Price label={finishLabel(printing.game, "foil")} value={printing.priceEurFoil} />
-            <Price label="USD" value={printing.priceUsd} format={(v) => `$${v.toFixed(2)}`} />
-          </dl>
-          <p className="text-muted-foreground text-xs">
-            Precios de Cardmarket vía {game?.sourceName ?? "Scryfall"}
-            {updated && `, actualizados el ${updated}`}.{" "}
-            {printing.cardmarketId && (
-              <a
-                className="underline"
-                href={`https://www.cardmarket.com/es/${game?.cardmarketCategory ?? "Magic"}/Products?idProduct=${printing.cardmarketId}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Ver en Cardmarket
-              </a>
-            )}
-          </p>
+          {game?.hasMarketPrices === false ? (
+            <p className="text-muted-foreground max-w-md text-sm">
+              Del {game.sourceName}. No hay precio de mercado: si una copia tuya vale algo, ponle un
+              valor estimado en Mis cartas.
+            </p>
+          ) : (
+            <>
+              <dl className="grid max-w-md grid-cols-3 gap-3">
+                <Price label={finishLabel(printing.game, "nonfoil")} value={printing.priceEur} />
+                <Price label={finishLabel(printing.game, "foil")} value={printing.priceEurFoil} />
+                <Price label="USD" value={printing.priceUsd} format={(v) => `$${v.toFixed(2)}`} />
+              </dl>
+              <p className="text-muted-foreground text-xs">
+                Precios de Cardmarket vía {game?.sourceName ?? "Scryfall"}
+                {updated && `, actualizados el ${updated}`}.{" "}
+                {printing.cardmarketId && (
+                  <a
+                    className="underline"
+                    href={`https://www.cardmarket.com/es/${game?.cardmarketCategory ?? "Magic"}/Products?idProduct=${printing.cardmarketId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Ver en Cardmarket
+                  </a>
+                )}
+              </p>
+            </>
+          )}
 
           <AddCopy
             printingId={printing.id}

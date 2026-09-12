@@ -152,6 +152,7 @@ export default async function CollectionPage({
                 <OwnedCardTile
                   printingId={c.id}
                   name={c.name}
+                  number={c.collectorNumber}
                   imageSmall={c.imageSmall}
                   finishes={c.finishes}
                   owned={c.owned}

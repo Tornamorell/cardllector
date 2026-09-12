@@ -48,6 +48,11 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Las cinco cartas que más han subido y bajado.
   - En la ficha de carta, el histórico de precio de cada acabado.
   - Aparecen cuando hay al menos dos días de precios guardados.
+- **Fútbol** (D29):
+  - Juego «Fútbol» en el catálogo, sin precios de mercado.
+  - Liga 2025-26 Megacracks (717 fichas), importado de la lista de CromosRepes con
+    `npm run import:album`.
+  - Series como rarezas y marcador con el número en lugar de imagen.
 - **Colecciones desde una expansión:**
   - Se crean llenas con una expansión entera, o con una de sus rarezas.
   - Se hace desde `/collections` o con «Guardar como colección…» en la expansión.
@@ -139,7 +144,8 @@ Lo principal está hecho (ver "Hecho", D24). Falta:
 - **Pokémon, cartas antiguas:** 1ª edición y shadowless con precio propio (hueco de D18).
 - **Pokémon en el escáner:** las cartas modernas llevan impresos el código de expansión
   (`abbreviation.official`, por ejemplo "MEW") y el número. Encaja con el mismo enfoque de OCR.
-- **Fútbol (cromos y cartas)**, planteado el 2026-09-12 y aparcado:
+- **Fútbol (cromos y cartas)**: empezado el 2026-09-12 (D29). Ya está el catálogo con Liga
+  2025-26 Megacracks, importado de CromosRepes. Queda pendiente de lo planteado:
   - Un álbum es una expansión (`game = sports`) y cada cromo es una carta con número, jugador y
     equipo.
   - **Listas:** crear el álbum pegando su listado («1 Courtois – Real Madrid»), o solo con el

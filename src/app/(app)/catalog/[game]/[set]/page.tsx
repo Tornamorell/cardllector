@@ -209,6 +209,7 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
               <OwnedCardTile
                 printingId={c.id}
                 name={c.name}
+                number={c.collectorNumber}
                 imageSmall={c.imageSmall}
                 finishes={c.finishes}
                 owned={c.owned}

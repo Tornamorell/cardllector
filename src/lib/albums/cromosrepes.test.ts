@@ -1,0 +1,96 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { parseCromosRepesList, toAlbumCards, type AlbumConfig } from "./cromosrepes";
+
+const config: AlbumConfig = {
+  releasedAt: "2025-08-06",
+  editions: { II: "2025-09-12", III: "2025-10-23" },
+  teams: { RMA: "Real Madrid CF", BAR: "FC Barcelona", ATC: "Athletic Club", RSO: "Real Sociedad de Fútbol" },
+};
+
+const sample = `
+check_box
+Serie Élite (y Paralelas)
+4 faltas
+·1 ELI Bellingham RMA
+1
+·1 ELI-POWER Bellingham RMA *
+
+disabled_by_default
+
+check_box
+Deportivo Alavés
+·19 Escudo
+·21 BIS Raúl Fernández (II)
+·21 Owono (Baja)
+
+check_box
+Nuevas Máster Rookie
+·516 Gorrotxategi RSO (III)
+
+check_box
+Serie Special One Black
+·4 SPECIAL ONE BLAK Lamine Yamal BAR *
+·10 NUEVA SPECIAL ONE BLACK Rashford BAR (III)
+
+check_box
+Ediciones Limitadas
+·EDL 01 Cubarsí BAR (Top Revelación) Starter Pack
+
+check_box
+Autógrafo Original
+·AO 13 CARD AUTÓGRAFO ORIGINAL - Sancet ATC *
+
+check_box
+Índices
+·Trading Cards Editados 2ª Edición (Checklist Cartas BIS) (1) (II)
+`;
+
+describe("parseCromosRepesList", () => {
+  it("reads sections, items and the user's marks, skipping page chrome", () => {
+    const items = parseCromosRepesList(sample);
+    expect(items).toHaveLength(11);
+    expect(items[0]).toEqual({ section: "Serie Élite (y Paralelas)", label: "1 ELI Bellingham RMA", marked: 0 });
+    expect(items[1]).toMatchObject({ label: "1 ELI-POWER Bellingham RMA *", marked: 1 });
+    expect(items[2].section).toBe("Deportivo Alavés");
+  });
+});
+
+describe("toAlbumCards", () => {
+  const cards = toAlbumCards(parseCromosRepesList(sample), config);
+  const byNumber = Object.fromEntries(cards.map((c) => [c.collectorNumber, c]));
+
+  it("numbers parallels, BIS and the special series apart", () => {
+    expect(cards.map((c) => c.collectorNumber)).toEqual([
+      "1", "1-POWER", "19", "21-BIS", "21", "516", "SOB-4", "SOB-10", "EDL-01", "AO-13", "CHK-1",
+    ]);
+  });
+
+  it("takes the series as rarity and the team from its code or its page", () => {
+    expect(byNumber["1-POWER"]).toMatchObject({ name: "Bellingham", rarity: "élite power", team: "Real Madrid CF" });
+    expect(byNumber["19"]).toMatchObject({ name: "Escudo Deportivo Alavés", rarity: "escudo", team: "Deportivo Alavés" });
+    expect(byNumber["21-BIS"]).toMatchObject({ name: "Raúl Fernández", rarity: "bis", team: "Deportivo Alavés" });
+    expect(byNumber["21"]).toMatchObject({ name: "Owono (Baja)", rarity: "básica" });
+    expect(byNumber["516"]).toMatchObject({ name: "Gorrotxategi", rarity: "master rookie", team: "Real Sociedad de Fútbol" });
+    expect(byNumber["SOB-4"]).toMatchObject({ name: "Lamine Yamal", rarity: "special one black", team: "FC Barcelona" });
+    expect(byNumber["EDL-01"]).toMatchObject({ name: "Cubarsí (Top Revelación) Starter Pack", team: "FC Barcelona" });
+    expect(byNumber["AO-13"]).toMatchObject({ name: "Sancet", rarity: "autógrafo original", team: "Athletic Club" });
+    expect(byNumber["CHK-1"]).toMatchObject({ rarity: "checklist" });
+  });
+
+  it("dates each card by its edition mark", () => {
+    expect(byNumber["1"].releasedAt).toBe("2025-08-06");
+    expect(byNumber["21-BIS"].releasedAt).toBe("2025-09-12");
+    expect(byNumber["SOB-10"].releasedAt).toBe("2025-10-23");
+  });
+
+  it("imports the whole Megacracks 2025-26 list with unique numbers", () => {
+    const text = readFileSync(join(__dirname, "../../../data/albums/liga-2025-26-megacracks.txt"), "utf8");
+    const all = toAlbumCards(parseCromosRepesList(text), config);
+    expect(all).toHaveLength(717);
+    expect(new Set(all.map((c) => c.collectorNumber)).size).toBe(717);
+    // The stored list carries no personal marks.
+    expect(all.every((c) => c.marked === 0)).toBe(true);
+  });
+});

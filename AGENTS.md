@@ -66,6 +66,7 @@ sources, decisions and roadmap.
 | `npm run sql -- "<query>"` | Query the local DB (there's no psql) |
 | `npm run sync:scryfall` · `npm run sync:names` | Magic catalog + prices · Spanish names |
 | `npm run sync:pokemon` (`-- --owned-only`) | Pokémon from TCGdex: full ~20 min · only owned prices |
+| `npm run import:album -- <album>` | Football album from `data/albums/<album>.{json,txt}` (D29) |
 | `npm run seed:user -- <email> <password>` | Create the (only) user |
 
 After adding or renaming routes, run `npx next typegen` so `PageProps<"/route">` types exist.

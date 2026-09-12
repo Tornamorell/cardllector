@@ -461,3 +461,42 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     complican todos los selectores, y hoy solo hacen falta separadores dentro de una ubicación.
   - Deducir el separador por la posición de la carta en la caja: no guardamos el orden físico.
 - **Revisar cuando:** haga falta más de un nivel, o la posición exacta dentro de un separador.
+
+## D29 · Fútbol: álbumes importados de las listas de CromosRepes — 2026-09-12 · provisional
+
+- **Contexto:** el usuario colecciona fútbol (Megacracks, Adrenalyn) y no hay ninguna fuente
+  abierta.
+  - CromosRepes solo enseña la lista cromo a cromo a un usuario con sesión que sigue la
+    colección, en su página «marcar faltas». No tiene API ni exportación.
+  - No hay precios de mercado.
+- **Decisión:**
+  - Juego nuevo, **Fútbol** (`game = sports`, slug `futbol`), sin precios de mercado
+    (`hasMarketPrices: false`). Solo cuenta el valor estimado (D27).
+  - Cada álbum es una expansión y cada ficha, una carta. Se guardan en `data/albums/` dos
+    ficheros por álbum:
+    - `<álbum>.txt`: el texto de la página de CromosRepes, sin las marcas del usuario;
+    - `<álbum>.json`: código, nombre, línea de producto, fechas de cada edición y códigos de
+      equipo.
+
+    `npm run import:album -- <álbum>` los carga en el catálogo. Se puede repetir sin
+    duplicar nada.
+  - **Cómo se consigue la lista:** leyendo esa página en el navegador del usuario, con su
+    sesión y a petición suya, una colección cada vez. Nunca recorriendo el sitio.
+  - **Numeración única dentro del álbum:**
+    - paralelas con sufijo: `16-POWER`;
+    - BIS con sufijo: `21-BIS`;
+    - series sin número propio, con prefijo: `SOB-1` (Special One Black), `SOG-1` (Special One
+      Gold), `EDL-01` (Edición Limitada) y `AO-01` (Autógrafo Original);
+    - listas de control: `CHK-1`.
+  - La serie es la rareza, con su color.
+  - El equipo va en `type_line`, con el código traducido: «RMA» es Real Madrid CF.
+  - `(II)` y `(III)` fijan la fecha de salida de la carta.
+  - Las bajas conservan «(Baja)» en el nombre.
+  - Sin imágenes: un marcador con el número (`label` en `CardThumb` y `HoloCard`).
+  - `oracle_id = sports:<nombre>` agrupa todas las fichas de un jugador, como en D19.
+- **Descartado:**
+  - Extraer las listas de CromosRepes de forma automática.
+  - Buscar imágenes de forma automática (D. «Fútbol» en la hoja de ruta).
+- **Revisar cuando:** CromosRepes ofrezca exportación, o se quiera importar también lo que
+  tiene el usuario a partir de sus faltas y repes. Sus marcas vienen en el mismo texto, pero no
+  dicen con seguridad qué tiene.

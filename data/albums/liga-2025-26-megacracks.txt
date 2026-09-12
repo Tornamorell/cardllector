@@ -1,0 +1,916 @@
+check_box
+Serie Élite (y Paralelas)
+·1 ELI Bellingham RMA
+·1 ELI-POWER Bellingham RMA *
+·2 ELI Budimir OSA
+·2 ELI-POWER Budimir OSA *
+·3 ELI Courtois RMA
+·3 ELI-POWER Courtois RMA *
+·4 ELI Dani Olmo BAR
+·4 ELI-POWER Dani Olmo BAR *
+·5 ELI Fede Valverde RMA
+·5 ELI-POWER Fede Valverde RMA *
+·6 ELI Griezmann ATM
+·6 ELI-POWER Griezmann ATM *
+·7 ELI Isco BET
+·7 ELI-POWER Isco BET *
+·8 ELI Julián Álvarez ATM
+·8 ELI-POWER Julián Álvarez ATM *
+·9 ELI Lamin Yamal BAR
+·9 ELI-POWER Lamine Yamal BAR *
+·10 ELI Lewandowski BAR
+·10 ELI-POWER Lewandowski BAR *
+·11 ELI Lukebakio SEV
+·11 ELI-POWER Lukebakio SEV *
+·12 ELI Mbappé RMA
+·12 ELI-POWER Mbappé RMA *
+·13 ELI Nico Williams ATC
+·13 ELI-POWER Nico Williams ATC *
+·14 ELI Oblak ATM
+·14 ELI-POWER Oblak ATM *
+·15 ELI Pedri BAR
+·15 ELI-POWER Pedri BAR *
+·16 ELI Raphinha BAR
+·16 ELI-POWER Raphinha BAR *
+·17 ELI Sancet ATC
+·17 ELI-POWER Sancet ATC *
+·18 ELI Vinícius RMA
+·18 ELI-POWER Vinícius RMA *
+
+disabled_by_default
+
+check_box
+Deportivo Alavés
+·19 Escudo
+·20 Sivera
+·21 BIS Raúl Fernández (II)
+·21 Owono (Baja)
+·22 Tenaglia
+·23 Moussa Diarra
+·24 BIS Pacheco (Last Moment Jugón nº224)
+·24 Garcés
+·25 BIS Parada (II)
+·25 Mouriño
+·26 BIS Jonny (II)
+·26 Manu Sánchez (Baja)
+·27 Benavídez
+·28 Guevara
+·29 Blanco
+·30 Guridi
+·31 Aleñá (II)
+·32 Carlos Vicente
+·33 BIS Lucas Boyé (III)
+·33 Conechny (Baja)
+·34 Mariano (II)
+·35 Toni Martínez
+·36 BIS Calebe (II)
+·36 Villalibre (Baja)
+
+disabled_by_default
+
+check_box
+Athletic Club
+·37 Escudo
+·38 Unai Simón
+·39 Agirrezabala (Baja)
+·39 BIS Padilla (II)
+·40 BIS Lekue (III)
+·40 Gorosabel
+·41 Vivian
+·42 Paredes
+·43 BIS Adama Boiro (III)
+·43 Yeray
+·44 Yuri
+·45 Vesga
+·46 Jauregizar
+·47 Prados
+·48 Ruiz de Galarreta
+·49 Unai Gómez
+·50 Sancet
+·51 Williams
+·52 Berenguer
+·53 Nico Williams
+·54 BIS Maroan (II)
+·54 Guruceta
+
+disabled_by_default
+
+check_box
+Club Atlético de Madrid
+·55 Escudo
+·56 Oblak
+·57 Musso
+·58 BIS Pubill (II)
+·58 Nahuel Molina
+·59 Giménez
+·60 Le Normand
+·61 Lenglet
+·62 BIS Ruggeri (II)
+·62 Galán
+·63 Gallagher
+·64 BIS Johny Cardoso (II)
+·64 De Paul (Baja)
+·65 Barrios
+·66 Koke
+·67 Marcos Llorente
+·68 BIS Almada (II)
+·68 Samuel Lino (Baja)
+·69 Giuliano
+·70 Julián Álvarez
+·71 Griezmann
+·72 Sørloth
+
+disabled_by_default
+
+check_box
+FC Barcelona
+·73 Escudo
+·74 Ter Stegen
+·75 Szczęsny
+·76 Koundé
+·77 Cubarsí
+·78 Araújo
+·79 BIS Christensen (II)
+·79 Íñigo Martínez (Baja)
+·80 BIS Gerard Martín (III)
+·80 Eric García
+·81 Balde
+·82 BIS Dro (II)
+·82 Casadó
+·83 De Jong
+·84 Fermín
+·85 BIS Marc Bernal (Last Moment Jugón nº224)
+·85 Gavi
+·86 Pedri
+·87 Dani Olmo
+·88 Lamine Yamal
+·89 BIS Ferrán Torres (II)
+·89 Lewandowski
+·90 Raphinha
+
+disabled_by_default
+
+check_box
+Real Betis Balompié
+·91 Escudo
+·92 Valles (II)
+·93 Adrián
+·93 BIS Pau López (II)
+·94 Aitor Ruibal
+·94 BIS Bellerín (III)
+·95 Bartra
+·96 Diego Llorente
+·97 BIS Ricardo Rodríguez (Last Moment Jugón nº224)
+·97 Natan
+·98 BIS Junior (II)
+·98 Perraud (Baja)
+·99 Marc Roca
+·100 Altimira
+·101 Lo Celso
+·102 Pablo Fornals
+·103 Isco
+·104 Pablo García (II)
+·105 Antony
+·105 BIS Riquelme (II)
+·106 Cucho Hernández
+·107 Abde
+·108 Bakambu
+
+disabled_by_default
+
+check_box
+RC Celta de Vigo
+·109 Escudo
+·110 Radu (II)
+·111 Iván Villar
+·112 BIS Carreira (III)
+·112 Javi Rodríguez
+·113 Starfelt
+·114 Domínguez
+·115 BIS Javi Rueda (III)
+·115 Yoel Lago
+·116 Mingueza
+·117 Marcos Alonso
+·118 Ilaix Moriba
+·119 Fran Beltrán
+·120 Damián
+·121 Hugo Álvarez
+·122 Sotelo
+·123 BIS Borja Iglesias (II)
+·123 Cervi
+·124 Pablo Durán
+·125 Swedberg
+·126 Iago Aspas
+
+disabled_by_default
+
+check_box
+Elche CF
+·127 Escudo
+·128 Dituro
+·129 BIS Iñaki Peña (III)
+·129 Iturbe (II)
+·130 Álvaro Núñez
+·131 Affengruber
+·132 BIS Chust (III)
+·132 Diaby
+·133 John Chetauya
+·134 Bigas
+·135 BIS Pedrosa (III)
+·135 Jairo (Baja)
+·136 Febas
+·137 Marc Aguado
+·138 Rodri Mendoza (II)
+·139 BIS Martím Neto (II)
+·139 Nico Fernández (Baja)
+·140 Josan
+·141 Agustín Álvarez (Baja)
+·141 BIS Germán Varela (II)
+·142 BIS André Silva (III)
+·142 Mourad
+·143 Yago Santiago
+·144 BIS Álvaro Rodríguez (II)
+·144 Óscar Plano (Baja)
+
+disabled_by_default
+
+check_box
+RCD Espanyol
+·145 Escudo
+·146 Dmitrović (II)
+·147 Fortuño
+·148 El Hilali
+·149 BIS Miguel Rubio (II)
+·149 Tejero (Baja)
+·150 Calero
+·151 Cabrera
+·152 BIS Salinas (II)
+·152 Pablo Ramón (Baja)
+·153 Carlos Romero
+·154 BIS Rubén Sánchez (II)
+·154 Gragera (Baja)
+·155 Terrats (II)
+·156 BIS Urko (III)
+·156 Pol Lozano
+·157 Edu Expósito
+·158 Jofre
+·159 Antoniu Roca
+·159 BIS Koleosho (III)
+·160 Pere Milla
+·161 Puado
+·162 Roberto Fernández
+
+disabled_by_default
+
+check_box
+Getafe CF
+·163 Escudo
+·164 David Soria
+·165 Letáček
+·166 BIS Kiko Femenía (III)
+·166 Sola (Baja)
+·167 Iglesias
+·168 Alderete (Baja)
+·168 BIS Abqar (III)
+·169 Djené
+·170 Domingos Duarte
+·171 Berrocal (Baja)
+·171 BIS Davinchi (II)
+·172 Diego Rico
+·173 Arambarri
+·174 Milla
+·175 BIS Mario Martín (III)
+·175 Uche (Baja)
+·176 BIS Abu Kamara (III)
+·176 Peter Federico (Baja)
+·177 Coba
+·178 Borja Mayoral
+·179 Álvaro Rodríguez (Baja)
+·179 BIS Álex Sancris (II)
+·180 Juanmi
+
+disabled_by_default
+
+check_box
+Girona FC
+·181 Escudo
+·182 Gazzaniga
+·183 Krapyvtsov
+·184 Arnau
+·185 BIS Hugo Rincón (II)
+·185 David López
+·186 BIS Francés (III)
+·186 Krejčí (Baja)
+·187 Blind
+·188 BIS Álex Moreno (III)
+·188 Miguel Gutiérrez (Baja)
+·189 Arthur (Baja)
+·189 BIS Joel Roca (II)
+·190 Van de Beek
+·191 Solis
+·192 BIS Witsel (III)
+·192 Yangel Herrera (Baja)
+·193 Iván Martín
+·194 Tsygankov
+·195 Yáser Asprilla
+·196 Abel Ruiz
+·196 BIS Bryan Gil (III)
+·197 Portu
+·198 Stuani
+
+disabled_by_default
+
+check_box
+UD Levante
+·199 Escudo
+·200 Pablo Campos (II)
+·201 Alfonso Pastor (II)
+·201 BIS Ryan (III)
+·202 Toljan (II)
+·203 BIS Matías Moreno (Last Moment Jugón nº224)
+·203 Dela
+·204 BIS Matturro (III)
+·204 Cabello
+·205 Elgezabal
+·206 Pampín
+·207 Oriol Rey
+·208 BIS Vencedor (III)
+·208 Víctor García (II)
+·209 BIS Iker Losada (III)
+·209 Sergio Lozano
+·210 Olasagasti (II)
+·211 Pablo Martínez
+·212 Carlos Álvarez
+·213 Iván Moreno
+·214 Brugué
+·215 Carlos Espí
+·216 Morales
+
+disabled_by_default
+
+check_box
+Real Madrid CF
+·217 Escudo
+·218 Courtois
+·219 Lunin
+·220 Carvajal
+·221 Militão
+·222 Asencio
+·223 Rüdiger
+·224 Alaba
+·225 BIS Fran García (III)
+·225 Mendy
+·226 Tchouamení
+·227 BIS Dani Ceballos (III)
+·227 Camavinga
+·228 Fede Valverde
+·229 Bellingham
+·230 Güler
+·231 BIS Endrick (II)
+·231 Brahim Díaz
+·232 Mbappé
+·233 BIS Gonzalo (II)
+·233 Rodrygo
+·234 Vinícius
+
+disabled_by_default
+
+check_box
+RCD Mallorca
+·235 Escudo
+·236 BIS Bergström (II)
+·236 Greif (Baja)
+·237 Leo Román (II)
+·238 BIS Maffeo (III)
+·238 Morey
+·239 Raíllo
+·240 BIS Lato (II)
+·240 Copete (Baja)
+·241 Valjent
+·242 Mojica
+·243 Samu Costa
+·244 Mascarell
+·245 Darder
+·246 Antonio Sánchez
+·247 Dani Rodríguez
+·248 Morlanes
+·249 Asano
+·250 Muriqi
+·251 Abdón
+·252 BIS Jan Virgili (III)
+·252 Marc Domènech
+
+disabled_by_default
+
+check_box
+CA Osasuna
+·253 Escudo
+·254 Sergio Herrera
+·255 Aitor Fernández
+·256 Rosier (II)
+·257 Catena
+·258 Boyomo
+·259 Herrando
+·260 Juan Cruz
+·261 Abel Bretones
+·262 Moncayola
+·263 Torró
+·264 Iker Muñoz
+·265 Rubén García
+·266 Moi Gómez
+·267 Aimar Oroz
+·268 BIS Iker Benito (III)
+·268 Kike Barja
+·269 Raúl García
+·270 Budimir
+
+disabled_by_default
+
+check_box
+Real Oviedo
+·271 Escudo
+·272 Aarón Escandell
+·273 Moldovan (II)
+·274 Nacho Vidal
+·275 Dani Calvo
+·276 BIS David Carmo (III)
+·276 Luengo
+·277 BIS Eric Bailly (Last Moment Jugón nº224)
+·277 David Costas
+·278 Rahim Alhassane
+·279 Colombatto
+·280 BIS Reina (II)
+·280 De la Hoz (Baja)
+·281 Sibo
+·282 Cazorla
+·283 Álex Cardero (Baja)
+·283 BIS Ilić (II)
+·284 BIS Ejaria (III)
+·284 Paulino (Baja)
+·285 Hassan
+·286 Ilyas Chaira
+·287 BIS Brandon Domingues (II)
+·287 Paraschiv (Baja)
+·288 Alemão (Baja)
+·288 BIS Fede Viñas (II)
+
+disabled_by_default
+
+check_box
+Rayo Vallecano
+·289 Escudo
+·290 Batalla
+·291 Cárdenas
+·292 Balliu
+·293 Ratiu
+·294 Lejeune
+·295 BIS Espino (III)
+·295 Mumin
+·296 Pep Chavarría
+·297 Pathé Ciss
+·298 BIS Gumbau (II)
+·298 Pedro Díaz
+·299 Óscar Valentín
+·300 Unai López
+·301 Isi
+·302 BIS Trejo (III)
+·302 Nteka
+·303 De Frutos
+·304 Álvaro García
+·305 Camello
+·306 BIS Fran Pérez (III)
+·306 Etienne Eto'o (Baja)
+
+disabled_by_default
+
+check_box
+Real Sociedad de Fútbol
+·307 Escudo
+·308 Remiro
+·309 Marrero
+·310 Aramburu
+·311 Martín (II)
+·312 Zubeldia
+·313 Aritz Elustondo
+·314 BIS Aihen Muñoz (III)
+·314 Pacheco (Baja)
+·315 BIS Turrientes (III)
+·315 Javi López (Baja)
+·316 BIS Gorrotxategi (II)
+·316 Pablo Marín
+·317 Brais Méndez
+·318 Sergio Gómez
+·319 Sučić
+·320 Kubo
+·321 Barrenetxea
+·322 Oyarzábal
+·323 Óskarsson
+·324 Mariezkurrena
+
+disabled_by_default
+
+check_box
+Sevilla FC
+·325 Escudo
+·326 Nyland
+·327 Álvaro Fernández
+·327 BIS Vlachodimos (II)
+·328 Carmona
+·329 Juanlu
+·330 Kike Salas
+·331 Badé (Baja)
+·331 BIS Castrín (III)
+·332 Nianzou
+·333 BIS Azpilicueta (III)
+·333 Pedrosa (Baja)
+·334 Gudelj
+·335 Sow
+·336 Agoumé
+·337 Vargas
+·338 Peque
+·339 Ejuke
+·340 BIS Alexis Sánchez (III)
+·340 Lukebakio (Baja)
+·341 Isaac Romero
+·342 Akor Adams
+
+disabled_by_default
+
+check_box
+Valencia CF
+·343 Escudo
+·344 Dimitrievski
+·345 Agirrezabala (II)
+·346 Foulquier
+·347 Correia
+·348 BIS Copete (II)
+·348 Mosquera (Baja)
+·349 Diakhaby
+·350 Tárrega
+·351 Gayà
+·352 Jesús Vázquez (II)
+·353 Pepelu
+·354 André Almeida
+·355 Javi Guerra
+·356 Luis Rioja
+·357 Santamaría (II)
+·358 BIS Danjuma (II)
+·358 Fran Pérez (Baja)
+·359 Diego López
+·360 BIS Lucas Beltrán (III)
+·360 Hugo Duro
+
+disabled_by_default
+
+check_box
+Villarreal CF
+·361 Escudo
+·362 Luiz Júnior
+·363 BIS Arnau Tenas (Last Moment Jugón nº224)
+·363 Diego Conde
+·364 Pau Navarro
+·365 Foyth
+·366 BIS Mouriño (II)
+·366 Logan Costa
+·367 Kambwala
+·368 BIS Pedraza (III)
+·368 Sergi Cardona
+·369 Santi Comesaña
+·370 Pape Gueye
+·371 Parejo
+·372 BIS Thomas (II)
+·372 Denis Suárez (Baja)
+·373 Buchanan (II)
+·374 BIS Solomon (III)
+·374 Ilias
+·375 Pépé
+·376 Ayoze
+·377 BIS Oluwaseyi (III)
+·377 Yeremy Pino (Baja)
+·378 Gerard Moreno
+
+disabled_by_default
+
+check_box
+Serie Vértigo (y Paralelas)
+·379 VER Álvaro García RAY
+·379 VER-POWER Álvaro García RAY *
+·380 VER Balde BAR
+·380 VER-POWER Balde BAR *
+·381 VER Brahim Díaz RMA
+·381 VER-POWER Brahim Díaz RMA *
+·382 VER Carlos Vicente ALA
+·382 VER-POWER Carlos Vicente ALA *
+·383 VER Giuliano ATM
+·383 VER-POWER Giuliano ATM *
+·384 VER Kubo RSO
+·384 VER-POWER Kubo RSO *
+·385 VER Luis Rioja VAL
+·385 VER-POWER Luis Rioja VAL *
+·386 VER Iñaki Williams ATC
+·386 VER-POWER Iñaki Williams ATC *
+·387 VER Yeremy Pino VIL
+·387 VER-POWER Yeremy Pino VIL *
+
+disabled_by_default
+
+check_box
+Serie Zona VIP (y Paralelas)
+·388 VIP Ayoze VIL
+·388 VIP-POWER Ayoze VIL *
+·389 VIP Barrios ATM
+·389 VIP-POWER Barrios ATM *
+·390 VIP Berenguer ATC
+·390 VIP-POWER Berenguer ATC *
+·391 VIP Camavinga RMA
+·391 VIP-POWER Camavinga RMA *
+·392 VIP Cubarsí BAR
+·392 VIP-POWER Cubarsí BAR *
+·393 VIP De Paul ATM
+·393 VIP-POWER De Paul ATM *
+·394 VIP Güler RMA
+·394 VIP-POWER Güler RMA *
+·395 VIP Iago Aspas CEL
+·395 VIP-POWER Iago Aspas CEL *
+·396 VIP Íñigo Martínez BAR
+·396 VIP-POWER Íñigo Martínez BAR *
+·397 VIP Jauregizar ATC
+·397 VIP-POWER Jauregizar ATC *
+·398 VIP Javi Guerra VAL
+·398 VIP-POWER Javi Guerra VAL *
+·399 VIP Koundé BAR
+·399 VIP-POWER Koundé BAR *
+·400 VIP Lejeune RAY
+·400 VIP-POWER Lejeune RAY *
+·401 VIP Lo Celso BET
+·401 VIP-POWER Lo Celso BET *
+·402 VIP Muriqi MLL
+·402 VIP-POWER Muriqi MLL *
+·403 VIP Puado ESP
+·403 VIP-POWER Puado ESP *
+·404 VIP Sørloth ATM
+·404 VIP-POWER Sørloth ATM *
+·405 VIP Tchouamení RMA
+·405 VIP-POWER Tchouamení RMA *
+
+disabled_by_default
+
+check_box
+Serie Master Rookie
+·406 MRK Canales ATC
+·407 MRK Carlos Álvarez LEV
+·408 MRK Coba GET
+·409 MRK Etienne Eto'o RAY
+·410 MRK Etta Eyong VIL
+·411 MRK Fer López CEL
+·412 MRK García Pascual SEV
+·413 MRK Hinojo ESP
+·414 MRK Iker Córdoba VAL
+·415 MRK Jesús Rodríguez BET
+·416 MRK Marc Domènech MLL
+·417 MRK Mariezkurrena RSO
+·418 MRK Pablo García BET
+·419 MRK Pau Navarro VIL
+·420 MRK Rayane ATM
+·421 MRK Sergi Domínguez BAR
+·422 MRK Toni Fernández BAR
+·423 MRK Yoel Lago CEL
+
+disabled_by_default
+
+check_box
+Serie Flashback
+·424 FBK Agüero - Julián Álvarez ATM
+·425 FBK Benzema - Mbappé RMA
+·426 FBK Denilson - Isco BET
+·427 FBK Jordi Alba - Balde BAR
+·428 FBK Kanouté - Lukebakio SEV
+·429 FBK Muniain - Nico Williams ATC
+·430 FBK Ronaldinho - Raphinha BAR
+·431 FBK Sergio Ramos - Asencio RMA
+·432 FBK Xavi - Pedri BAR
+
+disabled_by_default
+
+check_box
+Flashback Anthology
+·433 FBK-ANT Aduriz - Llorente - Nico Williams - Williams ATC
+·434 FBK-ANT Fernando Torres - Forlán - Griemann - Julián Álvarez ATM
+·435 FBK-ANT Iniesta - Sergio Busquets - Pedri - De Jong BAR
+·436 FBK-ANT Kross - Casemiro - Modrić - Fede Valverde RMA
+·437 FBK-ANT Marcelo - Pepe - Carvajal - Militão RMA
+·438 FBK-ANT Messi - Luis Suárez - Lamine Yamal - Lewandowski BAR
+·439 FBK-ANT Puyol - Piqué - Cubarsí - Íñigo Martínez BAR
+·440 FBK-ANT Ronaldo - Cristiano Ronaldo - Vinicius - Mbappé RMA
+
+disabled_by_default
+
+check_box
+Card MegaPower
+·441 CARD MEGA-POWER *
+
+disabled_by_default
+
+check_box
+Nuevos Fichajes
+·442 NFI Huijsen RMA
+·443 NFI Jutglá CEL (II)
+·444 NFI Raba VAL (II)
+·445 NFI Kike García ESP (II)
+·446 NFI Pablo Ibáñez ALA (II)
+·447 NFI Álex Baena ATM (II)
+·448 NFI Pablo Torre MLL (II)
+·449 NFI Alfon SEV (II)
+·450 NFI Joan García BAR (II)
+·451 NFI Robert Navarro ATC (II)
+·452 NFI Trent RMA (II)
+·453 NFI Moleiro VIL (II)
+·454 NFI Javi Muñoz GET (II)
+·455 NFI Víctor Muñoz OSA (II)
+·456 NFI Bardghji BAR (II)
+·457 NFI Ćaleta-Car RSO (II)
+·458 NFI Valentín Gómez BET (II)
+·459 NFI Lemar GIR (II)
+·460 NFI Suazo SEV (II)
+·461 NFI Hancko ATM (II)
+·462 NFI Rashford BAR (II)
+·463 NFI Rondón OVI (II)
+·464 NFI Areso ATC (II)
+·465 NFI Dolan ESP (II)
+·466 NFI Rafa Marín VIL (II)
+·467 NFI Carreras RMA (II)
+·468 NFI Mateo Joseph MLL (II)
+·469 NFI Deossa BET (II)
+·470 NFI Ugrinić VAL (II)
+·471 NFI Bryan Zaragoza CEL (II)
+·472 NFI Guedes RSO (II)
+·473 NFI Rafa Mir ELC (II)
+·474 NFI Vitor Reis GIR (II)
+·475 NFI Raspadori ATM (II)
+·476 NFI Mastantuono RMA (II)
+·477 NFI Manu Sánchez LEV (III)
+·478 NFI Patrot ELC (III)
+·479 NFI Liso GET (III)
+·480 NFI Luiz Felipe RAY (III)
+·481 NFI Koyalipou LEV (III)
+·482 NFI Kumbulla MLL (III)
+·483 NFI Denis Suárez ALA (III)
+·484 NFI Ramazani VAL (III)
+·485 NFI Becker OSA (III)
+·486 NFI Ounahi GIR (III)
+·487 NFI Renato Veiga VIL (III)
+·488 NFI Riedel ESP (III)
+·489 NFI Fabio Cardoso SEV (III)
+·490 NFI Dendoncker OVI (III)
+·491 NFI Carlos Soler RSO (III)
+·492 NFI Fede Redondo ELC (III)
+·493 NFI Livaković GIR (III)
+·494 NFI Alemão RAY (III)
+·495 NFI Neyou GET (III)
+·496 NFI Pickel ESP (III)
+·497 NFI Brekalo OVI (III)
+·498 NFI Batista Mendy SEV (III)
+·499 NFI Mikautadze VIL (III)
+·500 NFI Laporte ATC (III)
+·501 NFI Etta Eyong LEV (III)
+·502 NFI Vanat GIR (III)
+·503 NFI Amrabat BET (III)
+·504 NFI Nico González ATM (III)
+
+disabled_by_default
+
+check_box
+Nuevas Élite (y Paralelas)
+·505 NELI Huijsen RMA (III)
+·505 NELI-POWER Huijsen RMA (III) *
+·506 NELI Álex Baena ATM (III)
+·506 NELI-POWER Álex Baena ATM (III) *
+·507 NELI Cazorla OVI (III)
+·507 NELI-POWER Cazorla OVI (III) *
+
+disabled_by_default
+
+check_box
+Nuevas Vértigo (y Paralelas)
+·508 NVER Carreras RMA (III)
+·508 NVER-POWER Carreras RMA (III) *
+·509 NVER Rashford BAR (III)
+·509 NVER-POWER Rashford BAR (III) *
+·510 NVER Víctor Muñoz OSA (III)
+·510 NVER-POWER Víctor Muñoz OSA (III) *
+
+disabled_by_default
+
+check_box
+Nuevas Zona VIP (y Paralelas)
+·511 NVIP Hancko ATM (III)
+·511 NVIP-POWER Hancko ATM (III) *
+·512 NVIP Joan García BAR (III)
+·512 NVIP-POWER Joan García BAR (III) *
+·513 NVIP De Frutos RAY (III)
+·513 NVIP-POWER De Frutos RAY (III) *
+
+disabled_by_default
+
+check_box
+Nuevas Máster Rookie
+·514 NMRK Liso GET (III)
+·515 NMRK Rodri Mendoza ELC (III)
+·516 Gorrotxategi RSO (III)
+
+disabled_by_default
+
+check_box
+Nuevas Flashback
+·517 NFBK Tamudo - Puado ESP (III)
+·518 NFBK Joaquín - Antony BET (III)
+
+disabled_by_default
+
+check_box
+Nueva Flashback Anthology
+·519 NFBK-ANT Redondo - Di María - Higuaín - Mastantuono RMA (III)
+
+disabled_by_default
+
+check_box
+Serie Special One Black
+·1 SPECIAL ONE BLACK Unai Simón ATC *
+·2 SPECIAL ONE BLACK Oblak ATM *
+·3 SPECIAL ONE BLACK Gavi BAR *
+·4 SPECIAL ONE BLAK Lamine Yamal BAR *
+·5 SPECIAL ONE BLACK Raphinha BAR *
+·6 SPECIAL ONE BLACK Isco BET *
+·7 SPECIAL ONE BLACK Bellingham RMA *
+·8 SPECIAL ONE BLACK Vinícius RMA *
+·9 SPECIAL ONE BLAK Parejo VIL *
+
+disabled_by_default
+
+check_box
+Special One Gold
+·1 SPECIAL ONE GOLD Nico Williams ATC *
+·2 SPECIAL ONE GOLD Pedri BAR *
+·3 SPECIAL ONE GOLD Mbappé RMA *
+
+disabled_by_default
+
+check_box
+Nuevas Special One
+·10 NUEVA SPECIAL ONE BLACK Rashford BAR (III)
+·11 NUEVA SPECIAL ONE BLACK Mastantuono RMA (III)
+
+disabled_by_default
+
+check_box
+Índices
+·Trading Cards Editados 2ª Edición (Checklist Cartas BIS) (1) (II)
+·Trading Cards Editados 2ª Edición (Checklist Nuevos Fichajes) (y 2) (II)
+·Trading Cards Editados 3ª Edición (Checklist Cartas BIS y Nuevos Fichajes) (1) (III)
+·Trading Cards Editados 3ª Edición (Checklist Cartas BIS y Nuevos Fichajes) (y 2) (III)
+
+disabled_by_default
+
+check_box
+Ediciones Limitadas
+·EDL 01 Cubarsí BAR (Top Revelación) Starter Pack
+·EDL 02 Lamine Yamal BAT (Top Crack) Starter Pack
+·EDL 03 Mbappé (Top Goleador) Starter Pack
+·EDL 04 Álex Baena ATM (Top Fichaje) Jugón nº222
+·EDL 05 Rashford BAR (Top Fichaje) Jugón nº222
+·EDL 06 Huijsen RMA (Top Fichaje) Jugón nº222
+·EDL 07 Almada ATM (Top Fichaje) Jugón nº223
+·EDL 08 Mastantuono RMA (Top Fichaje) Jugón nº223
+·EDL 09 Moleiro VIL (Top Fichaje) Jugón nº223
+
+disabled_by_default
+
+check_box
+Autógrafo Original
+·AO 01 CARD AUTÓGRAFO ORIGINAL - Berenguer ATC *
+·AO 02 CARD AUTÓGRAFO ORIGINAL - Antonio Blanco ALA *
+·AO 03 CARD AUTÓGRAFO ORIGINAL - Jesús Rodríguez BET *
+·AO 04 CARD AUTÓGRAFO ORIGINAL DUAL - Diego Simeone/Giuliano Simeone ATM *
+·AO 05 CARD AUTÓGRAFO ORIGINAL DUAL - Dani Olmo/Lamine Yamal BAR *
+·AO 06 CARD AUTÓGRAFO ORIGINAL - Hugo Duro VAL *
+·AO 07 CARD AUTÓGRAFO ORIGINAL - Iago Aspas CEL *
+·AO 08 CARD AUTÓGRAFO ORIGINAL - Gazzaniga GIR *
+·AO 09 CARD AUTÓGRAFO ORIGINAL - Aimar Oroz OSA *
+·AO 10 CARD AUTÓGRAFO ORIGINAL - Mingueza CEL *
+·AO 11 CARD AUTÓGRAFO ORIGINAL - Fermín BAR *
+·AO 12 CARD AUTÓGRAFO ORIGINAL - Remiro RSO *
+·AO 13 CARD AUTÓGRAFO ORIGINAL - Sancet ATC *
+·AO 14 CARD AUTÓGRAFO ORIGINAL - Juanlu SEV *
+·AO 15 CARD AUTÓGRAFO ORIGINAL - Iago Aspas CEL *
+·AO 16 CARD AUTÓGRAFO ORIGINAL - Ratiu RAY *
+·AO 17 CARD AUTÓGRAFO ORIGINAL - Muriqi MLL *
+·AO 18 CARD AUTÓGRAFO ORIGINAL - Jauregizar ATC *
+·AO 19 CARD AUTÓGRAFO ORIGINAL -Lo Celso BET *
+·AO 20 CARD AUTÓGRAFO ORIGINAL - Isco BET *
+·AO 21 CARD AUTÓGRAFO ORIGINAL - Militão RMA *
+·AO 22 CARD AUTÓGRAFO ORIGINAL - Giuliano ATM *
+·AO 23 CARD AUTÓGRAFO ORIGINAL - Zubeldia RSO *
+·AO 24 CARD AUTÓGRAFO ORIGINAL - Sotelo CEL *
+·AO 25 CARD AUTÓGRAFO ORIGINAL - De Frutos RAY *
+
+disabled_by_default

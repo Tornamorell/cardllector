@@ -1,0 +1,32 @@
+{
+  "code": "megacracks-2526",
+  "name": "Liga 2025-26 Megacracks",
+  "setType": "megacracks",
+  "publisher": "Panini",
+  "source": "https://cromosrepes.com/coleccion/cromos/LIGA-2025-26-MEGACRACKS",
+  "releasedAt": "2025-08-06",
+  "editions": { "II": "2025-09-12", "III": "2025-10-23" },
+  "teams": {
+    "ALA": "Deportivo Alavés",
+    "ATC": "Athletic Club",
+    "ATM": "Club Atlético de Madrid",
+    "BAR": "FC Barcelona",
+    "BAT": "FC Barcelona",
+    "BET": "Real Betis Balompié",
+    "CEL": "RC Celta de Vigo",
+    "ELC": "Elche CF",
+    "ESP": "RCD Espanyol",
+    "GET": "Getafe CF",
+    "GIR": "Girona FC",
+    "LEV": "UD Levante",
+    "MLL": "RCD Mallorca",
+    "OSA": "CA Osasuna",
+    "OVI": "Real Oviedo",
+    "RAY": "Rayo Vallecano",
+    "RMA": "Real Madrid CF",
+    "RSO": "Real Sociedad de Fútbol",
+    "SEV": "Sevilla FC",
+    "VAL": "Valencia CF",
+    "VIL": "Villarreal CF"
+  }
+}

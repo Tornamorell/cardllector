@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 export function OwnedCardTile({
   printingId,
   name,
+  number,
   imageSmall,
   finishes,
   owned,
@@ -22,6 +23,8 @@ export function OwnedCardTile({
 }: {
   printingId: string;
   name: string;
+  /** Collector number, shown on the placeholder of cards without an image. */
+  number?: string;
   imageSmall: string | null;
   finishes: string[];
   owned: number;
@@ -38,6 +41,7 @@ export function OwnedCardTile({
         <CardThumb
           src={imageSmall}
           alt={name}
+          label={number && `#${number}`}
           size="md"
           className={cn(
             "w-full! transition-[filter,opacity] duration-300",

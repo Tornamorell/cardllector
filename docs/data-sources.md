@@ -122,8 +122,24 @@ con histórico, gradeadas y más juegos.
 
 Código: `src/lib/tcgdex/` (cliente con reintentos, tipos y mapeo) y `scripts/sync-pokemon.ts`.
 
-## Fútbol y deporte: sin fuente
+## Fútbol: listas de CromosRepes (verificado el 2026-09-12)
 
-No hay catálogo ni API de precios abiertos. Las referencias son las ventas cerradas de eBay,
-130point y Card Ladder, sin API pública. Por ahora el plan es dar de alta los montones a mano, sin
-`catalog_card_id`, con `attributes` libres y precio manual.
+No hay catálogo ni API de precios abiertos. Las referencias de precio son las ventas cerradas de
+eBay, 130point y Card Ladder, sin API pública. Los álbumes salen de las listas de
+[CromosRepes](https://cromosrepes.com/) (D29).
+
+- Tiene más de 8 500 colecciones.
+- **La ficha pública** (`/coleccion/ficha/<COLECCIÓN>`) da editorial, formato, total y una
+  descripción de las series, pero no la lista.
+- **La lista cromo a cromo** solo sale con sesión iniciada y la colección añadida a «Mis
+  listas», en la página «marcar faltas» (`/app/listas/marcar/<usuario>/<lista>/1`):
+  - secciones por equipo y por serie;
+  - cada ficha como «·número código nombre EQUIPO (edición)»;
+  - antes de cada ficha marcada, una línea con un número: son las faltas o repes del usuario.
+- No tiene API ni exportación. Sus condiciones limitan el uso al personal y no dicen nada del
+  acceso automático. `robots.txt` pide 5 segundos entre peticiones.
+- Se copia el texto de esa página, una colección cada vez y a petición del usuario, y
+  `src/lib/albums/cromosrepes.ts` lo convierte en cartas.
+- Ejemplo: Liga 2025-26 Megacracks, 717 fichas con paralelas, BIS, bajas, series especiales,
+  ediciones limitadas y autógrafos.
+- No hay imágenes. Las cartas llevan un marcador con su número.
