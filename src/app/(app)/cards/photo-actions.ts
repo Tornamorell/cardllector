@@ -1,13 +1,13 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, like, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { catalogCardPhotos, catalogCards } from "@/db/schema";
-import { cardPhotoUrl, isCardPhoto } from "@/lib/card-photo";
+import { CARD_PHOTO_PREFIX, cardPhotoUrl, isCardPhoto } from "@/lib/card-photo";
 import { photoHash } from "@/lib/scan/photo-hash";
-import { requireUser } from "@/lib/session";
+import { isAdmin, requireUser } from "@/lib/session";
 
 /** A 300×419 JPEG weighs ~30 KB; this leaves room without letting big files in. */
 const MAX_IMAGE_BYTES = 250_000;
@@ -55,4 +55,25 @@ export async function saveCardPhoto(
     .where(eq(catalogCards.id, catalogCardId));
   revalidatePath("/", "layout");
   return { saved: true, url, hash };
+}
+
+/**
+ * Deletes a shared photo, whoever took it: admins only (D30). The card goes back to having no
+ * image until someone shares another.
+ */
+export async function deleteCardPhoto(catalogCardId: string): Promise<{ deleted: boolean }> {
+  const user = await requireUser();
+  if (!isAdmin(user)) return { deleted: false };
+  const id = z.uuid().parse(catalogCardId);
+  const deleted = await db
+    .delete(catalogCardPhotos)
+    .where(eq(catalogCardPhotos.catalogCardId, id))
+    .returning({ id: catalogCardPhotos.catalogCardId });
+  if (!deleted.length) return { deleted: false };
+  await db
+    .update(catalogCards)
+    .set({ imageSmall: null, imageNormal: null })
+    .where(and(eq(catalogCards.id, id), like(catalogCards.imageSmall, `${CARD_PHOTO_PREFIX}%`)));
+  revalidatePath("/", "layout");
+  return { deleted: true };
 }

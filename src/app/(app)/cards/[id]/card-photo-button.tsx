@@ -1,22 +1,33 @@
 "use client";
 
-import { CameraIcon } from "lucide-react";
+import { CameraIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cardInPictureBlob } from "@/lib/card-photo";
-import { saveCardPhoto } from "../photo-actions";
+import { deleteCardPhoto, saveCardPhoto } from "../photo-actions";
 
 /**
  * «Añadir foto» / «Cambiar foto» for a card without a catalog image: camera or gallery, the
  * card found and straightened (or the middle of the picture, cut to a card's shape), and
- * shared with everyone (D30, D32).
+ * shared with everyone (D30, D32). «Borrar foto» for admins, confirmed in place.
  */
-export function CardPhotoButton({ catalogCardId, hasPhoto }: { catalogCardId: string; hasPhoto: boolean }) {
+export function CardPhotoButton({
+  catalogCardId,
+  hasPhoto,
+  canDelete = false,
+}: {
+  catalogCardId: string;
+  hasPhoto: boolean;
+  /** The user is an admin (ADMIN_EMAILS), who may delete anyone's photo. */
+  canDelete?: boolean;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [deleting, startDelete] = useTransition();
+  const [confirming, setConfirming] = useState(false);
 
   function upload(file: File) {
     startTransition(async () => {
@@ -41,6 +52,37 @@ export function CardPhotoButton({ catalogCardId, hasPhoto }: { catalogCardId: st
     });
   }
 
+  function remove() {
+    startDelete(async () => {
+      try {
+        const r = await deleteCardPhoto(catalogCardId);
+        setConfirming(false);
+        if (r.deleted) {
+          toast.success("Foto borrada.");
+          router.refresh();
+        } else {
+          toast.error("Solo un administrador puede borrar fotos.");
+        }
+      } catch {
+        toast.error("No se ha podido borrar la foto.");
+      }
+    });
+  }
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-1.5 text-sm">
+        <span>¿Borrar la foto? La dejarán de ver todos.</span>
+        <Button type="button" variant="destructive" size="sm" disabled={deleting} aria-busy={deleting} onClick={remove}>
+          {deleting ? "Borrando…" : "Borrar"}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" disabled={deleting} onClick={() => setConfirming(false)}>
+          Cancelar
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <>
       <Button
@@ -54,6 +96,12 @@ export function CardPhotoButton({ catalogCardId, hasPhoto }: { catalogCardId: st
         <CameraIcon />
         {pending ? "Guardando…" : hasPhoto ? "Cambiar foto" : "Añadir foto"}
       </Button>
+      {hasPhoto && canDelete && (
+        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => setConfirming(true)}>
+          <Trash2Icon />
+          Borrar foto
+        </Button>
+      )}
       <input
         ref={inputRef}
         type="file"

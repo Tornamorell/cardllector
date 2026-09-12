@@ -530,6 +530,10 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     con la forma de la carta desde el centro.
   - **Actualización (D32):** en los dos casos, la carta se busca en la foto y se endereza, como
     un escaneo. Si no se encuentra, el recorte de antes.
+  - **Actualización (2026-09-12):** los administradores (`ADMIN_EMAILS`) pueden borrar
+    cualquier foto desde la ficha («Borrar foto», con confirmación). La carta se queda sin
+    imagen hasta que alguien comparta otra. El resto de usuarios solo puede cambiarlas. No hay
+    roles en la base de datos; si hacen falta más permisos, pasar a un campo de rol.
   - Nunca sustituye una imagen del catálogo (Scryfall, TCGdex). Un escaneo no reemplaza una
     foto que ya aportó alguien; «Cambiar foto» sí.
   - `catalog_cards.image_*` apuntan a `/api/card-photos/<id>?v=<fecha>`: pide sesión y se

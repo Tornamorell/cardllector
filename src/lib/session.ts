@@ -8,3 +8,12 @@ export async function requireUser() {
   if (!session) redirect("/login");
   return session.user;
 }
+
+/** Admins are listed by email in ADMIN_EMAILS (comma-separated). They moderate shared photos (D30). */
+export function isAdmin(user: { email: string }) {
+  const admins = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return admins.includes(user.email.toLowerCase());
+}

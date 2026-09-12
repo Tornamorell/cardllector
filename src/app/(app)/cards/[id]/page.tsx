@@ -22,7 +22,7 @@ import { getOwnedStacks, getPrinting, getPrintingsOf, getSpanishName } from "@/l
 import { collectionOptions, collectionsOfCard } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
 import { priceHistory } from "@/lib/queries/value";
-import { requireUser } from "@/lib/session";
+import { isAdmin, requireUser } from "@/lib/session";
 import { ValueChart } from "@/components/value-chart";
 import { cn } from "@/lib/utils";
 import { isCardPhoto } from "@/lib/card-photo";
@@ -103,7 +103,11 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
           {/* No catalog image: anyone can share a photo of theirs (D30). */}
           {(!printing.imageNormal || isCardPhoto(printing.imageNormal)) && (
             <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
-              <CardPhotoButton catalogCardId={printing.id} hasPhoto={!!printing.imageNormal} />
+              <CardPhotoButton
+                catalogCardId={printing.id}
+                hasPhoto={!!printing.imageNormal}
+                canDelete={isAdmin(user)}
+              />
               <span className="text-muted-foreground text-xs">
                 {printing.imageNormal ? "Foto de un coleccionista" : "Sin imagen: la tuya la verán todos"}
               </span>
@@ -136,12 +140,7 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
             </p>
           </div>
 
-          {game?.hasMarketPrices === false ? (
-            <p className="text-muted-foreground max-w-md text-sm">
-              Del {game.sourceName}. No hay precio de mercado: si una copia tuya vale algo, ponle un
-              valor estimado en Mis cartas.
-            </p>
-          ) : (
+          {game?.hasMarketPrices !== false && (
             <>
               <dl className="grid max-w-md grid-cols-3 gap-3">
                 <Price label={finishLabel(printing.game, "nonfoil")} value={printing.priceEur} />
