@@ -184,13 +184,20 @@ export const GAMES: GameConfig[] = [
       { value: "flashback anthology", label: "Flashback Anthology" },
       { value: "élite", label: "Élite" },
       { value: "vértigo", label: "Vértigo" },
+      { value: "enjoy", label: "Enjoy" },
       { value: "zona vip", label: "Zona VIP" },
+      { value: "stars on 25", label: "Stars On 25" },
       { value: "élite power", label: "Élite Power" },
       { value: "vértigo power", label: "Vértigo Power" },
+      { value: "enjoy power", label: "Enjoy Power" },
       { value: "zona vip power", label: "Zona VIP Power" },
+      { value: "master rookie power", label: "Master Rookie Power" },
+      { value: "stars on 25 power", label: "Stars On 25 Power" },
       { value: "mega power", label: "Mega Power" },
+      { value: "just 25", label: "Just 25" },
       { value: "special one black", label: "Special One Black" },
       { value: "special one gold", label: "Special One Gold" },
+      { value: "special one champions", label: "Special One Champions" },
       { value: "edición limitada", label: "Edición Limitada" },
       { value: "autógrafo original", label: "Autógrafo Original" },
       { value: "checklist", label: "Checklist" },
@@ -240,8 +247,8 @@ export function rarityTier(rarity: string | null): RarityTier {
   const r = rarity ?? "";
   // Football series (D29): autographs and gold on top, then the POWER parallels and blacks.
   if (/autógrafo|special one gold/.test(r)) return "mythic";
-  if (/power|special one black|edición limitada/.test(r)) return "special";
-  if (/élite|vértigo|zona vip|master rookie|flashback/.test(r)) return "rare";
+  if (/power|special one black|special one champions|edición limitada|just 25/.test(r)) return "special";
+  if (/élite|vértigo|enjoy|zona vip|stars on|master rookie|flashback/.test(r)) return "rare";
   if (r === "bis" || r === "nuevo fichaje") return "uncommon";
   if (r === "uncommon") return "uncommon";
   if (r === "mythic" || /secret|hyper|special illustration|gold|crown/.test(r)) return "mythic";

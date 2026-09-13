@@ -493,7 +493,11 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     - BIS con sufijo: `21-BIS`;
     - series sin número propio, con prefijo: `SOB-1` (Special One Black), `SOG-1` (Special One
       Gold), `EDL-01` (Edición Limitada) y `AO-01` (Autógrafo Original);
-    - listas de control: `CHK-1`.
+    - listas de control: `CHK-1`;
+    - desde 2026-27, `JUST-1` (Just 25) y `SOC-ATM` (Special One Champions, una por club y sin
+      número).
+  - Los huecos que CromosRepes aún no ha puesto nombre («·21») no se importan: entran al volver
+    a importar la lista cuando lo tengan. «(BOX/LATA)» se quita del nombre.
   - La serie es la rareza, con su color.
   - El equipo va en `type_line`, con el código traducido: «RMA» es Real Madrid CF.
   - `(II)` y `(III)` fijan la fecha de salida de la carta.

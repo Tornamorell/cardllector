@@ -1,0 +1,32 @@
+{
+  "code": "megacracks-2627",
+  "name": "Liga 2026-27 Megacracks",
+  "setType": "megacracks",
+  "publisher": "Panini",
+  "source": "https://cromosrepes.com/coleccion/cromos/LIGA-2026-27-MEGACRACKS",
+  "releasedAt": "2026-08-07",
+  "editions": {},
+  "teams": {
+    "ALA": "Deportivo Alavés",
+    "ATH": "Athletic Club",
+    "ATC": "Athletic Club",
+    "ATM": "Club Atlético de Madrid",
+    "BAR": "FC Barcelona",
+    "BET": "Real Betis Balompié",
+    "CEL": "RC Celta de Vigo",
+    "DEP": "Real Club Deportivo de A Coruña",
+    "ELC": "Elche CF",
+    "ESP": "RCD Espanyol",
+    "GET": "Getafe CF",
+    "LEV": "Levante UD",
+    "MAL": "Málaga CF",
+    "OSA": "CA Osasuna",
+    "RAC": "Real Racing Club de Santander",
+    "RAY": "Rayo Vallecano",
+    "RMA": "Real Madrid CF",
+    "RSO": "Real Sociedad de Fútbol",
+    "SEV": "Sevilla FC",
+    "VAL": "Valencia CF",
+    "VIL": "Villarreal CF"
+  }
+}

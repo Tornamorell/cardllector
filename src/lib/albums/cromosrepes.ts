@@ -76,7 +76,18 @@ const SERIES: Record<string, { rarity: string; power?: true }> = {
   "FBK-ANT": { rarity: "flashback anthology" },
   "NFBK-ANT": { rarity: "flashback anthology" },
   NFI: { rarity: "nuevo fichaje" },
+  // New in 2026-27.
+  ENJ: { rarity: "enjoy" },
+  "ENJ-POWER": { rarity: "enjoy power", power: true },
+  NENJ: { rarity: "enjoy" },
+  "NENJ-POWER": { rarity: "enjoy power", power: true },
+  STARS: { rarity: "stars on 25" },
+  "MRK-POWER": { rarity: "master rookie power", power: true },
 };
+
+/** "CRISTIANO RONALDO" → "Cristiano Ronaldo"; names already in mixed case are left alone. */
+const titleCase = (s: string) =>
+  s === s.toUpperCase() ? s.toLowerCase().replace(/(^|\s)\p{L}/gu, (c) => c.toUpperCase()) : s;
 
 /** The series of a section, for items that don't print their code ("516 Gorrotxategi RSO"). */
 function sectionRarity(section: string): string | null {
@@ -86,6 +97,9 @@ function sectionRarity(section: string): string | null {
   if (s.includes("flashback anthology")) return "flashback anthology";
   if (s.includes("flashback")) return "flashback";
   if (/m[aá]ster rookie/.test(s)) return "master rookie";
+  if (s.includes("enjoy")) return "enjoy";
+  if (s.includes("stars on")) return "stars on 25";
+  if (s.includes("just 25")) return "just 25";
   if (s.includes("élite")) return "élite";
   if (s.includes("vértigo")) return "vértigo";
   if (s.includes("zona vip")) return "zona vip";
@@ -104,12 +118,16 @@ function takeEdition(label: string): { rest: string; edition: string | null } {
   return { rest: (label.slice(0, m.index) + label.slice(m.index + m[0].length)).trim(), edition: m[1] };
 }
 
-/** A team code anywhere in the label ("Cubarsí BAR (Top Revelación)"): the team, and the rest. */
+/**
+ * A team code anywhere in the label ("Cubarsí BAR (Top Revelación)", "Lamine Yamal BAR- Starter
+ * Pack"): the team, and the rest.
+ */
 function takeTeam(label: string, teams: Record<string, string>): { rest: string; team: string | null } {
   const words = label.split(" ");
-  const i = words.findLastIndex((w) => w in teams);
+  const i = words.findLastIndex((w) => w.replace(/[-,.:;]+$/, "") in teams);
   if (i === -1) return { rest: label, team: null };
-  return { rest: [...words.slice(0, i), ...words.slice(i + 1)].join(" ").trim(), team: teams[words[i]] };
+  const code = words[i].replace(/[-,.:;]+$/, "");
+  return { rest: [...words.slice(0, i), ...words.slice(i + 1)].join(" ").trim(), team: teams[code] };
 }
 
 /** The checklist as catalog cards: one per item, with unique numbers (see AlbumCard). */
@@ -127,7 +145,12 @@ export function toAlbumCards(items: RawItem[], config: AlbumConfig): AlbumCard[]
   for (const item of items) {
     // Albums, packs and "complete collection" entries aren't cards.
     if (/colecci[oó]n completa|álbum y sobres/i.test(item.section)) continue;
-    const { rest: label, edition } = takeEdition(item.label.replace(/\s*\*\s*$/, ""));
+    // A bare number is a player's slot CromosRepes hasn't named yet: it comes in with a later import.
+    if (/^\d+$/.test(item.label.trim())) continue;
+    // "*" marks the special ones; "(BOX/LATA)" says where a card comes from, not who's on it.
+    const { rest: label, edition } = takeEdition(
+      item.label.replace(/\s*\*\s*$/, "").replace(/\s*\(BOX\/LATA\)/i, ""),
+    );
     const releasedAt = (edition && config.editions[edition]) || config.releasedAt;
     const add = (number: string, name: string, rarity: string, team: string | null) =>
       cards.push({
@@ -146,7 +169,13 @@ export function toAlbumCards(items: RawItem[], config: AlbumConfig): AlbumCard[]
       add(`${gold ? "SOG" : "SOB"}-${m[1]}`, rest, gold ? "special one gold" : "special one black", team);
     } else if ((m = /^EDL (\d+) (.+)$/i.exec(label))) {
       const { rest, team } = takeTeam(m[2], config.teams);
-      add(`EDL-${m[1]}`, rest, "edición limitada", team);
+      add(`EDL-${m[1]}`, rest.replace(/\s*-\s*Starter Pack$/i, " Starter Pack"), "edición limitada", team);
+    } else if ((m = /^(\d+) JUST 25 ?- ?(.+)$/i.exec(label))) {
+      const { rest, team } = takeTeam(m[2], config.teams);
+      add(`JUST-${m[1]}`, titleCase(rest), "just 25", team);
+    } else if ((m = /^SPECIAL ONE CHAMPIONS (\S+)$/i.exec(label))) {
+      // One per champion club, no number: numbered by the club's code.
+      add(`SOC-${m[1]}`, "Special One Champions", "special one champions", config.teams[m[1]] ?? null);
     } else if ((m = /^AO (\d+) CARD AUT[OÓ]GRAFO ORIGINAL(?: DUAL)? ?- ?(.+)$/i.exec(label))) {
       const { rest, team } = takeTeam(m[2], config.teams);
       add(`AO-${m[1]}`, rest, "autógrafo original", team);
@@ -156,6 +185,10 @@ export function toAlbumCards(items: RawItem[], config: AlbumConfig): AlbumCard[]
       const series = SERIES[code];
       if (/^CARD MEGA-POWER$/i.test(body)) {
         add(number, "Card Mega Power", "mega power", null);
+      } else if (/^POWER STARS /i.test(body)) {
+        // The Stars On 25 parallel: "424 POWER STARS Raúl RMA", once "POWER STARS STARS …".
+        const { rest, team } = takeTeam(body.replace(/^POWER STARS (STARS )?/i, ""), config.teams);
+        add(`${number}-POWER`, rest, "stars on 25 power", team);
       } else if (series) {
         const { rest, team } = takeTeam(words.join(" "), config.teams);
         add(series.power ? `${number}-POWER` : number, rest, series.rarity, team);

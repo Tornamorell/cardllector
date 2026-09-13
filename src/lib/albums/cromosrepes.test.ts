@@ -93,4 +93,24 @@ describe("toAlbumCards", () => {
     // The stored list carries no personal marks.
     expect(all.every((c) => c.marked === 0)).toBe(true);
   });
+
+  it("imports the Megacracks 2026-27 list: its new series, and not the slots still unnamed", () => {
+    const dir = join(__dirname, "../../../data/albums");
+    const meta = JSON.parse(readFileSync(join(dir, "liga-2026-27-megacracks.json"), "utf8")) as AlbumConfig;
+    const text = readFileSync(join(dir, "liga-2026-27-megacracks.txt"), "utf8");
+    const all = toAlbumCards(parseCromosRepesList(text), meta);
+    const by = Object.fromEntries(all.map((c) => [c.collectorNumber, c]));
+
+    expect(new Set(all.map((c) => c.collectorNumber)).size).toBe(all.length);
+    expect(by["21"]).toBeUndefined(); // "·21", a player still to be named
+    expect(by["12"]).toMatchObject({ name: "Nico Williams", rarity: "élite", team: "Athletic Club" });
+    expect(by["379-POWER"]).toMatchObject({ name: "Abde", rarity: "enjoy power", team: "Real Betis Balompié" });
+    expect(by["430"]).toMatchObject({ name: "Zidane", rarity: "stars on 25", team: "Real Madrid CF" });
+    expect(by["425-POWER"]).toMatchObject({ name: "Varios Jugadores", rarity: "stars on 25 power" });
+    expect(by["408-POWER"]).toMatchObject({ name: "Carlos Espí", rarity: "master rookie power", team: "Levante UD" });
+    expect(by["JUST-1"]).toMatchObject({ name: "Cristiano Ronaldo", rarity: "just 25", team: "Real Madrid CF" });
+    expect(by["SOC-VAL"]).toMatchObject({ rarity: "special one champions", team: "Valencia CF" });
+    expect(by["EDL-02"]).toMatchObject({ name: "Lamine Yamal Starter Pack", team: "FC Barcelona" });
+    expect(all.some((c) => c.rarity === "checklist")).toBe(false);
+  });
 });

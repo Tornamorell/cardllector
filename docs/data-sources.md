@@ -142,6 +142,9 @@ eBay, 130point y Card Ladder, sin API pública. Los álbumes salen de las listas
   `src/lib/albums/cromosrepes.ts` lo convierte en cartas.
 - Ejemplo: Liga 2025-26 Megacracks, 717 fichas con paralelas, BIS, bajas, series especiales,
   ediciones limitadas y autógrafos.
+- Liga 2026-27 Megacracks (lista leída el 2026-09-13, primera edición del 7 de agosto de 2026):
+  549 fichas. Trae huecos de jugador sin nombre todavía («·21») y series nuevas con otros
+  formatos (Enjoy, Stars On 25, Just 25, Box Premium 25 Aniversario).
 - No hay imágenes. Las cartas llevan un marcador con su número.
 
 ## IA: API de Claude (verificado el 2026-09-12)

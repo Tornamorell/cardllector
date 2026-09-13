@@ -52,6 +52,9 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
   - Juego «Fútbol» en el catálogo, sin precios de mercado.
   - Liga 2025-26 Megacracks (717 fichas), importado de la lista de CromosRepes con
     `npm run import:album`.
+  - Liga 2026-27 Megacracks (549 fichas, 2026-09-13), con sus series nuevas: Enjoy, Stars On 25,
+    Just 25 y las de la Box Premium 25 Aniversario. Faltan 20 jugadores que CromosRepes aún no ha
+    nombrado: se vuelve a importar la lista cuando los tenga.
   - Series como rarezas y marcador con el número en lugar de imagen.
   - **Fotos compartidas** (D30): el escáner guarda la foto de las cartas sin imagen para
     todos, y en la ficha se puede añadir o cambiar.
