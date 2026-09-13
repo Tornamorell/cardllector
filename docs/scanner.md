@@ -90,7 +90,16 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
       el panel de abajo crecía y encogía con lo que enseñaba y lo movía; con un card slinger, que
       deja la carta siempre en el mismo sitio, eso lo desencajaba.
     - El recuadro ocupa el 94 % de la pantalla, menos una franja arriba y otra abajo para las
-      barras flotantes. Con «Recuadro − +», en los ajustes de la derecha,
+      barras flotantes.
+    - **«Ajustar recuadro»**, en los ajustes de la derecha:
+      - pausa la lectura;
+      - el recuadro se arrastra con el dedo, y el círculo de su esquina le cambia el tamaño,
+        del 30 al 100 %, con la forma de una carta;
+      - «Listo» guarda el tamaño y la posición en el dispositivo (`guideScale`, `guideDx`,
+        `guideDy`), «Restablecer» vuelve al recuadro centrado y grande, y el recuadro nunca se
+        sale de la pantalla (`placeGuide`);
+      - la franja amarilla va con el recuadro.
+    - Antes solo cambiaba el tamaño, con «Recuadro − +»,
       se hace más pequeño, hasta el 60 %, y el tamaño se recuerda en el dispositivo. Sirve para un
       card slinger, donde la carta se ve más pequeña y no se puede acercar: se ajusta una vez hasta
       que la carta llene el recuadro, para que la franja amarilla caiga en el número.
@@ -217,8 +226,9 @@ En `scanner.tsx`:
 
 En `geometry.ts`:
 - `INFO_STRIP` y `TITLE_STRIP`.
-- El relleno del recuadro guía, `GUIDE_FILL` (0,94), por el tamaño que elija cada uno (del 60 al
-  100 %, `guideScale` en los valores recordados del dispositivo).
+- El relleno del recuadro guía, `GUIDE_FILL` (0,94), con el tamaño y la posición que elija cada
+  uno (del 30 al 100 %, `GUIDE_SCALE_MIN`; `guideScale`, `guideDx` y `guideDy` en los valores
+  recordados del dispositivo).
 
 En `queries/scan.ts`:
 - `NAME_SIMILARITY_SURE` (0,6).

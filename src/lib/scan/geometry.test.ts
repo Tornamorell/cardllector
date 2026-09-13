@@ -1,13 +1,44 @@
 import { describe, expect, it } from "vitest";
-import { CARD_RATIO, coverTransform, GUIDE_FILL, guideFill, guideIn, guideRect, stripRect, toVideo } from "./geometry";
+import {
+  CARD_RATIO,
+  coverTransform,
+  DEFAULT_GUIDE,
+  GUIDE_FILL,
+  guideIn,
+  guideRect,
+  placeGuide,
+  stripRect,
+  toVideo,
+} from "./geometry";
 
-describe("guideFill", () => {
-  it("scales the guide between 60 % and 100 %, whatever was stored", () => {
-    expect(guideFill(1)).toBeCloseTo(GUIDE_FILL);
-    expect(guideFill(0.8)).toBeCloseTo(GUIDE_FILL * 0.8);
-    expect(guideFill(0.2)).toBeCloseTo(GUIDE_FILL * 0.6);
-    expect(guideFill(3)).toBeCloseTo(GUIDE_FILL);
-    expect(guideFill(Number.NaN)).toBeCloseTo(GUIDE_FILL);
+describe("placeGuide", () => {
+  const area = { x: 0, y: 64, w: 400, h: 700 };
+  const full = guideIn(area, GUIDE_FILL);
+  const centre = (r: { x: number; y: number; w: number; h: number }) => [r.x + r.w / 2, r.y + r.h / 2];
+
+  it("is the full guide, centred, by default", () => {
+    expect(placeGuide(area, DEFAULT_GUIDE)).toEqual(full);
+  });
+
+  it("shrinks around its centre and keeps the card's shape", () => {
+    const g = placeGuide(area, { scale: 0.5, dx: 0, dy: 0 });
+    expect(g.w).toBeCloseTo(full.w / 2);
+    expect(g.w / g.h).toBeCloseTo(CARD_RATIO);
+    expect(centre(g)).toEqual(centre(full));
+  });
+
+  it("moves by fractions of the area, but never out of it", () => {
+    const moved = placeGuide(area, { scale: 0.5, dx: 0.1, dy: 0.2 });
+    expect(centre(moved)[0]).toBeCloseTo(240);
+    expect(centre(moved)[1]).toBeCloseTo(64 + 350 + 140);
+    const far = placeGuide(area, { scale: 0.5, dx: 5, dy: -5 });
+    expect(far.x + far.w).toBeCloseTo(400);
+    expect(far.y).toBeCloseTo(64);
+  });
+
+  it("copes with whatever was stored", () => {
+    expect(placeGuide(area, { scale: 0.05, dx: Number.NaN, dy: 0 }).w).toBeCloseTo(full.w * 0.3);
+    expect(placeGuide(area, { scale: 9, dx: 0, dy: 0 })).toEqual(full);
   });
 });
 

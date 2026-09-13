@@ -15,16 +15,33 @@ export function guideRect(frameW: number, frameH: number, fill = 0.86): Rect {
   return { x: (frameW - w) / 2, y: (frameH - h) / 2, w, h };
 }
 
-/** How much of the space between the scanner's bars the guide takes, at the full size. */
+/** At its full size, the guide takes this much of the space between the scanner's bars. */
 export const GUIDE_FILL = 0.94;
-/** The sizes the owner can give the guide: smaller for a card slinger that shows cards small. */
-export const GUIDE_SCALE_MIN = 0.6;
+/** How small the owner can make it: a card slinger shows cards small, and always in one place. */
+export const GUIDE_SCALE_MIN = 0.3;
 export const GUIDE_SCALE_MAX = 1;
 
-/** The guide's fill for a chosen size, kept within bounds (stored values may be anything). */
-export function guideFill(scale: number): number {
-  const s = Number.isFinite(scale) ? Math.min(GUIDE_SCALE_MAX, Math.max(GUIDE_SCALE_MIN, scale)) : 1;
-  return GUIDE_FILL * s;
+/**
+ * Where the owner put the guide («Ajustar recuadro»): its size, from 0.3 to 1 of the full one,
+ * and its centre's offset from the middle, in fractions of the area.
+ */
+export type GuidePlace = { scale: number; dx: number; dy: number };
+export const DEFAULT_GUIDE: GuidePlace = { scale: 1, dx: 0, dy: 0 };
+
+export function clampGuideScale(scale: number): number {
+  return Number.isFinite(scale) ? Math.min(GUIDE_SCALE_MAX, Math.max(GUIDE_SCALE_MIN, scale)) : 1;
+}
+
+/** The guide in an area, as the owner placed it but never outside the area. Stored values may be anything. */
+export function placeGuide(area: Rect, place: GuidePlace): Rect {
+  const full = guideRect(area.w, area.h, GUIDE_FILL);
+  const scale = clampGuideScale(place.scale);
+  const w = full.w * scale;
+  const h = full.h * scale;
+  const offset = (v: number) => (Number.isFinite(v) ? v : 0);
+  const cx = Math.min(area.w - w / 2, Math.max(w / 2, area.w / 2 + offset(place.dx) * area.w));
+  const cy = Math.min(area.h - h / 2, Math.max(h / 2, area.h / 2 + offset(place.dy) * area.h));
+  return { x: area.x + cx - w / 2, y: area.y + cy - h / 2, w, h };
 }
 
 /** The same, inside an area of the screen (the space between the scanner's bars). */

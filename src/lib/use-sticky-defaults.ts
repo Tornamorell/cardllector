@@ -19,10 +19,13 @@ export interface StickyDefaults {
   /** Optional: also list what's entered in this collection (D23). Null = no collection. */
   entryCollectionId: string | null;
   /**
-   * The scanner guide's size, 0.6–1 of the space it has. A card slinger holds the card at a
-   * fixed distance: the guide is sized to it once.
+   * Where the scanner guide is («Ajustar recuadro», GuidePlace in scan/geometry.ts): its size,
+   * 0.3–1 of the full one, and its centre's offset from the middle. A card slinger holds the
+   * card in one place at a fixed distance: the guide is fitted to it once.
    */
   guideScale: number;
+  guideDx: number;
+  guideDy: number;
 }
 
 const DEFAULTS: StickyDefaults = {
@@ -34,6 +37,8 @@ const DEFAULTS: StickyDefaults = {
   lastSetCode: null,
   entryCollectionId: null,
   guideScale: 1,
+  guideDx: 0,
+  guideDy: 0,
 };
 
 const KEY = "cardllector:defaults";

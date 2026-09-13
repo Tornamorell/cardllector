@@ -37,16 +37,18 @@ import { SetPicker, type SetOption } from "@/components/set-picker";
 import { gameById, rarityLabel, rarityRank } from "@/lib/games";
 import type { ScanMatch } from "@/lib/queries/scan";
 import {
-  GUIDE_SCALE_MAX,
-  GUIDE_SCALE_MIN,
+  DEFAULT_GUIDE,
+  GUIDE_FILL,
   INFO_STRIP,
   NAME_LAYOUTS,
   TITLE_STRIP,
+  clampGuideScale,
   coverTransform,
-  guideFill,
-  guideIn,
+  guideRect,
+  placeGuide,
   stripRect,
   toVideo,
+  type GuidePlace,
   type NameLayout,
   type Rect,
 } from "@/lib/scan/geometry";
@@ -231,6 +233,10 @@ export function Scanner({
   const [lastText, setLastText] = useState("");
   const [showDebug, setShowDebug] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  // «Ajustar recuadro»: the guide being moved and resized, saved on «Listo».
+  const [adjusting, setAdjusting] = useState(false);
+  const [draftPlace, setDraftPlace] = useState<GuidePlace | null>(null);
+  const dragRef = useRef<{ mode: "move" | "resize"; x: number; y: number; start: GuidePlace } | null>(null);
   const [choices, setChoices] = useState<{ matches: ScanMatch[]; lang: string | null } | null>(null);
   // The session survives reloads and closing the camera (scan-session.ts).
   const [entries, setEntries] = useScanSession();
@@ -270,11 +276,18 @@ export function Scanner({
     : null;
   const nameLayout: NameLayout | null = (fixedSetType && NAME_LAYOUTS[fixedSetType]) || null;
 
-  // Paused while the history is open or the AI is identifying: nothing added behind the user's back.
-  const paused = historyOpen || identifying;
-  const settings = useRef({ defaults, fixedSet, locations, paused, nameLayout });
+  // Where the guide is: as the owner placed it, or as it's being adjusted.
+  const place: GuidePlace = draftPlace ?? {
+    scale: defaults.guideScale ?? DEFAULT_GUIDE.scale,
+    dx: defaults.guideDx ?? DEFAULT_GUIDE.dx,
+    dy: defaults.guideDy ?? DEFAULT_GUIDE.dy,
+  };
+  // Paused while the history is open, the AI is identifying or the guide is being adjusted:
+  // nothing added behind the user's back.
+  const paused = historyOpen || identifying || adjusting;
+  const settings = useRef({ defaults, fixedSet, locations, paused, nameLayout, place });
   useEffect(() => {
-    settings.current = { defaults, fixedSet, locations, paused, nameLayout };
+    settings.current = { defaults, fixedSet, locations, paused, nameLayout, place };
   });
 
   useEffect(
@@ -341,7 +354,7 @@ export function Scanner({
     const sr = stageEl.getBoundingClientRect();
     const t = coverTransform(video.videoWidth, video.videoHeight, vr.width, vr.height);
     const area = { x: sr.left - vr.left, y: sr.top - vr.top, w: sr.width, h: sr.height };
-    return toVideo(guideIn(area, guideFill(settings.current.defaults.guideScale)), t);
+    return toVideo(placeGuide(area, settings.current.place), t);
   }
 
   // --- Catalog lookups ------------------------------------------------------
@@ -974,11 +987,59 @@ export function Scanner({
     </div>
   );
   const current = entries[0] ?? null;
-  // The guide's size, remembered on the device: − and + in the panel (a card slinger's cards look small).
-  const guideScale = Math.min(GUIDE_SCALE_MAX, Math.max(GUIDE_SCALE_MIN, defaults.guideScale || 1));
-  const resizeGuide = (step: number) =>
-    setDefaults({ guideScale: Math.min(GUIDE_SCALE_MAX, Math.max(GUIDE_SCALE_MIN, Math.round((guideScale + step) * 100) / 100)) });
-  const guide = stage ? guideIn({ x: 0, y: 0, w: stage.w, h: stage.h }, guideFill(guideScale)) : null;
+  const guide = stage ? placeGuide({ x: 0, y: 0, w: stage.w, h: stage.h }, place) : null;
+
+  // «Ajustar recuadro»: drag the guide to the card, pull its corner to size it, «Listo» saves.
+  function startAdjust() {
+    setToolsOpen(false);
+    setDraftPlace(place);
+    setAdjusting(true);
+  }
+  function cancelAdjust() {
+    setAdjusting(false);
+    setDraftPlace(null);
+  }
+  /** Saves the guide where it's drawn: kept inside the screen, whatever the finger did. */
+  function finishAdjust() {
+    if (guide && stage) {
+      setDefaults({
+        guideScale: clampGuideScale(place.scale),
+        guideDx: (guide.x + guide.w / 2 - stage.w / 2) / stage.w,
+        guideDy: (guide.y + guide.h / 2 - stage.h / 2) / stage.h,
+      });
+    }
+    cancelAdjust();
+  }
+  function startDrag(e: React.PointerEvent, mode: "move" | "resize") {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { mode, x: e.clientX, y: e.clientY, start: place };
+  }
+  function dragGuide(e: React.PointerEvent) {
+    const drag = dragRef.current;
+    const el = stageRef.current;
+    if (!drag || !stage || !el) return;
+    if (drag.mode === "move") {
+      setDraftPlace({
+        ...drag.start,
+        dx: drag.start.dx + (e.clientX - drag.x) / stage.w,
+        dy: drag.start.dy + (e.clientY - drag.y) / stage.h,
+      });
+      return;
+    }
+    // Resizing from the corner, around the centre: as big as the finger is far from it.
+    const g = placeGuide({ x: 0, y: 0, w: stage.w, h: stage.h }, drag.start);
+    const full = guideRect(stage.w, stage.h, GUIDE_FILL);
+    const r = el.getBoundingClientRect();
+    const scale = Math.max(
+      Math.abs(e.clientX - r.left - (g.x + g.w / 2)) / (full.w / 2),
+      Math.abs(e.clientY - r.top - (g.y + g.h / 2)) / (full.h / 2),
+    );
+    setDraftPlace({ ...drag.start, scale: clampGuideScale(scale) });
+  }
+  function endDrag() {
+    dragRef.current = null;
+  }
   const strip = guide ? stripRect(guide, nameLayout?.strip ?? INFO_STRIP) : null;
   const fixedCode = fixedSet?.code.toUpperCase();
 
@@ -1099,9 +1160,30 @@ export function Scanner({
           {guide && strip && (
             <>
               <div
-                className="absolute rounded-[4.5%] border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
+                className={cn(
+                  "absolute rounded-[4.5%] border-2 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]",
+                  adjusting ? "border-primary pointer-events-auto cursor-move touch-none border-dashed" : "border-white/90",
+                )}
                 style={{ left: guide.x, top: guide.y, width: guide.w, height: guide.h }}
-              />
+                onPointerDown={adjusting ? (e) => startDrag(e, "move") : undefined}
+                onPointerMove={adjusting ? dragGuide : undefined}
+                onPointerUp={adjusting ? endDrag : undefined}
+                onPointerCancel={adjusting ? endDrag : undefined}
+              >
+                {adjusting && (
+                  <span
+                    aria-hidden
+                    className="bg-primary absolute -right-4 -bottom-4 size-8 cursor-nwse-resize touch-none rounded-full ring-4 ring-black/40"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      startDrag(e, "resize");
+                    }}
+                    onPointerMove={dragGuide}
+                    onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
+                  />
+                )}
+              </div>
               <div
                 className="absolute rounded border-2 border-primary"
                 style={{ left: strip.x, top: strip.y, width: strip.w, height: strip.h }}
@@ -1186,32 +1268,16 @@ export function Scanner({
 
         {toolsOpen && (
           <div className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.5rem)] right-17 z-10 w-60 space-y-2.5 rounded-2xl bg-black/80 p-3 text-sm backdrop-blur">
-            <div className="flex items-center justify-between gap-2">
-              <span>Recuadro</span>
-              <div className="flex items-center gap-1" role="group" aria-label="Tamaño del recuadro">
-                <button
-                  type="button"
-                  className="size-7 rounded-md bg-white/10 text-base hover:bg-white/20 disabled:opacity-40"
-                  onClick={() => resizeGuide(-0.05)}
-                  disabled={guideScale <= GUIDE_SCALE_MIN}
-                  aria-label="Recuadro más pequeño"
-                >
-                  −
-                </button>
-                <span className="w-10 text-center tabular-nums">{Math.round(guideScale * 100)} %</span>
-                <button
-                  type="button"
-                  className="size-7 rounded-md bg-white/10 text-base hover:bg-white/20 disabled:opacity-40"
-                  onClick={() => resizeGuide(0.05)}
-                  disabled={guideScale >= GUIDE_SCALE_MAX}
-                  aria-label="Recuadro más grande"
-                >
-                  +
-                </button>
-              </div>
-            </div>
+            <button
+              type="button"
+              className="w-full rounded-lg bg-white/10 px-3 py-1.5 text-left hover:bg-white/20"
+              onClick={startAdjust}
+            >
+              Ajustar recuadro
+            </button>
             <p className="text-xs text-white/60">
-              Si la carta se ve pequeña, como en un card slinger, achica el recuadro hasta que la llene.
+              Muévelo y cámbialo de tamaño hasta que coincida con la carta, por ejemplo en un card slinger.
+              Se recuerda en este móvil.
             </p>
             <button
               type="button"
@@ -1232,8 +1298,43 @@ export function Scanner({
         {/* The read loop needs the canvas even when the debug view is hidden. */}
         {!showDebug && <canvas ref={canvasRef} className="hidden" />}
 
+        {adjusting && (
+          <div className="absolute inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-10 space-y-2 rounded-2xl bg-black/75 p-3 backdrop-blur">
+            <p className="text-sm">
+              Arrastra el recuadro hasta la carta y tira del círculo de la esquina para cambiar su tamaño.
+              La lectura está en pausa.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={finishAdjust}>
+                Listo
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-white hover:bg-white/15 hover:text-white"
+                onClick={() => setDraftPlace(DEFAULT_GUIDE)}
+              >
+                Restablecer
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-white hover:bg-white/15 hover:text-white"
+                onClick={cancelAdjust}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Bottom, floating: the choices when a read is ambiguous, and the last card added. */}
-        <div className="absolute inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-10 space-y-2">
+        <div
+          className={cn(
+            "absolute inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-10 space-y-2",
+            adjusting && "hidden",
+          )}
+        >
           {choices && (
             <div className="space-y-1.5 rounded-2xl bg-black/75 p-2 backdrop-blur">
               <div className="flex items-center justify-between px-1">
