@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ListsSwitcher } from "@/components/lists-switcher";
 import { ProgressMeter } from "@/components/progress-meter";
 import { formatEur, formatInt } from "@/lib/format";
 import { setOptions } from "@/lib/queries/catalog";
@@ -15,6 +16,7 @@ export default async function CollectionsPage() {
 
   return (
     <div className="space-y-6">
+      <ListsSwitcher current="collections" />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Colecciones</h1>

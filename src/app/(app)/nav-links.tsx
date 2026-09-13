@@ -17,6 +17,7 @@ const LINKS = [
   { href: "/catalog", label: "Catálogo" },
   { href: "/inventory", label: "Mis cartas" },
   { href: "/collections", label: "Colecciones" },
+  { href: "/decks", label: "Mazos" },
   { href: "/locations", label: "Ubicaciones" },
   { href: "/scan", label: "Escanear" },
   { href: "/search", label: "Buscar" },
@@ -29,7 +30,8 @@ const TABS: Array<{ href: string; label: string; icon: LucideIcon; primary?: boo
   { href: "/catalog", label: "Catálogo", icon: LibraryBigIcon },
   { href: "/scan", label: "Escanear", icon: ScanLineIcon, primary: true },
   { href: "/inventory", label: "Mis cartas", icon: LayersIcon, also: ["/locations"] },
-  { href: "/collections", label: "Colecciones", icon: ListChecksIcon },
+  // Decks are reached from here too (the switcher at the top of both pages).
+  { href: "/collections", label: "Colecciones", icon: ListChecksIcon, also: ["/decks"] },
 ];
 
 const isActive = (pathname: string, href: string, also: string[] = []) =>

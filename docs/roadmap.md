@@ -69,6 +69,13 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
 - **Cuentas para colegas** (D34): roles `admin` y `user`, y `/admin` para crear cuentas,
   cambiar el rol, desactivarlas y ver el gasto de IA de cada una. Los admins borran fotos
   compartidas.
+- **Mazos de Commander** (D35):
+  - datos de juego de cada carta (`oracle_cards`), que rellena la sincronización de Scryfall;
+  - importar y exportar la lista de Moxfield o Arena, y análisis de curva, tipos, colores,
+    reglas de Commander, Game Changers y precio;
+  - cada mazo tiene su caja: se ve qué cartas están dentro, cuáles están en otra ubicación
+    (con «Traer») y cuáles faltan.
+  - Pendiente: categorías funcionales (rampa, robo, eliminación…) y mano de prueba.
 - **Colecciones desde una expansión:**
   - Se crean llenas con una expansión entera, o con una de sus rarezas.
   - Se hace desde `/collections` o con «Guardar como colección…» en la expansión.
@@ -114,6 +121,9 @@ los diálogos y el botón +.
 - Probar el escáner en el móvil con cartas reales.
 - Poner `ANTHROPIC_API_KEY` en Vercel para «Identificar con IA», y mandar fotos de otras series
   (Élite, Special One, Vértigo, Zona VIP…) para medir cuántas acierta (D31).
+- Tras desplegar las migraciones 0016 y 0017, lanzar una vez la sincronización de Scryfall
+  contra Neon (o esperar a la diaria, si GitHub Actions ya tiene `DATABASE_URL`), para que
+  `oracle_cards` tenga datos y los mazos funcionen (D35).
 - Opcional: cambiar la contraseña de Neon, que ha pasado por el chat de la sesión.
 
 ## Siguiente

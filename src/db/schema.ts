@@ -25,6 +25,8 @@ export const finish = pgEnum("finish", ["nonfoil", "foil", "etched"]);
 // Cardmarket grading scale.
 export const cardCondition = pgEnum("card_condition", ["MT", "NM", "EX", "GD", "LP", "PL", "PO"]);
 export const itemSource = pgEnum("item_source", ["manual", "scan"]);
+// Where a card goes in a deck (D35). The same as BOARDS in src/lib/decks/decklist.ts.
+export const deckBoard = pgEnum("deck_board", ["commander", "main", "side", "maybe"]);
 
 const money = (name: string) => numeric(name, { precision: 10, scale: 2, mode: "number" });
 
@@ -381,4 +383,50 @@ export const aiIdentifications = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("ai_identifications_owner_idx").on(t.ownerId, t.createdAt)],
+);
+
+// ---------------------------------------------------------------------------
+// Magic decks (D35): the cards by board, by card (oracle) rather than printing, and a box —
+// a location — holding the copies that are in the deck.
+// ---------------------------------------------------------------------------
+
+export const decks = pgTable(
+  "decks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // "commander" for now: what the analysis checks.
+    format: text("format").notNull().default("commander"),
+    description: text("description"),
+    // Its box: copies moved there are in the deck. Deleting the deck deletes it; the copies
+    // stay in the inventory, with no location.
+    locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("decks_owner_idx").on(t.ownerId), uniqueIndex("decks_location_uq").on(t.locationId)],
+);
+
+export const deckCards = pgTable(
+  "deck_cards",
+  {
+    deckId: uuid("deck_id")
+      .notNull()
+      .references(() => decks.id, { onDelete: "cascade" }),
+    board: deckBoard("board").notNull().default("main"),
+    oracleId: text("oracle_id")
+      .notNull()
+      .references(() => oracleCards.oracleId, { onDelete: "cascade" }),
+    quantity: integer("quantity").notNull().default(1),
+    // The printing the owner prefers, for its picture and price; null: the cheapest.
+    catalogCardId: uuid("catalog_card_id").references(() => catalogCards.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.deckId, t.board, t.oracleId] }),
+    index("deck_cards_oracle_idx").on(t.oracleId),
+    check("deck_cards_quantity_positive", sql`${t.quantity} > 0`),
+  ],
 );

@@ -708,3 +708,18 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     solo puede estar en un sitio.
 - **Revisar cuando:** se quieran categorías funcionales (rampa, robo, eliminación…), una mano
   de prueba o mazos de otros juegos.
+- **Actualización (fase 2, implementada el 2026-09-13):**
+  - `decks` y `deck_cards`. Las cartas van por carta (`oracle_id`) y tablero, con una edición
+    preferida opcional para la imagen y el precio; sin ella, el precio es el de la edición más
+    barata.
+  - `/decks` lista los mazos. `/decks/[id]` muestra las cartas agrupadas por tipo y el
+    análisis. Se entra desde «Mazos» en la barra y desde el selector Colecciones / Mazos.
+  - Importar pegando la lista; se reconocen el nombre completo o la cara delantera, sin
+    fichas ni cartas de arte, y la edición si la línea la indica. Exportar copia la lista con
+    las cabeceras de Moxfield y Arena.
+  - Estado de cada carta del comandante y del mazo principal: en la caja, en otra ubicación
+    (con «Traer»), en otro mazo o te falta.
+  - «Traer a la caja» mueve con `moveItems` las copias libres: nunca de la caja de otro mazo
+    ni gradeadas, y primero las que no tienen ubicación y las ediciones más baratas.
+  - Borrar un mazo borra su caja; sus cartas quedan en Mis cartas sin ubicación.
+  - El análisis es puro (`src/lib/decks/analysis.ts`) y tiene tests. Solo valida Commander.
