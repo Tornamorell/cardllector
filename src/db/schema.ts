@@ -112,7 +112,8 @@ export const oracleCards = pgTable(
     // "normal", "modal_dfc", "transform", "split", "adventure"…
     layout: text("layout"),
     manaCost: text("mana_cost"),
-    cmc: numeric("cmc", { precision: 6, scale: 1, mode: "number" }).notNull().default(0),
+    // Room for Gleemax ({1000000}) and half-mana Un-cards (0.5).
+    cmc: numeric("cmc", { precision: 10, scale: 1, mode: "number" }).notNull().default(0),
     colors: text("colors").array().notNull().default(sql`'{}'::text[]`),
     colorIdentity: text("color_identity").array().notNull().default(sql`'{}'::text[]`),
     typeLine: text("type_line"),

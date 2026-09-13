@@ -56,6 +56,9 @@ La respuesta ya no incluye `download_uri`.
 D35):
 - `mana_cost` (string, `"{4}{W}{W}{W}"`), `cmc` (número), `colors`, `color_identity`,
   `oracle_text`, `keywords`, `produced_mana`, `layout` (`normal`, `modal_dfc`, `transform`…).
+- `cmc` puede tener decimales (0,5 en cartas Un) y llega a 1 000 000: Gleemax, la única carta
+  con 1 000 o más (verificado el 2026-09-13). La columna es `numeric(10, 1)`; con
+  `numeric(6, 1)` la sincronización fallaba con «numeric field overflow».
 - Las cartas de doble cara no traen `mana_cost`, `colors` ni `oracle_text` arriba, sino en cada
   cara. `cmc`, `color_identity`, `produced_mana` y `legalities` sí van arriba.
 - `legalities` tiene 23 formatos (standard, future, historic, timeless, gladiator, pioneer,
