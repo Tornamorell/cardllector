@@ -79,6 +79,14 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     linterna (si el móvil la ofrece en `getCapabilities().torch`) y el contador de la sesión.
   - **En medio:** el recuadro guía, con la franja de datos marcada en amarillo y el estado de la
     lectura.
+    - El panel de abajo tiene un alto fijo: lo que enseña (la última carta, las candidatas, la
+      ayuda) se desplaza dentro si no cabe. Así el recuadro no cambia de tamaño ni de sitio
+      mientras escaneas, algo que con un card slinger, que deja la carta siempre en el mismo sitio,
+      lo desencajaba.
+    - El recuadro ocupa el 94 % del hueco entre las barras. Con «Recuadro − +», al pie del panel,
+      se hace más pequeño, hasta el 60 %, y el tamaño se recuerda en el dispositivo. Sirve para un
+      card slinger, donde la carta se ve más pequeña y no se puede acercar: se ajusta una vez hasta
+      que la carta llene el recuadro, para que la franja amarilla caiga en el número.
   - **Abajo, la última carta añadida:** imagen, nombre, expansión, precio para su acabado y
     - **cantidad** −/+: `changeQuantity(-1)` o un `addItem` más;
     - **acabado** con un toque (Normal/Foil/Etched en Magic, Estándar/Reverse holo en
@@ -201,7 +209,8 @@ En `scanner.tsx`:
 
 En `geometry.ts`:
 - `INFO_STRIP` y `TITLE_STRIP`.
-- El relleno del recuadro guía en `guideIn` (0,92).
+- El relleno del recuadro guía, `GUIDE_FILL` (0,94), por el tamaño que elija cada uno (del 60 al
+  100 %, `guideScale` en los valores recordados del dispositivo).
 
 En `queries/scan.ts`:
 - `NAME_SIMILARITY_SURE` (0,6).

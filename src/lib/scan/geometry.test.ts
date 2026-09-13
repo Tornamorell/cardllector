@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { CARD_RATIO, coverTransform, guideIn, guideRect, stripRect, toVideo } from "./geometry";
+import { CARD_RATIO, coverTransform, GUIDE_FILL, guideFill, guideIn, guideRect, stripRect, toVideo } from "./geometry";
+
+describe("guideFill", () => {
+  it("scales the guide between 60 % and 100 %, whatever was stored", () => {
+    expect(guideFill(1)).toBeCloseTo(GUIDE_FILL);
+    expect(guideFill(0.8)).toBeCloseTo(GUIDE_FILL * 0.8);
+    expect(guideFill(0.2)).toBeCloseTo(GUIDE_FILL * 0.6);
+    expect(guideFill(3)).toBeCloseTo(GUIDE_FILL);
+    expect(guideFill(Number.NaN)).toBeCloseTo(GUIDE_FILL);
+  });
+});
 
 describe("guideRect", () => {
   it("is limited by height on a landscape frame and centered", () => {

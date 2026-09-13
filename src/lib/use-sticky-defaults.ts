@@ -18,6 +18,11 @@ export interface StickyDefaults {
   lastSetCode: string | null;
   /** Optional: also list what's entered in this collection (D23). Null = no collection. */
   entryCollectionId: string | null;
+  /**
+   * The scanner guide's size, 0.6–1 of the space it has. A card slinger holds the card at a
+   * fixed distance: the guide is sized to it once.
+   */
+  guideScale: number;
 }
 
 const DEFAULTS: StickyDefaults = {
@@ -28,6 +33,7 @@ const DEFAULTS: StickyDefaults = {
   lastSectionId: null,
   lastSetCode: null,
   entryCollectionId: null,
+  guideScale: 1,
 };
 
 const KEY = "cardllector:defaults";

@@ -35,10 +35,13 @@ import { SetPicker, type SetOption } from "@/components/set-picker";
 import { gameById, rarityLabel, rarityRank } from "@/lib/games";
 import type { ScanMatch } from "@/lib/queries/scan";
 import {
+  GUIDE_SCALE_MAX,
+  GUIDE_SCALE_MIN,
   INFO_STRIP,
   NAME_LAYOUTS,
   TITLE_STRIP,
   coverTransform,
+  guideFill,
   guideIn,
   stripRect,
   toVideo,
@@ -334,7 +337,8 @@ export function Scanner({
     const vr = video.getBoundingClientRect();
     const sr = stageEl.getBoundingClientRect();
     const t = coverTransform(video.videoWidth, video.videoHeight, vr.width, vr.height);
-    return toVideo(guideIn({ x: sr.left - vr.left, y: sr.top - vr.top, w: sr.width, h: sr.height }), t);
+    const area = { x: sr.left - vr.left, y: sr.top - vr.top, w: sr.width, h: sr.height };
+    return toVideo(guideIn(area, guideFill(settings.current.defaults.guideScale)), t);
   }
 
   // --- Catalog lookups ------------------------------------------------------
@@ -967,7 +971,11 @@ export function Scanner({
     </div>
   );
   const current = entries[0] ?? null;
-  const guide = stage ? guideIn({ x: 0, y: 0, w: stage.w, h: stage.h }) : null;
+  // The guide's size, remembered on the device: − and + in the panel (a card slinger's cards look small).
+  const guideScale = Math.min(GUIDE_SCALE_MAX, Math.max(GUIDE_SCALE_MIN, defaults.guideScale || 1));
+  const resizeGuide = (step: number) =>
+    setDefaults({ guideScale: Math.min(GUIDE_SCALE_MAX, Math.max(GUIDE_SCALE_MIN, Math.round((guideScale + step) * 100) / 100)) });
+  const guide = stage ? guideIn({ x: 0, y: 0, w: stage.w, h: stage.h }, guideFill(guideScale)) : null;
   const strip = guide ? stripRect(guide, nameLayout?.strip ?? INFO_STRIP) : null;
   const fixedCode = fixedSet?.code.toUpperCase();
 
@@ -1175,7 +1183,10 @@ export function Scanner({
           )}
         </div>
 
-        <div className="relative z-10 space-y-3 rounded-t-2xl bg-neutral-950/95 px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+        {/* A fixed height: the guide above never moves or resizes with what's shown here. */}
+        <div className="relative z-10 rounded-t-2xl bg-neutral-950/95 px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+          <div className="flex h-56 flex-col gap-2">
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
           {showDebug && (
             <div className="space-y-1">
               <canvas ref={canvasRef} className="max-h-16 max-w-full rounded bg-white" />
@@ -1200,13 +1211,13 @@ export function Scanner({
               </div>
               <ul className="flex gap-2 overflow-x-auto pb-1">
                 {choices.matches.map((m) => (
-                  <li key={m.id} className="w-20 shrink-0">
+                  <li key={m.id} className="w-14 shrink-0">
                     <button type="button" onClick={() => choose(m)} className="w-full text-left text-[10px]">
                       <CardThumb
                         src={m.imageSmall}
                         alt={m.name}
                         label={`#${m.collectorNumber}`}
-                        size="md"
+                        size="sm"
                         className="w-full!"
                       />
                       <p className="mt-1 truncate text-white/80">
@@ -1228,17 +1239,18 @@ export function Scanner({
               onMinus={() => minusOne(current)}
             />
           ) : (
-            <p className="py-3 text-center text-sm text-white/70">
+            <p className="py-2 text-center text-sm text-white/70">
               {nameLayout
-                ? "Encaja la carta por delante. El nombre del jugador, en la franja de la derecha, tiene que quedar dentro del marco amarillo."
-                : "Encaja la carta en el recuadro. La esquina de abajo a la izquierda (el número) tiene que quedar dentro del marco amarillo."}
+                ? "El nombre del jugador, por delante, dentro del marco amarillo."
+                : "El número, abajo a la izquierda, dentro del marco amarillo."}
             </p>
           )}
 
           {location && section && (
             <NextSectionButton locationId={location.id} sectionId={section.id} className="w-full" />
           )}
-          <div className={cn("grid gap-2", aiEnabled && "grid-cols-2")}>
+            </div>
+          <div className={cn("grid shrink-0 gap-2", aiEnabled && "grid-cols-2")}>
             {aiEnabled && (
               <Button
                 variant="secondary"
@@ -1258,13 +1270,34 @@ export function Scanner({
             </Button>
           </div>
 
-          <button
-            type="button"
-            className="w-full text-center text-[11px] text-white/50"
-            onClick={() => setShowDebug((v) => !v)}
-          >
-            {showDebug ? "Ocultar lectura" : "Ver lo que lee"}
-          </button>
+          <div className="flex shrink-0 items-center justify-between text-[11px] text-white/50">
+            <button type="button" className="hover:text-white/80" onClick={() => setShowDebug((v) => !v)}>
+              {showDebug ? "Ocultar lectura" : "Ver lo que lee"}
+            </button>
+            <div className="flex items-center gap-1" role="group" aria-label="Tamaño del recuadro">
+              <span>Recuadro</span>
+              <button
+                type="button"
+                className="size-6 rounded bg-white/10 text-sm text-white hover:bg-white/20 disabled:opacity-40"
+                onClick={() => resizeGuide(-0.05)}
+                disabled={guideScale <= GUIDE_SCALE_MIN}
+                aria-label="Recuadro más pequeño"
+              >
+                −
+              </button>
+              <span className="w-9 text-center tabular-nums">{Math.round(guideScale * 100)} %</span>
+              <button
+                type="button"
+                className="size-6 rounded bg-white/10 text-sm text-white hover:bg-white/20 disabled:opacity-40"
+                onClick={() => resizeGuide(0.05)}
+                disabled={guideScale >= GUIDE_SCALE_MAX}
+                aria-label="Recuadro más grande"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          </div>
         </div>
       </div>
     </div>

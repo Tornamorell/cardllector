@@ -15,6 +15,18 @@ export function guideRect(frameW: number, frameH: number, fill = 0.86): Rect {
   return { x: (frameW - w) / 2, y: (frameH - h) / 2, w, h };
 }
 
+/** How much of the space between the scanner's bars the guide takes, at the full size. */
+export const GUIDE_FILL = 0.94;
+/** The sizes the owner can give the guide: smaller for a card slinger that shows cards small. */
+export const GUIDE_SCALE_MIN = 0.6;
+export const GUIDE_SCALE_MAX = 1;
+
+/** The guide's fill for a chosen size, kept within bounds (stored values may be anything). */
+export function guideFill(scale: number): number {
+  const s = Number.isFinite(scale) ? Math.min(GUIDE_SCALE_MAX, Math.max(GUIDE_SCALE_MIN, scale)) : 1;
+  return GUIDE_FILL * s;
+}
+
 /** The same, inside an area of the screen (the space between the scanner's bars). */
 export function guideIn(area: Rect, fill = 0.92): Rect {
   const g = guideRect(area.w, area.h, fill);
