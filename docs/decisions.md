@@ -680,3 +680,31 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
 - **Revisar cuando:** haga falta que cada uno cambie su contraseña o la recupere (hoy no hay
   pantalla para eso), más roles (por ejemplo, quien importe álbumes), o límites de IA por
   cuenta.
+
+## D35 · Mazos de Magic (Commander), con análisis y copias físicas — 2026-09-13 · provisional
+
+- **Contexto:** el usuario quiere montar sus mazos de Magic, sobre todo de Commander, con un
+  análisis como el de Moxfield (tipos, curva de maná…), y que cada mazo ocupe copias físicas de
+  su colección.
+- **Decisión:**
+  - **Datos de juego por carta** (`oracle_cards`, una fila por `oracle_id`): coste de maná, CMC,
+    colores, identidad de color, tipos, texto, palabras clave, maná que produce, legalidad en
+    ocho formatos y si está en la lista de Game Changers de Commander. Salen del mismo
+    `default_cards` de la sincronización diaria, de la primera impresión en papel de cada
+    carta.
+  - **Mazos** (fase 2): formato, tableros (comandante, principal, banquillo y «quizá»), e
+    importar y exportar la lista como la dan Moxfield o Arena (`1 Sol Ring (C21) 263`).
+  - **Análisis:** curva de maná por tipo, CMC medio, reparto por tipos, símbolos de color frente a
+    fuentes, validación de Commander (100 cartas, una copia de cada, identidad de color del
+    comandante, prohibidas, Game Changers) y precio.
+  - **Copias físicas:** cada mazo tiene su ubicación, su caja. Ocupar una copia es moverla a
+    esa ubicación con lo que ya existe (D28). Así el mazo sabe qué tiene dentro, qué está en
+    otra caja y qué falta, y cuánto cuesta.
+- **Descartado:**
+  - Pedir los datos a la API de Scryfall al analizar: prohibido en el camino de una petición
+    (convenciones del repo) y lento.
+  - Guardar las 23 legalidades de Scryfall: la mayoría son formatos digitales o de nicho.
+  - Una tabla aparte con qué copias ocupa cada mazo: duplicaría las ubicaciones, y una copia
+    solo puede estar en un sitio.
+- **Revisar cuando:** se quieran categorías funcionales (rampa, robo, eliminación…), una mano
+  de prueba o mazos de otros juegos.

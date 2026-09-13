@@ -14,6 +14,7 @@ El esquema está en `src/db/schema.ts` (Drizzle), y las migraciones en `drizzle/
 | `catalog_cards` | edición física de una carta (printing) | `external_id` es el id en la fuente (Scryfall o TCGdex). `oracle_id` agrupa las ediciones de una misma carta: en Magic es el de Scryfall y en Pokémon es `pokemon:<nombre>` (D19). Los precios son los de la última sincronización. |
 | `card_names` | (edición, idioma) | Nombre impreso traducido, apuntando a la edición inglesa equivalente. De momento solo `es`. |
 | `catalog_card_photos` | edición sin imagen de su fuente | Foto compartida que aportó un usuario, al escanear o desde la ficha: JPEG de 300×419, quién la aportó y de dónde viene. Su huella perceptual (`hash`, 16 cifras hexadecimales) sirve al escáner para reconocer la carta (D33). `image_small` e `image_normal` de la carta apuntan a `/api/card-photos/<id>` (D30). |
+| `oracle_cards` | carta de Magic (no edición) | Su lado de reglas, igual en todas sus ediciones: coste de maná, CMC, colores, identidad de color, tipos, texto, palabras clave, maná que produce, legalidad en ocho formatos y si es Game Changer en Commander. La rellena la sincronización diaria de Scryfall; la lee el análisis de mazos (D35). |
 
 - `game` (`mtg` \| `pokemon` \| `sports`) está desde el principio para no rehacer tablas al añadir
   otros juegos. Lo específico de cada juego (su slug en la URL, sus rarezas con nombre en

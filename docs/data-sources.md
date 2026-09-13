@@ -52,6 +52,19 @@ La respuesta ya no incluye `download_uri`.
 - Las cartas de doble cara y las reversibles guardan la imagen, y a veces el `oracle_id`, en
   `card_faces[]`.
 
+**Datos de juego** (verificado el 2026-09-13 con `/cards/named`; los guarda `oracle_cards`,
+D35):
+- `mana_cost` (string, `"{4}{W}{W}{W}"`), `cmc` (número), `colors`, `color_identity`,
+  `oracle_text`, `keywords`, `produced_mana`, `layout` (`normal`, `modal_dfc`, `transform`…).
+- Las cartas de doble cara no traen `mana_cost`, `colors` ni `oracle_text` arriba, sino en cada
+  cara. `cmc`, `color_identity`, `produced_mana` y `legalities` sí van arriba.
+- `legalities` tiene 23 formatos (standard, future, historic, timeless, gladiator, pioneer,
+  modern, legacy, pauper, vintage, penny, commander, oathbreaker, standardbrawl, brawl,
+  competitivebrawl, alchemy, paupercommander, duel, oldschool, premodern, predh, tlr), con los
+  valores `legal`, `not_legal`, `banned` o `restricted`. Guardamos ocho.
+- `game_changer` (booleano): la carta está en la lista de Game Changers de Commander, que marca
+  el nivel (bracket) de un mazo. Por ejemplo, The One Ring.
+
 Código: `src/lib/scryfall/` (cliente, tipos y mapeo) y `scripts/sync-scryfall.ts`,
 `scripts/sync-names.ts`.
 

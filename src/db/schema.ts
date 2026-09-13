@@ -96,6 +96,38 @@ export const catalogCards = pgTable(
   ],
 );
 
+// The rules side of each Magic card, the same in all its printings (one row per Scryfall
+// oracle_id): cost, colours, types, text, legality. What deck analysis reads (D35). Filled by
+// the daily Scryfall sync.
+export const oracleCards = pgTable(
+  "oracle_cards",
+  {
+    oracleId: text("oracle_id").primaryKey(),
+    name: text("name").notNull(),
+    // Deck lists name cards by their full name or, for double-faced ones, their front face's.
+    searchName: text("search_name").notNull(),
+    frontSearchName: text("front_search_name").notNull(),
+    // "normal", "modal_dfc", "transform", "split", "adventure"…
+    layout: text("layout"),
+    manaCost: text("mana_cost"),
+    cmc: numeric("cmc", { precision: 6, scale: 1, mode: "number" }).notNull().default(0),
+    colors: text("colors").array().notNull().default(sql`'{}'::text[]`),
+    colorIdentity: text("color_identity").array().notNull().default(sql`'{}'::text[]`),
+    typeLine: text("type_line"),
+    oracleText: text("oracle_text"),
+    keywords: text("keywords").array().notNull().default(sql`'{}'::text[]`),
+    producedMana: text("produced_mana").array().notNull().default(sql`'{}'::text[]`),
+    // The main formats only (FORMATS in scryfall/map.ts): "legal", "not_legal", "banned", "restricted".
+    legalities: jsonb("legalities").$type<Record<string, string>>().notNull().default({}),
+    // On Commander's Game Changers list, which sets a deck's bracket.
+    gameChanger: boolean("game_changer").notNull().default(false),
+  },
+  (t) => [
+    index("oracle_cards_search_idx").on(t.searchName),
+    index("oracle_cards_front_search_idx").on(t.frontSearchName),
+  ],
+);
+
 // Printed names in other languages (Spanish for now), pointing at the English printing
 // that carries the price. Lets the user search "Rayo" and find Lightning Bolt.
 export const cardNames = pgTable(

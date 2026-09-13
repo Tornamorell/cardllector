@@ -12,6 +12,9 @@ export interface ScryfallCardFace {
   printed_name?: string;
   oracle_id?: string;
   type_line?: string;
+  mana_cost?: string;
+  oracle_text?: string;
+  colors?: string[];
   image_uris?: ScryfallImageUris;
 }
 
@@ -35,6 +38,18 @@ export interface ScryfallCard {
   collector_number: string;
   rarity: string;
   type_line?: string;
+  // Rules data (the same in every printing), for deck analysis (D35).
+  layout?: string;
+  mana_cost?: string;
+  cmc?: number;
+  colors?: string[];
+  color_identity?: string[];
+  oracle_text?: string;
+  keywords?: string[];
+  produced_mana?: string[];
+  legalities?: Record<string, string>;
+  /** On Commander's Game Changers list, which sets a deck's bracket. */
+  game_changer?: boolean;
   released_at: string;
   digital: boolean;
   finishes: string[];

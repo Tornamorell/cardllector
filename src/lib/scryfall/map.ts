@@ -1,9 +1,45 @@
-import type { catalogCards, sets } from "@/db/schema";
+import type { catalogCards, oracleCards, sets } from "@/db/schema";
 import { normalizeForSearch } from "@/lib/search/normalize";
-import type { ScryfallCard, ScryfallSet } from "./types";
+import type { ScryfallCard, ScryfallCardFace, ScryfallSet } from "./types";
 
 export type CatalogCardRow = typeof catalogCards.$inferInsert;
 export type SetRow = typeof sets.$inferInsert;
+export type OracleCardRow = typeof oracleCards.$inferInsert;
+
+/** The formats whose legality is kept; Scryfall's other twenty are niche or digital-only. */
+export const FORMATS = ["commander", "standard", "pioneer", "modern", "legacy", "vintage", "pauper", "brawl"] as const;
+
+/**
+ * The rules side of a card, the same in all its printings (D35): cost, colours, types, text,
+ * legality. Multi-faced cards without them at the top take them from their faces, joined with
+ * " // ". Null without an oracle id.
+ */
+export function mapOracleCard(card: ScryfallCard): OracleCardRow | null {
+  const faces = card.card_faces ?? [];
+  const oracleId = card.oracle_id ?? faces[0]?.oracle_id;
+  if (!oracleId) return null;
+  const fromFaces = (pick: (f: ScryfallCardFace) => string | undefined) => {
+    const parts = faces.map(pick).filter((v): v is string => !!v);
+    return parts.length ? parts.join(" // ") : null;
+  };
+  return {
+    oracleId,
+    name: card.name,
+    searchName: normalizeForSearch(card.name),
+    frontSearchName: normalizeForSearch(faces[0]?.name ?? card.name),
+    layout: card.layout ?? null,
+    manaCost: card.mana_cost ?? fromFaces((f) => f.mana_cost),
+    cmc: card.cmc ?? 0,
+    colors: card.colors ?? [...new Set(faces.flatMap((f) => f.colors ?? []))],
+    colorIdentity: card.color_identity ?? [],
+    typeLine: card.type_line ?? fromFaces((f) => f.type_line),
+    oracleText: card.oracle_text ?? (faces.length ? faces.map((f) => f.oracle_text ?? "").join("\n//\n") : null),
+    keywords: card.keywords ?? [],
+    producedMana: card.produced_mana ?? [],
+    legalities: Object.fromEntries(FORMATS.map((f) => [f, card.legalities?.[f] ?? "not_legal"])),
+    gameChanger: card.game_changer ?? false,
+  };
+}
 
 export interface PrintedNameRow {
   setCode: string;

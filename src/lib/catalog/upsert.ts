@@ -1,8 +1,8 @@
 import { getTableColumns, sql, type SQL } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { db, pool } from "@/db/client";
-import { catalogCards, sets } from "@/db/schema";
-import type { CatalogCardRow, PrintedNameRow, SetRow } from "@/lib/scryfall/map";
+import { catalogCards, oracleCards, sets } from "@/db/schema";
+import type { CatalogCardRow, OracleCardRow, PrintedNameRow, SetRow } from "@/lib/scryfall/map";
 import { restorePhotoUrls } from "./photos";
 
 /** `SET col = excluded.col` for every given column, for ON CONFLICT DO UPDATE. */
@@ -73,6 +73,33 @@ export async function refreshSetCounts() {
      ) c
      where c.id = s.id and s.card_count is distinct from c.n`,
   );
+}
+
+/** The rules data of Magic cards (D35). Rows must have distinct oracle ids. */
+export async function upsertOracleCards(rows: OracleCardRow[]) {
+  if (!rows.length) return;
+  await db
+    .insert(oracleCards)
+    .values(rows)
+    .onConflictDoUpdate({
+      target: oracleCards.oracleId,
+      set: excluded(oracleCards, [
+        "name",
+        "searchName",
+        "frontSearchName",
+        "layout",
+        "manaCost",
+        "cmc",
+        "colors",
+        "colorIdentity",
+        "typeLine",
+        "oracleText",
+        "keywords",
+        "producedMana",
+        "legalities",
+        "gameChanger",
+      ]),
+    });
 }
 
 export async function upsertCatalogCards(rows: CatalogCardRow[]) {

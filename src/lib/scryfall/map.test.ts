@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapPrintedName, mapScryfallCard, mapScryfallSet } from "./map";
+import { mapOracleCard, mapPrintedName, mapScryfallCard, mapScryfallSet } from "./map";
 import type { ScryfallCard, ScryfallSet } from "./types";
 
 const updatedAt = new Date("2026-09-11T09:05:34Z");
@@ -70,6 +70,68 @@ describe("mapScryfallCard", () => {
 
   it("skips digital-only printings", () => {
     expect(mapScryfallCard({ ...bolt, digital: true }, updatedAt)).toBeNull();
+  });
+});
+
+describe("mapOracleCard", () => {
+  it("keeps the rules side, and the legality of the main formats only", () => {
+    const row = mapOracleCard({
+      ...bolt,
+      layout: "normal",
+      mana_cost: "{R}",
+      cmc: 1,
+      colors: ["R"],
+      color_identity: ["R"],
+      oracle_text: "Lightning Bolt deals 3 damage to any target.",
+      keywords: [],
+      legalities: { commander: "legal", standard: "not_legal", modern: "legal", oathbreaker: "legal" },
+      game_changer: false,
+    })!;
+    expect(row).toMatchObject({
+      oracleId: bolt.oracle_id,
+      name: "Lightning Bolt",
+      searchName: "lightning bolt",
+      manaCost: "{R}",
+      cmc: 1,
+      colors: ["R"],
+      colorIdentity: ["R"],
+      typeLine: "Instant",
+      gameChanger: false,
+    });
+    expect(row.legalities).toMatchObject({ commander: "legal", modern: "legal", pauper: "not_legal" });
+    expect(row.legalities).not.toHaveProperty("oathbreaker");
+  });
+
+  it("takes a double-faced card's cost, colours, types and text from its faces", () => {
+    const row = mapOracleCard({
+      ...delver,
+      layout: "transform",
+      cmc: 1,
+      color_identity: ["U"],
+      card_faces: [
+        {
+          name: "Delver of Secrets",
+          oracle_id: "abc",
+          type_line: "Creature — Human Wizard",
+          mana_cost: "{U}",
+          colors: ["U"],
+          oracle_text: "At the beginning of your upkeep, look at the top card of your library.",
+        },
+        { name: "Insectile Aberration", type_line: "Creature — Human Insect", mana_cost: "", colors: ["U"], oracle_text: "Flying" },
+      ],
+    })!;
+    expect(row).toMatchObject({
+      oracleId: "abc",
+      frontSearchName: "delver of secrets",
+      manaCost: "{U}",
+      colors: ["U"],
+      typeLine: "Creature — Human Wizard // Creature — Human Insect",
+    });
+    expect(row.oracleText).toContain("\n//\nFlying");
+  });
+
+  it("needs an oracle id", () => {
+    expect(mapOracleCard({ ...delver, card_faces: [{ name: "Delver of Secrets" }] })).toBeNull();
   });
 });
 
