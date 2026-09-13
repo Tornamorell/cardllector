@@ -92,9 +92,11 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     - El recuadro ocupa el 94 % de la pantalla, menos una franja arriba y otra abajo para las
       barras flotantes.
     - **«Ajustar recuadro»**, en los ajustes de la derecha:
-      - pausa la lectura;
-      - el recuadro se arrastra con el dedo, y el círculo de su esquina le cambia el tamaño,
-        del 30 al 100 %, con la forma de una carta;
+      - pausa la lectura y oculta las barras y la columna de botones; las instrucciones y
+        «Listo» pasan arriba, por encima del recuadro;
+      - el recuadro se arrastra con el dedo, y cualquiera de los círculos de sus cuatro esquinas
+        le cambia el tamaño alrededor del centro, del 30 al 100 %, con la forma de una carta;
+        así siempre queda alguno libre;
       - «Listo» guarda el tamaño y la posición en el dispositivo (`guideScale`, `guideDx`,
         `guideDy`), «Restablecer» vuelve al recuadro centrado y grande, y el recuadro nunca se
         sale de la pantalla (`placeGuide`);

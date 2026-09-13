@@ -1155,7 +1155,11 @@ export function Scanner({
             bars, so it stays centred where the camera looks. */}
         <div
           ref={stageRef}
-          className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] bottom-[calc(env(safe-area-inset-bottom)+4rem)]"
+          className={cn(
+            "pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] bottom-[calc(env(safe-area-inset-bottom)+4rem)]",
+            // While adjusting, the guide and its handles go over everything but the adjust panel.
+            adjusting && "z-20",
+          )}
         >
           {guide && strip && (
             <>
@@ -1170,19 +1174,27 @@ export function Scanner({
                 onPointerUp={adjusting ? endDrag : undefined}
                 onPointerCancel={adjusting ? endDrag : undefined}
               >
-                {adjusting && (
-                  <span
-                    aria-hidden
-                    className="bg-primary absolute -right-4 -bottom-4 size-8 cursor-nwse-resize touch-none rounded-full ring-4 ring-black/40"
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                      startDrag(e, "resize");
-                    }}
-                    onPointerMove={dragGuide}
-                    onPointerUp={endDrag}
-                    onPointerCancel={endDrag}
-                  />
-                )}
+                {/* A handle on each corner: whichever is free of the bars. Each sizes around the centre. */}
+                {adjusting &&
+                  [
+                    "-left-4 -top-4 cursor-nwse-resize",
+                    "-right-4 -top-4 cursor-nesw-resize",
+                    "-left-4 -bottom-4 cursor-nesw-resize",
+                    "-right-4 -bottom-4 cursor-nwse-resize",
+                  ].map((corner) => (
+                    <span
+                      key={corner}
+                      aria-hidden
+                      className={cn("bg-primary absolute size-8 touch-none rounded-full ring-4 ring-black/40", corner)}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        startDrag(e, "resize");
+                      }}
+                      onPointerMove={dragGuide}
+                      onPointerUp={endDrag}
+                      onPointerCancel={endDrag}
+                    />
+                  ))}
               </div>
               <div
                 className="absolute rounded border-2 border-primary"
@@ -1193,7 +1205,12 @@ export function Scanner({
         </div>
 
         {/* Top: close, where the cards go, and the session. */}
-        <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 bg-gradient-to-b from-black/70 to-transparent px-3 pt-[max(env(safe-area-inset-top),0.75rem)] pb-4">
+        <div
+          className={cn(
+            "absolute inset-x-0 top-0 z-10 flex items-center gap-2 bg-gradient-to-b from-black/70 to-transparent px-3 pt-[max(env(safe-area-inset-top),0.75rem)] pb-4",
+            adjusting && "hidden",
+          )}
+        >
           <Button
             variant="ghost"
             size="icon"
@@ -1226,7 +1243,10 @@ export function Scanner({
 
         {/* What the reader is doing, under the top bar. */}
         <p
-          className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.25rem)] left-1/2 z-10 max-w-[65%] -translate-x-1/2 truncate rounded-full bg-black/60 px-3 py-1 text-center text-xs"
+          className={cn(
+            "absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.25rem)] left-1/2 z-10 max-w-[65%] -translate-x-1/2 truncate rounded-full bg-black/60 px-3 py-1 text-center text-xs",
+            adjusting && "hidden",
+          )}
           role="status"
           aria-live="polite"
         >
@@ -1234,7 +1254,12 @@ export function Scanner({
         </p>
 
         {/* Right: the tools, one tap each. */}
-        <div className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.5rem)] right-3 z-10 flex flex-col items-center gap-1 rounded-full bg-black/55 p-1 backdrop-blur">
+        <div
+          className={cn(
+            "absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.5rem)] right-3 z-10 flex flex-col items-center gap-1 rounded-full bg-black/55 p-1 backdrop-blur",
+            adjusting && "hidden",
+          )}
+        >
           {torch.supported && (
             <ToolButton
               label={torch.on ? "Apagar linterna" : "Encender linterna"}
@@ -1299,9 +1324,9 @@ export function Scanner({
         {!showDebug && <canvas ref={canvasRef} className="hidden" />}
 
         {adjusting && (
-          <div className="absolute inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-10 space-y-2 rounded-2xl bg-black/75 p-3 backdrop-blur">
+          <div className="absolute inset-x-3 top-[max(env(safe-area-inset-top),0.75rem)] z-30 space-y-2 rounded-2xl bg-black/80 p-3 backdrop-blur">
             <p className="text-sm">
-              Arrastra el recuadro hasta la carta y tira del círculo de la esquina para cambiar su tamaño.
+              Arrastra el recuadro hasta la carta y tira de cualquier esquina para cambiar su tamaño.
               La lectura está en pausa.
             </p>
             <div className="flex flex-wrap gap-2">
