@@ -38,12 +38,14 @@ import { gameById, rarityLabel, rarityRank } from "@/lib/games";
 import type { ScanMatch } from "@/lib/queries/scan";
 import {
   DEFAULT_GUIDE,
+  FOUND_INFO_STRIP,
   GUIDE_FILL,
   INFO_STRIP,
   NAME_LAYOUTS,
   TITLE_STRIP,
   clampGuideScale,
   coverTransform,
+  fromVideo,
   guideRect,
   placeGuide,
   stripRect,
@@ -65,7 +67,9 @@ import { cn } from "@/lib/utils";
 import { addItem, changeFinish, changeQuantity } from "../inventory/actions";
 import { savePendingScan } from "../review/actions";
 import { saveCardPhoto } from "../cards/photo-actions";
-import { cardInGuideBlob, cardInGuidePixels } from "@/lib/card-photo";
+import { cardInGuideBlob, cardInGuidePixels, findCardIn } from "@/lib/card-photo";
+import type { Pt, Quad } from "@/lib/scan/card-quad";
+import { quadBounds, quadsAgree } from "@/lib/scan/find-card";
 import { bestMatch, cardHash } from "@/lib/scan/card-hash";
 import { useScanSession } from "./scan-session";
 
@@ -232,6 +236,8 @@ export function Scanner({
   const [status, setStatus] = useState("Encaja la carta en el recuadro.");
   const [lastText, setLastText] = useState("");
   const [showDebug, setShowDebug] = useState(false);
+  // The card found in the view (D36), on the stage: its outline, and the box that's read.
+  const [found, setFound] = useState<{ points: string; box: Rect } | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
   // «Ajustar recuadro»: the guide being moved and resized, saved on «Listo».
   const [adjusting, setAdjusting] = useState(false);
@@ -258,6 +264,8 @@ export function Scanner({
   const runningRef = useRef(false);
   /** Catalog card id → hash of its shared photo (D33), of the fixed set or of all. */
   const photoHashesRef = useRef(new Map<string, string>());
+  /** The card found in the view (D36), in video pixels: reads in a row that saw it there, and that missed it. */
+  const foundRef = useRef<{ quad: Quad; seen: number; missed: number } | null>(null);
   const readState = useRef({
     votes: [] as Array<string | null>,
     empty: 0,
@@ -345,16 +353,76 @@ export function Scanner({
     return data.text;
   }
 
-  /** The guide, in video pixels. */
-  function cardInVideo(): Rect | null {
+  /** The video, how it's shown, and the space between the bars (on screen, relative to the video). */
+  function view() {
     const video = videoRef.current;
     const stageEl = stageRef.current;
     if (!video?.videoWidth || !stageEl) return null;
     const vr = video.getBoundingClientRect();
     const sr = stageEl.getBoundingClientRect();
     const t = coverTransform(video.videoWidth, video.videoHeight, vr.width, vr.height);
-    const area = { x: sr.left - vr.left, y: sr.top - vr.top, w: sr.width, h: sr.height };
-    return toVideo(placeGuide(area, settings.current.place), t);
+    return { video, t, area: { x: sr.left - vr.left, y: sr.top - vr.top, w: sr.width, h: sr.height } };
+  }
+
+  /** The guide, in video pixels. */
+  function cardInVideo(): Rect | null {
+    const v = view();
+    return v && toVideo(placeGuide(v.area, settings.current.place), v.t);
+  }
+
+  /**
+   * Looks for the card in everything shown between the bars (D36). It counts once found in two
+   * reads in a row in about the same place, and is dropped when missed in two. The card in video
+   * pixels, or null: read the guide.
+   */
+  function locateCard(): Quad | null {
+    const v = view();
+    if (!v || !settings.current.defaults.findCard) {
+      foundRef.current = null;
+      setFound(null);
+      return null;
+    }
+    const { video, t, area } = v;
+    const shown = toVideo(area, t);
+    const x = Math.max(0, shown.x);
+    const y = Math.max(0, shown.y);
+    const search = {
+      x,
+      y,
+      w: Math.min(video.videoWidth, shown.x + shown.w) - x,
+      h: Math.min(video.videoHeight, shown.y + shown.h) - y,
+    };
+    let quad: Quad | null = null;
+    try {
+      quad = findCardIn(video, search);
+    } catch {
+      // Not found this time.
+    }
+    const last = foundRef.current;
+    if (quad) {
+      foundRef.current = { quad, seen: last && quadsAgree(last.quad, quad) ? last.seen + 1 : 1, missed: 0 };
+    } else if (last && ++last.missed >= 2) {
+      foundRef.current = null;
+    }
+    const kept = foundRef.current && foundRef.current.seen >= 2 ? foundRef.current.quad : null;
+    if (!kept) {
+      setFound(null);
+      return null;
+    }
+    const onStage = (p: Pt) => {
+      const s = fromVideo(p, t);
+      return { x: s.x - area.x, y: s.y - area.y };
+    };
+    const q = { tl: onStage(kept.tl), tr: onStage(kept.tr), br: onStage(kept.br), bl: onStage(kept.bl) };
+    const points = [q.tl, q.tr, q.br, q.bl].map((p) => `${Math.round(p.x)},${Math.round(p.y)}`).join(" ");
+    setFound((prev) => (prev?.points === points ? prev : { points, box: quadBounds(q) }));
+    return kept;
+  }
+
+  /** The card found in the view (D36), or the guide: for the photos. */
+  function readRect(): Rect | null {
+    const f = foundRef.current;
+    return f && f.seen >= 2 ? quadBounds(f.quad) : cardInVideo();
   }
 
   // --- Catalog lookups ------------------------------------------------------
@@ -506,9 +574,12 @@ export function Scanner({
     }
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const card = cardInVideo();
+    const s = readState.current;
+    const located = video && canvas && workerRef.current ? locateCard() : null;
+    // A found card that doesn't read may not be the card: then every other read is of the guide.
+    const onCard = located && !(s.empty >= 3 && s.tick % 2 === 1) ? located : null;
+    const card = onCard ? quadBounds(onCard) : cardInVideo();
     if (video && canvas && card && workerRef.current) {
-      const s = readState.current;
       s.tick++;
       try {
         // Every third read, by the photo; the rest, by the text.
@@ -521,7 +592,7 @@ export function Scanner({
           if (runningRef.current) setTimeout(tick, TICK_MS);
           return;
         }
-        captureRegion(video, stripRect(card, INFO_STRIP), canvas, INFO_HEIGHT);
+        captureRegion(video, stripRect(card, onCard ? FOUND_INFO_STRIP : INFO_STRIP), canvas, INFO_HEIGHT);
         const text = await ocr(canvas, "info");
         const line = parseCollectorLine(text);
         if (line) {
@@ -667,7 +738,7 @@ export function Scanner({
   async function contributePhoto(catalogCardId: string) {
     try {
       const video = videoRef.current;
-      const card = cardInVideo();
+      const card = readRect();
       if (!video || !card) return;
       const blob = await cardInGuideBlob(video, card);
       if (!blob) return;
@@ -699,7 +770,7 @@ export function Scanner({
   /** The card in the guide, straightened (D32), PHOTO_HEIGHT px tall: for «Para luego» and the AI. */
   async function guidePhoto(): Promise<Blob | null> {
     const video = videoRef.current;
-    const card = cardInVideo();
+    const card = readRect();
     if (!video || !card) return null;
     return cardInGuideBlob(video, card, PHOTO_HEIGHT, 0.8);
   }
@@ -1040,7 +1111,12 @@ export function Scanner({
   function endDrag() {
     dragRef.current = null;
   }
-  const strip = guide ? stripRect(guide, nameLayout?.strip ?? INFO_STRIP) : null;
+  // The yellow strip marks what's read: on the card found in the view (D36), or on the guide.
+  const onFound = !adjusting && found ? found.box : null;
+  const readBox = onFound ?? guide;
+  const strip = readBox
+    ? stripRect(readBox, nameLayout?.strip ?? (onFound ? FOUND_INFO_STRIP : INFO_STRIP))
+    : null;
   const fixedCode = fixedSet?.code.toUpperCase();
 
   return (
@@ -1165,8 +1241,12 @@ export function Scanner({
             <>
               <div
                 className={cn(
-                  "absolute rounded-[4.5%] border-2 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]",
-                  adjusting ? "border-primary pointer-events-auto cursor-move touch-none border-dashed" : "border-white/90",
+                  "absolute rounded-[4.5%] border-2",
+                  adjusting
+                    ? "border-primary pointer-events-auto cursor-move touch-none border-dashed shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
+                    : found
+                      ? "border-white/35" // the card is outlined where it is: the guide steps back
+                      : "border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]",
                 )}
                 style={{ left: guide.x, top: guide.y, width: guide.w, height: guide.h }}
                 onPointerDown={adjusting ? (e) => startDrag(e, "move") : undefined}
@@ -1200,6 +1280,16 @@ export function Scanner({
                 className="absolute rounded border-2 border-primary"
                 style={{ left: strip.x, top: strip.y, width: strip.w, height: strip.h }}
               />
+              {found && !adjusting && (
+                <svg className="absolute inset-0 size-full overflow-visible" aria-hidden>
+                  <polygon
+                    points={found.points}
+                    className="fill-emerald-400/10 stroke-emerald-400"
+                    strokeWidth={3}
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
             </>
           )}
         </div>
@@ -1303,6 +1393,21 @@ export function Scanner({
             <p className="text-xs text-white/60">
               Muévelo y cámbialo de tamaño hasta que coincida con la carta, por ejemplo en un card slinger.
               Se recuerda en este móvil.
+            </p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={defaults.findCard}
+              className="flex w-full items-center justify-between rounded-lg bg-white/10 px-3 py-1.5 text-left hover:bg-white/20"
+              onClick={() => setDefaults({ findCard: !defaults.findCard })}
+            >
+              Buscar la carta
+              <span className={cn("text-xs", defaults.findCard ? "text-emerald-400" : "text-white/50")}>
+                {defaults.findCard ? "Sí" : "No"}
+              </span>
+            </button>
+            <p className="text-xs text-white/60">
+              La busca en toda la imagen y la marca en verde. Si no la encuentra, lee el recuadro.
             </p>
             <button
               type="button"

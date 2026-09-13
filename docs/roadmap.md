@@ -66,6 +66,9 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
     salen con la carta recortada a sus bordes y recta, como un escaneo.
   - **Reconocer por la foto** (D33): una carta con foto compartida se reconoce comparando
     huellas perceptuales en el móvil, aunque no tenga texto legible.
+  - **Buscar la carta** (D36): el escáner encuentra la carta en toda la imagen, la marca en
+    verde y la lee donde esté, también en un card slinger; si no la encuentra, lee el
+    recuadro. Falta probarlo en el móvil.
 - **Cuentas para colegas** (D34): roles `admin` y `user`, y `/admin` para crear cuentas,
   cambiar el rol, desactivarlas y ver el gasto de IA de cada una. Los admins borran fotos
   compartidas.
@@ -199,7 +202,6 @@ Lo principal está hecho (ver "Hecho", D24). Falta:
 - Filtro por expansión dentro de una colección y de Mis cartas.
 - Colecciones con entradas de "cualquier edición" o por acabado, o creadas pegando una lista de
   nombres (D23).
-- Detección automática del contorno de la carta en el escáner (OpenCV.js).
 - Abrir la app a otros usuarios (D14).
 
 ## Preguntas abiertas

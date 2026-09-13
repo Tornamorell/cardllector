@@ -739,3 +739,54 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     - «Robar» para simular turnos.
   - **Probabilidad hipergeométrica** de una mano inicial con 2 a 4 tierras.
   - **Descartado:** etiquetas libres como las de Moxfield. De momento bastan las seis funciones.
+
+## D36 · Buscar la carta en toda la imagen del escáner — 2026-09-14 · provisional
+
+- **Contexto:**
+  - El escáner leía siempre lo que caía en el recuadro guía. Con un card slinger la carta se ve
+    pequeña: había que ajustar el recuadro a mano y, si no quedaba justo, la franja de datos no
+    caía en el número. El usuario pidió que el lector encontrara la carta solo.
+  - Con sus fotos del slinger, `detectCardQuad` (D32) elegía las paredes de la caja: toma la
+    recta más exterior de cada lado y supone que la carta llena el recorte.
+- **Decisión:** un segundo detector, `findCard` (`src/lib/scan/find-card.ts`, puro, sobre RGBA),
+  que busca la carta en todo lo que se ve entre las barras, a 360 px de ancho:
+  - Las 30 rectas más fuertes casi verticales y las 30 casi horizontales (transformada de Hough
+    con votos ponderados por el gradiente, hasta ±14°).
+  - Cada cuatro que formen un cuadrilátero con forma de carta (63:88 ± 0,09, al menos el 6 % de
+    la imagen) se puntúan por la fuerza de sus lados, medida sobre los propios lados (mediana),
+    menos lo que cada recta sigue más allá de las esquinas: el borde de una carta acaba en sus
+    esquinas, una pared o el borde de un tapete no.
+  - Media geométrica de los cuatro lados, para que uno débil hunda el cuadrilátero, y
+    penalizaciones suaves si se aleja de 63:88 o si sus lados opuestos no son paralelos.
+  - Al final cada lado se empuja hacia fuera, hasta un 5 % del ancho, al borde más exterior que
+    tenga al menos la mitad de fuerza: el borde del diseño suele ser más fuerte que el de la carta.
+  - En el escáner, en cada lectura (`locateCard`): la carta cuenta cuando sale dos veces seguidas
+    en el mismo sitio y se descarta cuando falla dos. Entonces se dibuja su contorno en verde, el
+    recuadro pasa a segundo plano y se lee la caja que la rodea en lugar del recuadro: número,
+    título, huella (D33), «Para luego», IA y foto compartida. Si tras tres lecturas no lee nada,
+    una de cada dos vuelve al recuadro, por si lo encontrado no era la carta.
+  - La franja del número de una carta encontrada llega hasta un 8 % por debajo de ella
+    (`FOUND_INFO_STRIP`). En el slinger, el borde negro de la carta no se distingue del fondo
+    oscuro, así que lo que encuentra es el marco de dentro, y el número va impreso en ese borde.
+  - Se puede apagar en los ajustes del escáner («Buscar la carta», `findCard` en el dispositivo).
+  - `detectCardQuad` sigue enderezando la carta dentro de esa caja (D32), donde sí la llena.
+  - Medido el 2026-09-14 con 5 fotos del slinger del usuario, recortadas a 16:9 como las ve el
+    escáner, y 5 fotos anteriores:
+    - La encuentra en 4 de las 5 del slinger y en las 5 anteriores (fondo rojo, verde, marrón,
+      cartas giradas). Falla con una carta de fútbol oscura, cuyo borde de arriba se confunde con
+      la sombra: elige otro trozo.
+    - Leyendo un solo fotograma por foto: la franja nueva lee el número en 2 de las 4 cartas de
+      Magic (SLD 1990 y HOB 0003), y una tercera con una cifra mal. Con la franja del recuadro,
+      en ninguna: caía en el texto de la carta.
+    - 25–60 ms por fotograma en un Mac.
+- **Descartado:**
+  - Ajustar `detectCardQuad`: su supuesto, que la carta llena el recorte y el borde es la recta
+    más exterior, es justo lo que falla con las paredes.
+  - De los cuadriláteros casi tan buenos como el mejor, quedarse con el más grande: en el slinger
+    elegía el hueco de la caja.
+  - Exigir que lo que rodea a la carta sea de un solo color: las paredes del slinger tienen luces
+    y sombras y no lo separaba.
+  - OpenCV.js (~8 MB) o pedírselo a la IA (impreciso y de pago por fotograma), como en D32.
+- **Revisar cuando:** se pruebe en el móvil (el tiempo por fotograma, si la lectura se hace más
+  lenta) y con más fondos; si confunde el hueco del slinger a menudo, usar el recuadro como pista
+  de dónde buscar.

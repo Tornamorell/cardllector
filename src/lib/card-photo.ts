@@ -1,6 +1,7 @@
 // Shared card photos (D30): URLs and the card-shaped image, for both server and browser. The
 // canvas functions only run in the browser.
-import { autoLevels, detectCardQuad, warpCard, type Quad } from "@/lib/scan/card-quad";
+import { autoLevels, detectCardQuad, warpCard, type Pt, type Quad } from "@/lib/scan/card-quad";
+import { findCard } from "@/lib/scan/find-card";
 
 export const CARD_PHOTO_PREFIX = "/api/card-photos/";
 
@@ -118,6 +119,20 @@ export function cardInGuidePixels(source: CanvasImageSource, guide: Rect) {
   } catch {
     return null;
   }
+}
+
+/**
+ * The card anywhere in `area` of `source` (D36): its corners in `source` pixels, or null. What
+ * the scanner reads, instead of the guide, when it finds one.
+ */
+export function findCardIn(source: CanvasImageSource, area: Rect): Quad | null {
+  const small = draw(source, area, DETECT_WIDTH);
+  const found = findCard(small.pixels(), small.canvas.width, small.canvas.height);
+  if (!found) return null;
+  const k = area.w / small.canvas.width;
+  const at = (p: Pt) => ({ x: area.x + p.x * k, y: area.y + p.y * k });
+  const { tl, tr, br, bl } = found.quad;
+  return { tl: at(tl), tr: at(tr), br: at(br), bl: at(bl) };
 }
 
 /** The card in a picture of it (camera or gallery), as a 300×419 shared photo. */

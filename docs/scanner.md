@@ -12,6 +12,9 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
   → a pantalla completa, con el recuadro guía 63×88 entre la barra de arriba y el panel de abajo
   → el recuadro, pasado de coordenadas de pantalla a píxeles de vídeo      src/lib/scan/geometry.ts
     (object-fit: cover recorta el vídeo: coverTransform + toVideo)
+  → «Buscar la carta» (D36): findCard() en todo lo que se ve, a 360 px    src/lib/scan/find-card.ts
+    → si sale dos lecturas seguidas en el mismo sitio, se lee su caja en lugar del recuadro,
+      con la franja de datos más baja (x 0–55 %, y 93–108 %)
   → 1. franja de datos (abajo a la izquierda: x 2–50 %, y 89,5–99 %), escalada a 140 px de alto,
        en gris con el contraste estirado → Tesseract (A–Z 0–9 / • ., PSM 6)
        → parseCollectorLine(): número, total, códigos, idioma           src/lib/scan/parse.ts
@@ -83,7 +86,7 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     - linterna, si el móvil la ofrece en `getCapabilities().torch`;
     - «Identificar con IA»;
     - «Para luego», con las que hay por revisar;
-    - ajustes: el tamaño del recuadro y «Ver lo que lee».
+    - ajustes: «Ajustar recuadro», «Buscar la carta» y «Ver lo que lee».
   - **En medio:** el recuadro guía, con la franja de datos marcada en amarillo y el estado de la
     lectura.
     - Va centrado en la pantalla, donde mira la cámara, y no cambia de tamaño ni de sitio. Antes
@@ -105,6 +108,17 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
       se hace más pequeño, hasta el 60 %, y el tamaño se recuerda en el dispositivo. Sirve para un
       card slinger, donde la carta se ve más pequeña y no se puede acercar: se ajusta una vez hasta
       que la carta llene el recuadro, para que la franja amarilla caiga en el número.
+    - **«Buscar la carta»** (D36), activado por defecto en los ajustes: en cada lectura busca la
+      carta en todo lo que se ve entre las barras (`findCard`, `src/lib/scan/find-card.ts`).
+      - Cuando la encuentra dos lecturas seguidas en el mismo sitio, dibuja su contorno en verde,
+        el recuadro pasa a segundo plano y se lee la carta encontrada en lugar del recuadro: el
+        número, el título, la huella, «Para luego», la IA y la foto compartida.
+      - La franja amarilla va con la carta y llega hasta un 8 % por debajo de ella
+        (`FOUND_INFO_STRIP`): en un slinger, el borde negro no se distingue del fondo oscuro, lo
+        que se encuentra es el marco de dentro, y el número va impreso en ese borde.
+      - Si la pierde dos lecturas seguidas, vuelve al recuadro. Si tras tres lecturas no lee
+        nada, una de cada dos es del recuadro, por si lo encontrado no era la carta.
+      - Así el recuadro solo hace falta ajustarlo si no la encuentra.
   - **Abajo, flotando, la última carta añadida** en una línea: imagen, nombre, expansión, precio para su acabado y
     - **cantidad** −/+: `changeQuantity(-1)` o un `addItem` más;
     - **acabado** con un toque, que pasa al siguiente (Normal/Foil/Etched en Magic, Estándar/Reverse holo en
@@ -113,7 +127,7 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
   - Si la lectura es ambigua, encima aparece la tira de candidatas.
   - **«Para luego»** (el reloj de la columna de la derecha, D25) guarda en la cola de revisión,
     sin parar la sesión:
-    - una foto del recuadro (JPEG de 560 px de alto);
+    - una foto de la carta encontrada o, si no la hay, del recuadro (JPEG de 560 px de alto);
     - lo último que ha leído y el nombre que ha sacado del título, si lo hay;
     - los ajustes de la sesión.
 
@@ -231,6 +245,12 @@ En `geometry.ts`:
 - El relleno del recuadro guía, `GUIDE_FILL` (0,94), con el tamaño y la posición que elija cada
   uno (del 30 al 100 %, `GUIDE_SCALE_MIN`; `guideScale`, `guideDx` y `guideDy` en los valores
   recordados del dispositivo).
+- `FOUND_INFO_STRIP`: la franja de datos de una carta encontrada (D36).
+
+En `find-card.ts` (D36): cuántas rectas se prueban (`LINES`, 30), la inclinación máxima
+(`MAX_SLOPE`, ±14°), el tamaño mínimo (`MIN_AREA`, 6 % de la imagen), la tolerancia de forma
+(`RATIO_TOLERANCE`, `RATIO_SIGMA`, `PARALLEL_SIGMA`), cuánto cuenta que una recta siga más allá
+de las esquinas (`EXT_WEIGHT`) y hasta dónde se empuja cada lado hacia fuera (`REACH`, 5 %).
 
 En `queries/scan.ts`:
 - `NAME_SIMILARITY_SURE` (0,6).
@@ -244,6 +264,5 @@ En `queries/scan.ts`:
   cambia solo la carta actual; el valor por defecto se fija antes de empezar.
 - **Cola de revisión** con miniatura (`pending_scans`), si la búsqueda manual se queda corta.
 - **Service worker** (Serwist), para uso sin conexión.
-- Si con el OCR no basta: reconocimiento por imagen (hash perceptual de la ilustración, que
-  necesita detectar la carta y corregir la perspectiva) o respaldo con IA (descartado de momento
-  por coste, D06).
+- **Probar «Buscar la carta» (D36) en el móvil:** cuánto tarda por fotograma y si confunde el
+  hueco del card slinger con la carta.

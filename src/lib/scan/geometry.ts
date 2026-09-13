@@ -57,6 +57,14 @@ export function guideIn(area: Rect, fill = 0.92): Rect {
  */
 export const INFO_STRIP = { x0: 0.02, x1: 0.5, y0: 0.895, y1: 0.99 };
 
+/**
+ * The info strip of a card found in the view (D36), reaching below it. Down a card slinger a
+ * black border doesn't stand out from the dark floor, so what's found is the frame inside it,
+ * and the number is printed in that border. Where the whole card is found (a light table), the
+ * strip still covers the number, and a little of the table under it.
+ */
+export const FOUND_INFO_STRIP = { x0: 0, x1: 0.55, y0: 0.93, y1: 1.08 };
+
 /** Title line: the fallback when the info strip can't be read. */
 export const TITLE_STRIP = { x0: 0.04, x1: 0.76, y0: 0.025, y1: 0.1 };
 
@@ -95,6 +103,11 @@ export function stripRect(card: Rect, strip = INFO_STRIP): Rect {
 export function coverTransform(videoW: number, videoH: number, boxW: number, boxH: number) {
   const scale = Math.max(boxW / videoW, boxH / videoH);
   return { scale, offX: (boxW - videoW * scale) / 2, offY: (boxH - videoH * scale) / 2 };
+}
+
+/** A point in video pixels → on screen (relative to the video element): the inverse of `toVideo`. */
+export function fromVideo(p: { x: number; y: number }, t: ReturnType<typeof coverTransform>) {
+  return { x: p.x * t.scale + t.offX, y: p.y * t.scale + t.offY };
 }
 
 /** A rectangle on screen (relative to the video element) → video pixels. */

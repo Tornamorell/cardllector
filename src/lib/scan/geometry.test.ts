@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CARD_RATIO,
   coverTransform,
+  fromVideo,
   DEFAULT_GUIDE,
   GUIDE_FILL,
   guideIn,
@@ -86,5 +87,16 @@ describe("coverTransform + toVideo", () => {
     // The sides are cropped: the visible width is less than the video's.
     expect(r.x).toBeGreaterThan(0);
     expect(r.x + r.w / 2).toBeCloseTo(540);
+  });
+});
+
+describe("fromVideo", () => {
+  it("puts a video pixel back where toVideo took it from", () => {
+    // A 16:9 portrait stream on a phone: cropped top and bottom.
+    const t = coverTransform(2160, 3840, 390, 635);
+    const r = toVideo({ x: 40, y: 100, w: 120, h: 160 }, t);
+    const p = fromVideo({ x: r.x, y: r.y }, t);
+    expect(p.x).toBeCloseTo(40);
+    expect(p.y).toBeCloseTo(100);
   });
 });

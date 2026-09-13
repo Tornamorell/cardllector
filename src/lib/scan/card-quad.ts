@@ -20,7 +20,7 @@ const MIN_SUPPORT = 12; // scan lines that must agree on a side
 const PEAKS_PER_LINE = 5;
 
 /** A 3×3 box blur of the RGB channels: cloth or wood texture shouldn't look like an edge. */
-function blurRgb(rgba: ArrayLike<number>, w: number, h: number): Float32Array {
+export function blurRgb(rgba: ArrayLike<number>, w: number, h: number): Float32Array {
   const out = new Float32Array(w * h * 3);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -45,7 +45,7 @@ function blurRgb(rgba: ArrayLike<number>, w: number, h: number): Float32Array {
 }
 
 /** Horizontal and vertical Sobel, summed over R, G and B: a red cloth next to a white border counts. */
-function gradients(rgb: Float32Array, w: number, h: number) {
+export function gradients(rgb: Float32Array, w: number, h: number) {
   const gx = new Float32Array(w * h);
   const gy = new Float32Array(w * h);
   const p = (x: number, y: number, c: number) => rgb[(y * w + x) * 3 + c];
@@ -112,7 +112,7 @@ function edgeCandidates(
   return out;
 }
 
-type Line = { a: number; b: number }; // vertical sides: x = a·y + b; horizontal: y = a·x + b
+export type Line = { a: number; b: number }; // vertical sides: x = a·y + b; horizontal: y = a·x + b
 
 /**
  * The card's side among the candidates: of the straight lines that many scan lines agree on,
@@ -162,7 +162,7 @@ function fitSide(cands: Candidate[], vertical: boolean, tol = 1.5): Line | null 
 }
 
 /** Where a vertical-ish side (x = a·y + b) meets a horizontal-ish one (y = a·x + b). */
-function meet(vertical: Line, horizontal: Line): Pt {
+export function meet(vertical: Line, horizontal: Line): Pt {
   const x = (vertical.a * horizontal.b + vertical.b) / (1 - vertical.a * horizontal.a);
   return { x, y: horizontal.a * x + horizontal.b };
 }

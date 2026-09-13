@@ -26,6 +26,8 @@ export interface StickyDefaults {
   guideScale: number;
   guideDx: number;
   guideDy: number;
+  /** The scanner looks for the card in the whole view and reads it where it is (D36). */
+  findCard: boolean;
 }
 
 const DEFAULTS: StickyDefaults = {
@@ -39,6 +41,7 @@ const DEFAULTS: StickyDefaults = {
   guideScale: 1,
   guideDx: 0,
   guideDy: 0,
+  findCard: true,
 };
 
 const KEY = "cardllector:defaults";
