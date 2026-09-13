@@ -95,7 +95,7 @@ El valor histórico de lo que tienes de una colección no se guarda: se puede re
 | Tabla | Una fila por | Contenido |
 | --- | --- | --- |
 | `decks` | mazo de Magic | Dueño, nombre, formato (`commander`), descripción y su caja (`location_id`, única): las copias que están en esa ubicación están en el mazo. |
-| `deck_cards` | carta de un mazo en un tablero | Mazo, tablero (`deck_board`: `commander`, `main`, `side` o `maybe`), carta (`oracle_id` de `oracle_cards`), copias y, opcional, la edición preferida (`catalog_card_id`) para su imagen y su precio. Clave: mazo, tablero y carta. |
+| `deck_cards` | carta de un mazo en un tablero | Mazo, tablero (`deck_board`: `commander`, `main`, `side` o `maybe`), carta (`oracle_id` de `oracle_cards`), copias, opcional la edición preferida (`catalog_card_id`) para su imagen y su precio, y las funciones puestas a mano (`roles`; null = deducidas del texto). Clave: mazo, tablero y carta. |
 
 `date` es la fecha de los datos de precio (el `updated_at` del fichero de Scryfall), no la de la
 ejecución. `snapshotPrices()` es idempotente: repetirla en la misma fecha sobrescribe ese día.

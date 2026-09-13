@@ -1,0 +1,1 @@
+ALTER TABLE "deck_cards" ADD COLUMN "roles" text[];

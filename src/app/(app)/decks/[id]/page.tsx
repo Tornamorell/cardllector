@@ -11,12 +11,14 @@ import {
   bracketHint,
   MANA_KEYS,
   MANA_LABELS,
+  openingHandLands,
   TYPE_GROUPS,
   TYPE_LABELS,
   typeGroup,
   type DeckAnalysis,
 } from "@/lib/decks/analysis";
 import { BOARD_LABELS, formatDecklist, type Board } from "@/lib/decks/decklist";
+import { cardRoles, ROLE_LABELS, ROLE_REFERENCE, ROLES, roleCounts, type Role } from "@/lib/decks/roles";
 import { formatEur } from "@/lib/format";
 import { boxContents, deckCardRows, getDeck, type DeckCardRow } from "@/lib/queries/decks";
 import { requireUser } from "@/lib/session";
@@ -24,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { DeckAdder } from "./deck-adder";
 import { DeckCardRow as CardRow, type DeckCardView } from "./deck-card-row";
 import { DeckTools } from "./deck-tools";
+import { OpeningHand } from "./opening-hand";
 
 export const metadata: Metadata = { title: "Mazo" };
 
@@ -60,7 +63,23 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
   for (const r of rows) listed.set(r.oracleId, (listed.get(r.oracleId) ?? 0) + r.quantity);
   const extras = box.filter((b) => b.copies > (listed.get(b.oracleId) ?? 0));
 
+  // What each card does: the owner's choice, or the guess from its text.
+  const rolesOf = (r: DeckCardRow) => (r.manualRoles as Role[] | null) ?? cardRoles(r);
+  const roles = roleCounts(rows.map((r) => ({ board: r.board, quantity: r.quantity, roles: rolesOf(r) })));
+  const library = rows
+    .filter((r) => r.board === "main")
+    .map((r) => ({
+      oracleId: r.oracleId,
+      name: r.name,
+      imageSmall: r.imageSmall,
+      printingId: r.printingId,
+      isLand: typeGroup(r.typeLine) === "land",
+      quantity: r.quantity,
+    }));
+
   const view = (r: DeckCardRow): DeckCardView => ({
+    roles: rolesOf(r),
+    manualRoles: r.manualRoles !== null,
     board: r.board,
     oracleId: r.oracleId,
     quantity: r.quantity,
@@ -153,6 +172,10 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
           {TYPE_GROUPS.map((g) => section(TYPE_LABELS[g], onBoard("main").filter((r) => typeGroup(r.typeLine) === g)))}
           {section(BOARD_LABELS.side, onBoard("side"))}
           {section(BOARD_LABELS.maybe, onBoard("maybe"))}
+          <section className="space-y-2">
+            <h3 className="text-muted-foreground border-b pb-1 text-sm font-semibold">Mano de prueba</h3>
+            <OpeningHand cards={library} />
+          </section>
           {extras.length > 0 && (
             <section className="space-y-1">
               <h3 className="text-muted-foreground border-b pb-1 text-sm font-semibold">En la caja, pero no en la lista</h3>
@@ -168,7 +191,7 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
         </div>
 
         <aside className="space-y-4">
-          <Analysis a={a} />
+          <Analysis a={a} roles={roles} />
         </aside>
       </div>
     </div>
@@ -184,10 +207,12 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function Analysis({ a }: { a: DeckAnalysis }) {
+function Analysis({ a, roles }: { a: DeckAnalysis; roles: Record<Role, number> }) {
   const maxCurve = Math.max(1, ...a.curve);
   const totalPips = MANA_KEYS.reduce((n, k) => n + a.pips[k], 0);
   const colors = MANA_KEYS.filter((k) => a.pips[k] || a.landSources[k] || a.otherSources[k]);
+  const hand = openingHandLands(a.copies.main, a.types.land);
+  const pct = (p: number) => `${Math.round(p * 100)} %`;
   return (
     <>
       <Panel title="Reglas de Commander">
@@ -241,7 +266,34 @@ function Analysis({ a }: { a: DeckAnalysis }) {
               {a.mdfcLands > 0 && <span className="text-muted-foreground font-normal"> +{a.mdfcLands} de doble cara</span>}
             </dd>
           </div>
+          {a.copies.main >= 7 && (
+            <div className="col-span-2">
+              <dt className="text-muted-foreground text-xs">Mano inicial con 2 a 4 tierras</dt>
+              <dd className="font-semibold tabular-nums">
+                {pct(hand.twoToFour)}
+                <span className="text-muted-foreground font-normal"> · 2 o más: {pct(hand.atLeastTwo)}</span>
+              </dd>
+            </div>
+          )}
         </dl>
+      </Panel>
+
+      <Panel title="Funciones">
+        <ul className="space-y-1 text-sm">
+          {ROLES.map((r) => (
+            <li key={r} className="flex justify-between gap-2">
+              <span>{ROLE_LABELS[r]}</span>
+              <span className="tabular-nums">
+                {roles[r]}
+                {ROLE_REFERENCE[r] != null && <span className="text-muted-foreground text-xs"> / ~{ROLE_REFERENCE[r]}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="text-muted-foreground text-xs">
+          Deducidas del texto de cada carta; corrígelas con la etiqueta de su fila. La cifra con «~» es una
+          referencia habitual en Commander, no una regla.
+        </p>
       </Panel>
 
       <Panel title="Tipos">

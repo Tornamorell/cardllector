@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { analyzeDeck, bracketHint, manaPips, typeGroup, type DeckCardInfo } from "./analysis";
+import {
+  analyzeDeck,
+  bracketHint,
+  hypergeometric,
+  manaPips,
+  openingHandLands,
+  typeGroup,
+  type DeckCardInfo,
+} from "./analysis";
 
 const card = (c: Partial<DeckCardInfo> & Pick<DeckCardInfo, "name">): DeckCardInfo => ({
   board: "main",
@@ -119,6 +127,22 @@ describe("analyzeDeck", () => {
     });
     expect(hint([chooser, background])).toMatch(/^El mazo tiene/);
     expect(hint([card({ board: "commander", name: "Sol Ring", typeLine: "Artifact" })])).toMatch(/^No pueden ser comandantes/);
+  });
+});
+
+describe("hypergeometric and opening hands", () => {
+  it("computes exact odds", () => {
+    // 10 cards, 5 hits, draw 2: exactly one hit = 5·5 / C(10,2) = 25/45.
+    expect(hypergeometric(10, 5, 2, 1)).toBeCloseTo(25 / 45);
+    const total = [0, 1, 2, 3, 4, 5, 6, 7].reduce((s, k) => s + hypergeometric(99, 37, 7, k), 0);
+    expect(total).toBeCloseTo(1);
+  });
+
+  it("gives a 37-land Commander deck its odds", () => {
+    // Checked with exact integer combinations: 81.42 % and 74.84 %.
+    const odds = openingHandLands(99, 37);
+    expect(odds.atLeastTwo).toBeCloseTo(0.8142, 3);
+    expect(odds.twoToFour).toBeCloseTo(0.7484, 3);
   });
 });
 

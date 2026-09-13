@@ -134,6 +134,13 @@
       "when": 1789298990530,
       "tag": "0018_cmc_precision",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789301883611,
+      "tag": "0019_deck_card_roles",
+      "breakpoints": true
     }
   ]
 }

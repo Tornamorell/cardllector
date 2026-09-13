@@ -75,7 +75,9 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
     reglas de Commander, Game Changers y precio;
   - cada mazo tiene su caja: se ve qué cartas están dentro, cuáles están en otra ubicación
     (con «Traer») y cuáles faltan.
-  - Pendiente: categorías funcionales (rampa, robo, eliminación…) y mano de prueba.
+  - Funciones de cada carta (rampa, robo, eliminación, barrido, contrahechizo, tutor),
+    deducidas del texto y corregibles a mano, y mano de prueba con mulligan y probabilidad de
+    tierras.
 - **Colecciones desde una expansión:**
   - Se crean llenas con una expansión entera, o con una de sus rarezas.
   - Se hace desde `/collections` o con «Guardar como colección…» en la expansión.

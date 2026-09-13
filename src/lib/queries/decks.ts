@@ -39,6 +39,8 @@ export type DeckCardRow = DeckCardInfo & {
   oracleId: string;
   /** The printing the owner chose, if any. */
   preferredPrintingId: string | null;
+  /** Roles the owner set for this card; null: guessed from its text (roles.ts). */
+  manualRoles: string[] | null;
   /** The one shown: the chosen printing, else the newest with a picture. */
   printingId: string | null;
   imageSmall: string | null;
@@ -64,7 +66,7 @@ export async function deckCardRows(ownerId: string, deckId?: string): Promise<De
             o.color_identity as "colorIdentity", o.produced_mana as "producedMana",
             o.oracle_text as "oracleText", o.keywords,
             o.legalities->>'commander' as "commanderLegality", o.game_changer as "gameChanger",
-            dc.catalog_card_id as "preferredPrintingId",
+            dc.catalog_card_id as "preferredPrintingId", dc.roles as "manualRoles",
             coalesce(pref.id, latest.id) as "printingId",
             coalesce(pref.image_small, latest.image_small) as "imageSmall",
             coalesce(pref.set_code, latest.set_code) as "setCode",

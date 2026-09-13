@@ -7,6 +7,7 @@ import { db, pool } from "@/db/client";
 import { catalogCards, deckCards, decks, locations, oracleCards } from "@/db/schema";
 import { BOARDS, parseDecklist, type Board } from "@/lib/decks/decklist";
 import { resolveDecklist, type ResolvedLine } from "@/lib/decks/resolve";
+import { ROLES, type Role } from "@/lib/decks/roles";
 import { deckCardRows } from "@/lib/queries/decks";
 import { requireUser } from "@/lib/session";
 import { moveItems } from "../inventory/actions";
@@ -142,6 +143,18 @@ export async function setDeckCardQuantity(deckId: string, from: Board, oracleId:
   if (n === 0) await db.delete(deckCards).where(where);
   else await db.update(deckCards).set({ quantity: n }).where(where);
   await db.update(decks).set({ updatedAt: new Date() }).where(eq(decks.id, deck.id));
+  refresh();
+}
+
+/** Sets what a card does in the deck, overriding the guess; null goes back to the guess. */
+export async function setDeckCardRoles(deckId: string, from: Board, oracleId: string, roles: Role[] | null) {
+  const user = await requireUser();
+  const deck = await ownedDeck(user.id, deckId);
+  const value = roles === null ? null : [...new Set(z.array(z.enum(ROLES)).max(ROLES.length).parse(roles))];
+  await db
+    .update(deckCards)
+    .set({ roles: value })
+    .where(and(eq(deckCards.deckId, deck.id), eq(deckCards.board, board.parse(from)), eq(deckCards.oracleId, oracleId)));
   refresh();
 }
 

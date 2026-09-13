@@ -112,6 +112,27 @@ export function manaPips(cost: string | null): Record<ManaKey, number> {
   return pips;
 }
 
+function choose(n: number, k: number) {
+  if (k < 0 || k > n) return 0;
+  const m = Math.min(k, n - k);
+  let r = 1;
+  for (let i = 1; i <= m; i++) r = (r * (n - m + i)) / i;
+  return r;
+}
+
+/** The chance of exactly k hits drawing n cards from N, K of them hits (no replacement). */
+export function hypergeometric(N: number, K: number, n: number, k: number): number {
+  const all = choose(N, n);
+  return all ? (choose(K, k) * choose(N - K, n - k)) / all : 0;
+}
+
+/** Odds of an opening hand of 7 from the library (the main deck; the commander starts apart). */
+export function openingHandLands(library: number, lands: number) {
+  const exactly = (k: number) => hypergeometric(library, lands, Math.min(7, library), k);
+  const twoToFour = exactly(2) + exactly(3) + exactly(4);
+  return { twoToFour, atLeastTwo: 1 - exactly(0) - exactly(1) };
+}
+
 /** What the Game Changers say about a deck's bracket; the other criteria aren't checked. */
 export function bracketHint(gameChangers: number): string {
   if (gameChangers === 0) return "Sin Game Changers: cabe en los brackets 1 y 2 si el resto del mazo encaja.";

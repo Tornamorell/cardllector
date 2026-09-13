@@ -1,17 +1,18 @@
 "use client";
 
-import { ArrowDownToLineIcon, XIcon } from "lucide-react";
+import { ArrowDownToLineIcon, TagIcon, XIcon } from "lucide-react";
 import Link from "next/link";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { CardThumb } from "@/components/card-thumb";
 import { ManaCost } from "@/components/mana-cost";
 import { QuantityStepper, selectClass } from "@/components/stack-fields";
 import { Button } from "@/components/ui/button";
 import { BOARD_LABELS, BOARDS, type Board } from "@/lib/decks/decklist";
+import { ROLE_LABELS, ROLES, type Role } from "@/lib/decks/roles";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { moveDeckCard, pullIntoDeck, setDeckCardQuantity } from "../actions";
+import { moveDeckCard, pullIntoDeck, setDeckCardQuantity, setDeckCardRoles } from "../actions";
 
 export type DeckCardView = {
   board: Board;
@@ -24,11 +25,21 @@ export type DeckCardView = {
   priceEur: number | null;
   /** For the commander and main deck: where this card's copies are (D35). */
   status: { inBox: number; want: number; free: number; freeWhere: string[]; inOtherDecks: number } | null;
+  /** What it does here, and whether the owner set it (else guessed from its text). */
+  roles: Role[];
+  manualRoles: boolean;
 };
 
 /** One card of the deck: copies, board, and whether its copies are in the box. */
 export function DeckCardRow({ deckId, card }: { deckId: string; card: DeckCardView }) {
   const [pending, startTransition] = useTransition();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Role[]>(card.roles);
+
+  function saveRoles(roles: Role[] | null) {
+    setEditing(false);
+    run(() => setDeckCardRoles(deckId, card.board, card.oracleId, roles));
+  }
 
   function run(action: () => Promise<unknown>, error = "No se ha podido guardar el cambio.") {
     startTransition(async () => {
@@ -88,7 +99,51 @@ export function DeckCardRow({ deckId, card }: { deckId: string; card: DeckCardVi
                 Te {lacking === 1 ? "falta" : `faltan ${lacking}`}
               </span>
             ))}
+          {card.roles.map((r) => (
+            <span key={r} className="bg-muted text-foreground/80 rounded px-1 text-[10px]">
+              {ROLE_LABELS[r]}
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(card.roles);
+              setEditing((e) => !e);
+            }}
+            className="hover:text-foreground"
+            aria-label={`Funciones de ${card.name}`}
+            aria-expanded={editing}
+            title={card.manualRoles ? "Funciones puestas a mano" : "Funciones deducidas del texto"}
+          >
+            <TagIcon className={cn("size-3", card.manualRoles && "text-primary")} />
+          </button>
         </div>
+        {editing && (
+          <div className="flex flex-wrap items-center gap-1 pt-1.5">
+            {ROLES.map((r) => (
+              <button
+                key={r}
+                type="button"
+                aria-pressed={draft.includes(r)}
+                onClick={() => setDraft((d) => (d.includes(r) ? d.filter((x) => x !== r) : [...d, r]))}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-xs",
+                  draft.includes(r) ? "bg-primary text-primary-foreground border-primary" : "text-muted-foreground",
+                )}
+              >
+                {ROLE_LABELS[r]}
+              </button>
+            ))}
+            <Button type="button" size="xs" onClick={() => saveRoles(draft)} disabled={pending}>
+              Guardar
+            </Button>
+            {card.manualRoles && (
+              <Button type="button" size="xs" variant="ghost" onClick={() => saveRoles(null)} disabled={pending}>
+                Automático
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       <select
         className={cn(selectClass, "h-8 w-28 text-xs")}

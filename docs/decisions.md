@@ -723,3 +723,19 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     ni gradeadas, y primero las que no tienen ubicación y las ediciones más baratas.
   - Borrar un mazo borra su caja; sus cartas quedan en Mis cartas sin ubicación.
   - El análisis es puro (`src/lib/decks/analysis.ts`) y tiene tests. Solo valida Commander.
+- **Actualización (fase 3, 2026-09-13):**
+  - **Funciones** (`src/lib/decks/roles.ts`): rampa, robo, eliminación, barrido, contrahechizo y
+    tutor.
+    - Se deducen del texto de reglas con expresiones regulares, sin el texto recordatorio.
+      Las tierras no tienen funciones; buscar tierras es rampa, no tutor.
+    - Son una aproximación: cada carta se puede corregir a mano (`deck_cards.roles`, null =
+      automático) y volver a lo automático.
+    - El panel las cuenta frente a una referencia habitual en Commander: unas 10 de rampa, 10 de
+      robo, 10 de eliminación y 3 barridos.
+  - **Mano de prueba** (`src/lib/decks/test-hand.ts`):
+    - baraja el mazo principal (el comandante empieza aparte) con `crypto.getRandomValues` y
+      roba 7;
+    - mulligan London con el primero gratis, como en multijugador, eligiendo qué va al fondo;
+    - «Robar» para simular turnos.
+  - **Probabilidad hipergeométrica** de una mano inicial con 2 a 4 tierras.
+  - **Descartado:** etiquetas libres como las de Moxfield. De momento bastan las seis funciones.

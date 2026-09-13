@@ -423,6 +423,9 @@ export const deckCards = pgTable(
     quantity: integer("quantity").notNull().default(1),
     // The printing the owner prefers, for its picture and price; null: the cheapest.
     catalogCardId: uuid("catalog_card_id").references(() => catalogCards.id, { onDelete: "set null" }),
+    // What the card does here (ROLES in src/lib/decks/roles.ts), set by the owner; null: guessed
+    // from its text.
+    roles: text("roles").array(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
