@@ -199,8 +199,9 @@ export async function deleteDeck(deckId: string) {
 
 /**
  * «Traer al mazo»: moves into the deck's box the copies it lacks (commander and main deck)
- * from wherever they are free — never from another deck's box, never graded ones. Copies with
- * no location go first, then the cheapest printings. One card, or the whole deck.
+ * from wherever they are free — never from another deck's box, never graded ones. Copies of
+ * the printing the list names go first (the full art you chose), then copies with no location,
+ * then the cheapest printings. One card, or the whole deck.
  */
 export async function pullIntoDeck(deckId: string, oracleId?: string) {
   const user = await requireUser();
@@ -216,15 +217,19 @@ export async function pullIntoDeck(deckId: string, oracleId?: string) {
   }
 
   const rows = (await deckCardRows(user.id, deck.id)).filter((r) => !oracleId || r.oracleId === oracleId);
-  const needed = new Map<string, { want: number; inBox: number }>();
+  const needed = new Map<string, { want: number; inBox: number; printingId: string | null }>();
   for (const r of rows) {
     if (r.board !== "commander" && r.board !== "main") continue;
     const seen = needed.get(r.oracleId);
-    needed.set(r.oracleId, { want: (seen?.want ?? 0) + r.quantity, inBox: r.inBox });
+    needed.set(r.oracleId, {
+      want: (seen?.want ?? 0) + r.quantity,
+      inBox: r.inBox,
+      printingId: seen?.printingId ?? r.preferredPrintingId,
+    });
   }
 
   const stacks: Array<{ itemId: string; count: number }> = [];
-  for (const [id, { want, inBox }] of needed) {
+  for (const [id, { want, inBox, printingId }] of needed) {
     let missing = want - inBox;
     if (missing <= 0) continue;
     const { rows: free } = await pool.query<{ id: string; quantity: number }>(
@@ -234,8 +239,8 @@ export async function pullIntoDeck(deckId: string, oracleId?: string) {
        left join decks od on od.location_id = i.location_id
        where i.owner_id = $1 and c.oracle_id = $2 and i.grading_company is null and od.id is null
          and i.location_id is distinct from $3
-       order by (i.location_id is null) desc, c.price_eur asc nulls last`,
-      [user.id, id, locationId],
+       order by coalesce(c.id = $4, false) desc, (i.location_id is null) desc, c.price_eur asc nulls last`,
+      [user.id, id, locationId, printingId],
     );
     for (const s of free) {
       if (missing <= 0) break;

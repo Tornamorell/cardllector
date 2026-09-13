@@ -99,8 +99,9 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
       board: r.board,
       quantity: r.quantity,
       name: r.name,
-      setCode: r.preferredPrintingId ? r.setCode : null,
-      collectorNumber: r.preferredPrintingId ? r.collectorNumber : null,
+      // The printing chosen or the one in the box; with neither, any printing will do.
+      setCode: r.preferredPrintingId || r.boxedPrintingId ? r.setCode : null,
+      collectorNumber: r.preferredPrintingId || r.boxedPrintingId ? r.collectorNumber : null,
     })),
   );
 

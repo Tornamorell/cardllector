@@ -710,8 +710,9 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   de prueba o mazos de otros juegos.
 - **Actualización (fase 2, implementada el 2026-09-13):**
   - `decks` y `deck_cards`. Las cartas van por carta (`oracle_id`) y tablero, con una edición
-    preferida opcional para la imagen y el precio; sin ella, el precio es el de la edición más
-    barata.
+    preferida opcional. La imagen y el precio son los de tu copia en la caja si la hay (desde
+    el 2026-09-14, abajo); si no, los de la edición preferida o, sin ella, la imagen más
+    reciente y el precio de la edición más barata.
   - `/decks` lista los mazos. `/decks/[id]` muestra las cartas agrupadas por tipo y el
     análisis. Se entra desde «Mazos» en la barra y desde el selector Colecciones / Mazos.
   - Importar pegando la lista; se reconocen el nombre completo o la cara delantera, sin
@@ -720,7 +721,8 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - Estado de cada carta del comandante y del mazo principal: en la caja, en otra ubicación
     (con «Traer»), en otro mazo o te falta.
   - «Traer a la caja» mueve con `moveItems` las copias libres: nunca de la caja de otro mazo
-    ni gradeadas, y primero las que no tienen ubicación y las ediciones más baratas.
+    ni gradeadas; primero las de la edición preferida, luego las que no tienen ubicación y las
+    ediciones más baratas.
   - Borrar un mazo borra su caja; sus cartas quedan en Mis cartas sin ubicación.
   - El análisis es puro (`src/lib/decks/analysis.ts`) y tiene tests. Solo valida Commander.
 - **Actualización (fase 3, 2026-09-13):**
@@ -739,6 +741,14 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     - «Robar» para simular turnos.
   - **Probabilidad hipergeométrica** de una mano inicial con 2 a 4 tierras.
   - **Descartado:** etiquetas libres como las de Moxfield. De momento bastan las seis funciones.
+- **Actualización (2026-09-14):** el usuario tenía escaneada la full art de su comandante, y el
+  mazo seguía enseñando la edición de la lista aunque «Traer» había movido su copia a la caja.
+  - Cada carta enseña y valora la copia que tiene en la caja: la de la edición preferida si
+    está, si no la más valiosa, con su valor como el de cualquier copia (D27). Sin copia en la
+    caja, como antes. Al exportar sale esa edición.
+  - «Traer» elige primero las copias de la edición preferida.
+  - **Descartado:** cambiar la edición preferida al traer una copia: la lista es lo que el
+    usuario eligió, y la caja ya dice lo que tiene.
 
 ## D36 · Buscar la carta en toda la imagen del escáner — 2026-09-14 · provisional
 

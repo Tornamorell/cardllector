@@ -41,8 +41,13 @@ export type DeckCardRow = DeckCardInfo & {
   preferredPrintingId: string | null;
   /** Roles the owner set for this card; null: guessed from its text (roles.ts). */
   manualRoles: string[] | null;
-  /** The one shown: the chosen printing, else the newest with a picture. */
+  /**
+   * The one shown and priced: the owner's copy in the deck's box, else the chosen printing,
+   * else the newest with a picture.
+   */
   printingId: string | null;
+  /** The printing of the owner's copy in the box, if there's one there. */
+  boxedPrintingId: string | null;
   imageSmall: string | null;
   setCode: string | null;
   collectorNumber: string | null;
@@ -67,11 +72,12 @@ export async function deckCardRows(ownerId: string, deckId?: string): Promise<De
             o.oracle_text as "oracleText", o.keywords,
             o.legalities->>'commander' as "commanderLegality", o.game_changer as "gameChanger",
             dc.catalog_card_id as "preferredPrintingId", dc.roles as "manualRoles",
-            coalesce(pref.id, latest.id) as "printingId",
-            coalesce(pref.image_small, latest.image_small) as "imageSmall",
-            coalesce(pref.set_code, latest.set_code) as "setCode",
-            coalesce(pref.collector_number, latest.collector_number) as "collectorNumber",
-            coalesce(pref.price_eur, cheap.price_eur)::float8 as "priceEur",
+            coalesce(boxed.id, pref.id, latest.id) as "printingId",
+            boxed.id as "boxedPrintingId",
+            coalesce(boxed.image_small, pref.image_small, latest.image_small) as "imageSmall",
+            coalesce(boxed.set_code, pref.set_code, latest.set_code) as "setCode",
+            coalesce(boxed.collector_number, pref.collector_number, latest.collector_number) as "collectorNumber",
+            coalesce(boxed.value, pref.price_eur, cheap.price_eur)::float8 as "priceEur",
             coalesce(own.in_box, 0)::int as "inBox",
             coalesce(own.free, 0)::int as free,
             coalesce(own.free_where, '{}') as "freeWhere",
@@ -90,6 +96,19 @@ export async function deckCardRows(ownerId: string, deckId?: string): Promise<De
        where c.game = 'mtg' and c.oracle_id = dc.oracle_id and c.image_small is not null
        order by c.released_at desc nulls last limit 1
      ) latest on true
+     -- The owner's copy in the box: the chosen printing if it's there, else the most valuable.
+     -- Its value is itemValueEurSql's (pricing.ts): the owner's estimate, else the market price.
+     left join lateral (
+       select c.id, c.image_small, c.set_code, c.collector_number,
+              coalesce(i.estimated_value_eur,
+                       case i.finish when 'nonfoil' then c.price_eur when 'foil' then c.price_eur_foil end) as value
+       from items i
+       join catalog_cards c on c.id = i.catalog_card_id
+       where i.owner_id = $1 and i.location_id = d.location_id and c.oracle_id = dc.oracle_id
+         and i.grading_company is null
+       order by c.id = dc.catalog_card_id desc nulls last, value desc nulls last
+       limit 1
+     ) boxed on true
      left join lateral (
        select sum(i.quantity) filter (where i.location_id = d.location_id) as in_box,
               sum(i.quantity) filter (where i.location_id is distinct from d.location_id and od.id is null) as free,
