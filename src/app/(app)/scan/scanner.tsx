@@ -4,10 +4,12 @@ import {
   ClockIcon,
   FlashlightIcon,
   ImageUpIcon,
+  LoaderCircleIcon,
   MinusIcon,
   MoveIcon,
   PlusIcon,
   ScanLineIcon,
+  SlidersHorizontalIcon,
   SparklesIcon,
   XIcon,
 } from "lucide-react";
@@ -228,6 +230,7 @@ export function Scanner({
   const [status, setStatus] = useState("Encaja la carta en el recuadro.");
   const [lastText, setLastText] = useState("");
   const [showDebug, setShowDebug] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [choices, setChoices] = useState<{ matches: ScanMatch[]; lang: string | null } | null>(null);
   // The session survives reloads and closing the camera (scan-session.ts).
   const [entries, setEntries] = useScanSession();
@@ -1077,15 +1080,38 @@ export function Scanner({
         </div>
       </details>
 
-      {/* Full-screen scanner. Always mounted so the video and stage refs exist. */}
+      {/* Full-screen scanner, ManaBox-style: the camera fills the screen and every control floats
+          over it, so nothing takes room from the guide or moves it. Always mounted: the read
+          loop needs the video, stage and canvas refs. */}
       <div
-        className={cn("fixed inset-0 z-50 flex flex-col bg-black text-white", !running && "hidden")}
+        className={cn("fixed inset-0 z-50 overflow-hidden bg-black text-white", !running && "hidden")}
         role="dialog"
         aria-label="Escáner"
       >
         <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" />
 
-        <div className="relative z-10 flex items-center gap-2 bg-gradient-to-b from-black/80 to-transparent px-3 pt-[max(env(safe-area-inset-top),0.75rem)] pb-3">
+        {/* Where the guide goes: the whole screen but a band top and bottom for the floating
+            bars, so it stays centred where the camera looks. */}
+        <div
+          ref={stageRef}
+          className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] bottom-[calc(env(safe-area-inset-bottom)+4rem)]"
+        >
+          {guide && strip && (
+            <>
+              <div
+                className="absolute rounded-[4.5%] border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
+                style={{ left: guide.x, top: guide.y, width: guide.w, height: guide.h }}
+              />
+              <div
+                className="absolute rounded border-2 border-primary"
+                style={{ left: strip.x, top: strip.y, width: strip.w, height: strip.h }}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Top: close, where the cards go, and the session. */}
+        <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 bg-gradient-to-b from-black/70 to-transparent px-3 pt-[max(env(safe-area-inset-top),0.75rem)] pb-4">
           <Button
             variant="ghost"
             size="icon"
@@ -1105,100 +1131,112 @@ export function Scanner({
               {fixedCode && `, solo ${fixedCode}`}
             </p>
           </div>
-          {torch.supported && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn("text-white hover:bg-white/15 hover:text-white", torch.on && "bg-white/25")}
-              onClick={toggleTorch}
-              aria-label={torch.on ? "Apagar linterna" : "Encender linterna"}
-              aria-pressed={torch.on}
-            >
-              <FlashlightIcon />
-            </Button>
-          )}
           <button
             type="button"
             onClick={() => setHistoryOpen((open) => !open)}
             aria-expanded={historyOpen}
             aria-label={`Esta sesión: ${totalsText}. Ver el historial`}
-            className="rounded-full bg-white/15 px-3 py-1 text-sm tabular-nums hover:bg-white/25"
+            className="rounded-full bg-black/55 px-3 py-1 text-sm tabular-nums backdrop-blur hover:bg-black/70"
           >
             {totals.cards} · <span className="text-primary font-semibold">{formatEur(totals.valueEur)}</span>
           </button>
         </div>
 
-        <div ref={stageRef} className="relative z-10 flex-1">
-          {guide && strip && (
-            <>
-              <div
-                className="absolute rounded-[4.5%] border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]"
-                style={{ left: guide.x, top: guide.y, width: guide.w, height: guide.h }}
-              />
-              <div
-                className="absolute rounded border-2 border-primary"
-                style={{ left: strip.x, top: strip.y, width: strip.w, height: strip.h }}
-              />
-            </>
-          )}
-          <p
-            className="absolute inset-x-4 top-2 mx-auto w-fit max-w-full truncate rounded-full bg-black/60 px-3 py-1 text-center text-xs"
-            role="status"
-            aria-live="polite"
-          >
-            {status}
-          </p>
+        {/* What the reader is doing, under the top bar. */}
+        <p
+          className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.25rem)] left-1/2 z-10 max-w-[65%] -translate-x-1/2 truncate rounded-full bg-black/60 px-3 py-1 text-center text-xs"
+          role="status"
+          aria-live="polite"
+        >
+          {status}
+        </p>
 
-          {historyOpen && (
-            <div className="absolute inset-0 z-20 flex flex-col bg-neutral-950/95">
-              <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-2">
-                <div className="min-w-0">
-                  <p className="font-semibold">Esta sesión</p>
-                  <p className="text-sm text-white/70">{totalsText}</p>
-                  <p className="text-xs text-white/50">La lectura está en pausa mientras miras.</p>
-                </div>
-                <Button size="sm" variant="secondary" onClick={() => setHistoryOpen(false)}>
-                  Seguir escaneando
-                </Button>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                {entries.length ? (
-                  <SessionList
-                    entries={entries}
-                    busy={busy}
-                    onMinus={minusOne}
-                    onPlus={plusOne}
-                    tone="overlay"
-                  />
-                ) : (
-                  <p className="px-4 py-8 text-center text-sm text-white/60">
-                    Aún no has añadido nada en esta sesión.
-                  </p>
-                )}
-              </div>
-              {entries.length > 0 && (
-                <div className="border-t border-white/10 px-4 py-3">{sessionActions("overlay")}</div>
-              )}
-            </div>
+        {/* Right: the tools, one tap each. */}
+        <div className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.5rem)] right-3 z-10 flex flex-col items-center gap-1 rounded-full bg-black/55 p-1 backdrop-blur">
+          {torch.supported && (
+            <ToolButton
+              label={torch.on ? "Apagar linterna" : "Encender linterna"}
+              pressed={torch.on}
+              onClick={toggleTorch}
+            >
+              <FlashlightIcon />
+            </ToolButton>
           )}
+          {aiEnabled && (
+            <ToolButton
+              label={identifying ? "Identificando con IA…" : "Identificar con IA"}
+              onClick={identifyWithAi}
+              disabled={identifying}
+            >
+              {identifying ? <LoaderCircleIcon className="animate-spin" /> : <SparklesIcon />}
+            </ToolButton>
+          )}
+          <ToolButton
+            label={pendingCount ? `Para luego (${pendingCount} por revisar)` : "Para luego"}
+            onClick={saveForLater}
+            disabled={saving}
+            badge={pendingCount}
+          >
+            {saving ? <LoaderCircleIcon className="animate-spin" /> : <ClockIcon />}
+          </ToolButton>
+          <ToolButton label="Ajustes del escáner" pressed={toolsOpen} onClick={() => setToolsOpen((open) => !open)}>
+            <SlidersHorizontalIcon />
+          </ToolButton>
         </div>
 
-        {/* A fixed height: the guide above never moves or resizes with what's shown here. */}
-        <div className="relative z-10 rounded-t-2xl bg-neutral-950/95 px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
-          <div className="flex h-56 flex-col gap-2">
-            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
-          {showDebug && (
-            <div className="space-y-1">
-              <canvas ref={canvasRef} className="max-h-16 max-w-full rounded bg-white" />
-              <pre className="max-h-16 overflow-auto text-[10px] text-white/70">{lastText || "—"}</pre>
+        {toolsOpen && (
+          <div className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.5rem)] right-17 z-10 w-60 space-y-2.5 rounded-2xl bg-black/80 p-3 text-sm backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <span>Recuadro</span>
+              <div className="flex items-center gap-1" role="group" aria-label="Tamaño del recuadro">
+                <button
+                  type="button"
+                  className="size-7 rounded-md bg-white/10 text-base hover:bg-white/20 disabled:opacity-40"
+                  onClick={() => resizeGuide(-0.05)}
+                  disabled={guideScale <= GUIDE_SCALE_MIN}
+                  aria-label="Recuadro más pequeño"
+                >
+                  −
+                </button>
+                <span className="w-10 text-center tabular-nums">{Math.round(guideScale * 100)} %</span>
+                <button
+                  type="button"
+                  className="size-7 rounded-md bg-white/10 text-base hover:bg-white/20 disabled:opacity-40"
+                  onClick={() => resizeGuide(0.05)}
+                  disabled={guideScale >= GUIDE_SCALE_MAX}
+                  aria-label="Recuadro más grande"
+                >
+                  +
+                </button>
+              </div>
             </div>
-          )}
-          {/* The read loop needs the canvas even when the debug view is hidden. */}
-          {!showDebug && <canvas ref={canvasRef} className="hidden" />}
+            <p className="text-xs text-white/60">
+              Si la carta se ve pequeña, como en un card slinger, achica el recuadro hasta que la llene.
+            </p>
+            <button
+              type="button"
+              className="w-full rounded-lg bg-white/10 px-3 py-1.5 text-left hover:bg-white/20"
+              onClick={() => setShowDebug((v) => !v)}
+            >
+              {showDebug ? "Ocultar lo que lee" : "Ver lo que lee"}
+            </button>
+          </div>
+        )}
 
-          {choices ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
+        {showDebug && (
+          <div className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+5.5rem)] left-3 z-10 max-w-[55%] space-y-1 rounded-lg bg-black/70 p-2">
+            <canvas ref={canvasRef} className="max-h-16 max-w-full rounded bg-white" />
+            <pre className="max-h-24 overflow-auto text-[10px] text-white/80">{lastText || "—"}</pre>
+          </div>
+        )}
+        {/* The read loop needs the canvas even when the debug view is hidden. */}
+        {!showDebug && <canvas ref={canvasRef} className="hidden" />}
+
+        {/* Bottom, floating: the choices when a read is ambiguous, and the last card added. */}
+        <div className="absolute inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-10 space-y-2">
+          {choices && (
+            <div className="space-y-1.5 rounded-2xl bg-black/75 p-2 backdrop-blur">
+              <div className="flex items-center justify-between px-1">
                 <p className="text-sm font-medium">¿Cuál es?</p>
                 <Button
                   variant="ghost"
@@ -1230,81 +1268,59 @@ export function Scanner({
                 ))}
               </ul>
             </div>
-          ) : current ? (
-            <CurrentCard
-              entry={current}
-              busy={busy}
-              onFinish={(f) => setFinish(current, f)}
-              onPlus={() => plusOne(current)}
-              onMinus={() => minusOne(current)}
-            />
-          ) : (
-            <p className="py-2 text-center text-sm text-white/70">
-              {nameLayout
-                ? "El nombre del jugador, por delante, dentro del marco amarillo."
-                : "El número, abajo a la izquierda, dentro del marco amarillo."}
-            </p>
           )}
-
           {location && section && (
             <NextSectionButton locationId={location.id} sectionId={section.id} className="w-full" />
           )}
-            </div>
-          <div className={cn("grid shrink-0 gap-2", aiEnabled && "grid-cols-2")}>
-            {aiEnabled && (
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={identifying}
-                aria-busy={identifying}
-                onClick={identifyWithAi}
-              >
-                <SparklesIcon />
-                {identifying ? "Identificando…" : "Identificar con IA"}
-              </Button>
+          <div className="rounded-2xl bg-black/65 px-3 py-2 backdrop-blur">
+            {current ? (
+              <CurrentCard
+                entry={current}
+                busy={busy}
+                onFinish={(f) => setFinish(current, f)}
+                onPlus={() => plusOne(current)}
+                onMinus={() => minusOne(current)}
+              />
+            ) : (
+              <p className="py-1 text-center text-sm text-white/80">
+                {nameLayout
+                  ? "El nombre del jugador, por delante, dentro del marco amarillo."
+                  : "El número, abajo a la izquierda, dentro del marco amarillo."}
+              </p>
             )}
-            <Button variant="secondary" size="sm" disabled={saving} onClick={saveForLater}>
-              <ClockIcon />
-              {saving ? "Guardando…" : aiEnabled ? "Para luego" : "¿No la reconoce? Para luego"}
-              {pendingCount > 0 && <span className="text-muted-foreground tabular-nums">({pendingCount})</span>}
-            </Button>
-          </div>
-
-          <div className="flex shrink-0 items-center justify-between text-[11px] text-white/50">
-            <button type="button" className="hover:text-white/80" onClick={() => setShowDebug((v) => !v)}>
-              {showDebug ? "Ocultar lectura" : "Ver lo que lee"}
-            </button>
-            <div className="flex items-center gap-1" role="group" aria-label="Tamaño del recuadro">
-              <span>Recuadro</span>
-              <button
-                type="button"
-                className="size-6 rounded bg-white/10 text-sm text-white hover:bg-white/20 disabled:opacity-40"
-                onClick={() => resizeGuide(-0.05)}
-                disabled={guideScale <= GUIDE_SCALE_MIN}
-                aria-label="Recuadro más pequeño"
-              >
-                −
-              </button>
-              <span className="w-9 text-center tabular-nums">{Math.round(guideScale * 100)} %</span>
-              <button
-                type="button"
-                className="size-6 rounded bg-white/10 text-sm text-white hover:bg-white/20 disabled:opacity-40"
-                onClick={() => resizeGuide(0.05)}
-                disabled={guideScale >= GUIDE_SCALE_MAX}
-                aria-label="Recuadro más grande"
-              >
-                +
-              </button>
-            </div>
-          </div>
           </div>
         </div>
+
+        {historyOpen && (
+          <div className="absolute inset-0 z-20 flex flex-col bg-neutral-950/95 pt-[max(env(safe-area-inset-top),0.75rem)] pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+            <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-2">
+              <div className="min-w-0">
+                <p className="font-semibold">Esta sesión</p>
+                <p className="text-sm text-white/70">{totalsText}</p>
+                <p className="text-xs text-white/50">La lectura está en pausa mientras miras.</p>
+              </div>
+              <Button size="sm" variant="secondary" onClick={() => setHistoryOpen(false)}>
+                Seguir escaneando
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {entries.length ? (
+                <SessionList entries={entries} busy={busy} onMinus={minusOne} onPlus={plusOne} tone="overlay" />
+              ) : (
+                <p className="px-4 py-8 text-center text-sm text-white/60">Aún no has añadido nada en esta sesión.</p>
+              )}
+            </div>
+            {entries.length > 0 && (
+              <div className="border-t border-white/10 px-4 py-3">{sessionActions("overlay")}</div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-/** The last card added, with one-tap finish and quantity controls. */
+/** The last card added, in one floating row: its finish in one tap (it cycles), and −/+ copies. */
 function CurrentCard({
   entry,
   busy,
@@ -1321,70 +1337,60 @@ function CurrentCard({
   const { match } = entry;
   const labels = gameById(match.game)?.finishLabels ?? FINISH_LABELS;
   const finishes = FINISH_ORDER.filter((f) => match.finishes.includes(f));
+  const nextFinish = finishes[(finishes.indexOf(entry.finish) + 1) % finishes.length];
   const price = entryUnitPrice(entry);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <CardThumb
-          src={match.imageSmall}
-          alt={match.name}
-          size="sm"
-          foil={entry.finish !== "nonfoil"}
-        />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{match.name}</p>
-          <p className="truncate text-xs text-white/70">
-            {match.setName} · #{match.collectorNumber}
-            {entry.lang && (
-              <>
-                {" · "}
-                <LanguageFlag code={entry.lang} />
-              </>
-            )}
-          </p>
-          <p className="text-sm tabular-nums">{formatEur(price)}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="secondary"
-            size="icon"
-            disabled={busy}
-            onClick={onMinus}
-            aria-label="Una copia menos"
-          >
-            <MinusIcon />
-          </Button>
-          <span className="w-8 text-center text-lg font-semibold tabular-nums">{entry.count}</span>
-          <Button variant="secondary" size="icon" disabled={busy} onClick={onPlus} aria-label="Una copia más">
-            <PlusIcon />
-          </Button>
-        </div>
+    <div className="flex items-center gap-2.5">
+      <CardThumb src={match.imageSmall} alt={match.name} size="xs" foil={entry.finish !== "nonfoil"} />
+      <div className="min-w-0 flex-1 leading-tight">
+        <p className="truncate text-sm font-semibold">{match.name}</p>
+        <p className="truncate text-xs text-white/70">
+          {match.setCode.toUpperCase()} #{match.collectorNumber}
+          {entry.lang && (
+            <>
+              {" · "}
+              <LanguageFlag code={entry.lang} />
+            </>
+          )}
+          {" · "}
+          <span className="text-primary tabular-nums">{formatEur(price)}</span>
+        </p>
       </div>
       {finishes.length > 1 && (
-        <div
-          className="grid auto-cols-fr grid-flow-col gap-1 rounded-lg bg-white/10 p-1"
-          role="radiogroup"
-          aria-label="Acabado"
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onFinish(nextFinish)}
+          className="shrink-0 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium hover:bg-white/25 disabled:opacity-50"
+          aria-label={`Acabado: ${labels[entry.finish]}. Cambiar a ${labels[nextFinish]}`}
         >
-          {finishes.map((f) => (
-            <button
-              key={f}
-              type="button"
-              role="radio"
-              aria-checked={entry.finish === f}
-              disabled={busy}
-              onClick={() => onFinish(f)}
-              className={cn(
-                "rounded-md py-2 text-sm font-medium transition-colors",
-                entry.finish === f ? "bg-white text-black" : "text-white/80 hover:bg-white/10",
-              )}
-            >
-              {labels[f]}
-            </button>
-          ))}
-        </div>
+          {labels[entry.finish]}
+        </button>
       )}
+      <div className="flex shrink-0 items-center">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="text-white hover:bg-white/15 hover:text-white"
+          disabled={busy}
+          onClick={onMinus}
+          aria-label="Una copia menos"
+        >
+          <MinusIcon />
+        </Button>
+        <span className="w-6 text-center font-semibold tabular-nums">{entry.count}</span>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="text-white hover:bg-white/15 hover:text-white"
+          disabled={busy}
+          onClick={onPlus}
+          aria-label="Una copia más"
+        >
+          <PlusIcon />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -1502,5 +1508,46 @@ function ChoicesGrid({
         ))}
       </ul>
     </section>
+  );
+}
+
+
+/** A round button of the scanner's right column; `badge` counts something (cards to review). */
+function ToolButton({
+  label,
+  onClick,
+  disabled,
+  pressed,
+  badge,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  /** For toggles (torch, settings): whether it's on. */
+  pressed?: boolean;
+  badge?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      aria-pressed={pressed}
+      className={cn(
+        "relative flex size-11 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15 disabled:opacity-50 [&_svg]:size-5",
+        pressed && "bg-white/25",
+      )}
+    >
+      {children}
+      {!!badge && (
+        <span className="bg-primary text-primary-foreground absolute -top-0.5 -right-0.5 min-w-4 rounded-full px-1 text-center text-[10px] leading-4 tabular-nums">
+          {badge}
+        </span>
+      )}
+    </button>
   );
 }

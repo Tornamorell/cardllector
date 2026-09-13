@@ -75,25 +75,33 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     mano», que abre el alta rápida.
 - **Escaneando, a pantalla completa** (capa fija, con los márgenes de seguridad de iOS gracias a
   `viewportFit: cover`):
-  - **Arriba:** cerrar, destino (ubicación, colección y «solo XXX» si hay expansión fija),
-    linterna (si el móvil la ofrece en `getCapabilities().torch`) y el contador de la sesión.
+  - Como en ManaBox, la cámara ocupa toda la pantalla y los controles flotan sobre ella: nada le
+    quita sitio al recuadro ni lo mueve.
+  - **Arriba**, sobre la imagen: cerrar, destino (ubicación, colección y «solo XXX» si hay
+    expansión fija) y el contador de la sesión.
+  - **A la derecha**, una columna de botones:
+    - linterna, si el móvil la ofrece en `getCapabilities().torch`;
+    - «Identificar con IA»;
+    - «Para luego», con las que hay por revisar;
+    - ajustes: el tamaño del recuadro y «Ver lo que lee».
   - **En medio:** el recuadro guía, con la franja de datos marcada en amarillo y el estado de la
     lectura.
-    - El panel de abajo tiene un alto fijo: lo que enseña (la última carta, las candidatas, la
-      ayuda) se desplaza dentro si no cabe. Así el recuadro no cambia de tamaño ni de sitio
-      mientras escaneas, algo que con un card slinger, que deja la carta siempre en el mismo sitio,
-      lo desencajaba.
-    - El recuadro ocupa el 94 % del hueco entre las barras. Con «Recuadro − +», al pie del panel,
+    - Va centrado en la pantalla, donde mira la cámara, y no cambia de tamaño ni de sitio. Antes
+      el panel de abajo crecía y encogía con lo que enseñaba y lo movía; con un card slinger, que
+      deja la carta siempre en el mismo sitio, eso lo desencajaba.
+    - El recuadro ocupa el 94 % de la pantalla, menos una franja arriba y otra abajo para las
+      barras flotantes. Con «Recuadro − +», en los ajustes de la derecha,
       se hace más pequeño, hasta el 60 %, y el tamaño se recuerda en el dispositivo. Sirve para un
       card slinger, donde la carta se ve más pequeña y no se puede acercar: se ajusta una vez hasta
       que la carta llene el recuadro, para que la franja amarilla caiga en el número.
-  - **Abajo, la última carta añadida:** imagen, nombre, expansión, precio para su acabado y
+  - **Abajo, flotando, la última carta añadida** en una línea: imagen, nombre, expansión, precio para su acabado y
     - **cantidad** −/+: `changeQuantity(-1)` o un `addItem` más;
-    - **acabado** con un toque (Normal/Foil/Etched en Magic, Estándar/Reverse holo en
+    - **acabado** con un toque, que pasa al siguiente (Normal/Foil/Etched en Magic, Estándar/Reverse holo en
       Pokémon): `changeFinish()` mueve esas copias al montón con el acabado nuevo, fusionándolas
       si ya existe.
-  - Si la lectura es ambigua, en su lugar aparece la tira de candidatas.
-  - **«¿No la reconoce? Para luego»** (D25) guarda en la cola de revisión, sin parar la sesión:
+  - Si la lectura es ambigua, encima aparece la tira de candidatas.
+  - **«Para luego»** (el reloj de la columna de la derecha, D25) guarda en la cola de revisión,
+    sin parar la sesión:
     - una foto del recuadro (JPEG de 560 px de alto);
     - lo último que ha leído y el nombre que ha sacado del título, si lo hay;
     - los ajustes de la sesión.
@@ -143,7 +151,7 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     - Así, una Élite o una Flashback se identifican con la IA la primera vez y, desde que tienen
       foto, se reconocen solas.
     - «Ver lo que lee» muestra «foto: a N bits» cuando reconoce una.
-  - **Identificar con IA** (D31), junto a «Para luego», solo si está configurada
+  - **Identificar con IA** (D31), en la columna de la derecha, solo si está configurada
     `ANTHROPIC_API_KEY`:
     - Manda la foto del recuadro (JPEG de 560 px) a `POST /api/scan/identify`, que se la pasa a
       Claude Sonnet 5 y le pide un JSON con un formato cerrado (`src/lib/scan/identify.ts`):
@@ -161,7 +169,7 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
       límite de 150 cada 24 horas (`AI_IDENTIFY_DAILY_LIMIT`).
     - Medido el 2026-09-12 con dos Megacracks (una base y una Élite Power): Sonnet 5 acertó el
       jugador y la serie en las dos; Haiku 4.5 y Opus 5 fallaron alguna serie.
-  - «Ver lo que lee» muestra la última franja procesada y el texto de Tesseract.
+  - «Ver lo que lee», en los ajustes, muestra la última franja procesada y el texto de Tesseract.
 - **PWA:** manifest, iconos y `appleWebApp`. Añadida a la pantalla de inicio, se abre sin la barra
   del navegador. Aún no hay service worker.
 
