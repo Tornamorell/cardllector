@@ -118,17 +118,16 @@ los diálogos y el botón +.
 
 ## Despliegue (2026-09-11)
 
-- En producción en **https://cardllector.vercel.app**. El repo es `Tornamorell/cardllector` y
+- En producción en **https://cardllector.vercel.app**. El repo es `Tornamorell/tapmat` (antes `cardllector`) y
   la base de datos es Neon (Postgres 17, Frankfurt).
 - Neon cargado: 129 564 cartas (Magic y Pokémon), 56 886 nombres en español y 1 191
   expansiones, en 109 MB. Las cadenas de conexión están en `.env.neon.local` (no se commitea).
 
 ## Pendiente del usuario
 
-- **Nombre nuevo, Tapmat (D38):** renombrar el repo en GitHub a `tapmat` (*Settings → General*;
-  `gh` no está instalado en el Mac), y entonces actualizar el remoto local. Si se quiere
-  `tapmat.vercel.app`, añadirlo en Vercel (*Settings → Domains*), cambiar a la vez
-  `BETTER_AUTH_URL` y redirigir el dominio viejo al nuevo.
+- **Dominio de Tapmat, si se quiere (D38):** añadir `tapmat.vercel.app` en Vercel (*Settings →
+  Domains*), cambiar a la vez `BETTER_AUTH_URL` y redirigir el dominio viejo al nuevo. El repo ya
+  se llama `Tornamorell/tapmat` (2026-09-14).
 
 - Crear su usuario en producción (`npm run seed:user` contra Neon).
 - Añadir el secreto `DATABASE_URL` (conexión directa) en GitHub Actions para las

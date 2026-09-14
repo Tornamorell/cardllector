@@ -881,8 +881,8 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - **No cambian** las claves internas `cardllector:*` del navegador (ajustes recordados, sesión
     del escáner, conversación abierta del asistente): cambiarlas perdería lo guardado en cada
     dispositivo, y nadie las ve. Tampoco la carpeta local del proyecto.
-  - Repo y dominio: lo hace el usuario (roadmap, «Pendiente del usuario»). GitHub redirige el
-    nombre viejo.
+  - El repo se renombró a `Tornamorell/tapmat` el mismo día; GitHub redirige el nombre viejo.
+    El dominio, si se quiere, lo cambia el usuario (roadmap, «Pendiente del usuario»).
 - **Descartado:**
   - Tapete: gustó, pero se prefirió en inglés.
   - Playmat: es un objeto que se compra, no suena a app, y es imposible de encontrar.
