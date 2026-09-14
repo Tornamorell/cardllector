@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { MAX_TURN_CHARS, toApiMessages, type ChatTurn } from "./history";
+import { MAX_TURN_CHARS, titleFrom, toApiMessages, type ChatTurn } from "./history";
+
+describe("titleFrom", () => {
+  it("names a conversation by its first question, on one line", () => {
+    expect(titleFrom("  ¿Qué le falta\na este mazo?  ")).toBe("¿Qué le falta a este mazo?");
+    expect(titleFrom("x".repeat(100))).toBe(`${"x".repeat(79)}…`);
+    expect(titleFrom("   ")).toBe("Conversación");
+  });
+});
 
 describe("toApiMessages", () => {
   it("drops empty turns and joins the same speaker's", () => {

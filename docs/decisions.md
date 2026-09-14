@@ -828,8 +828,9 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - Los resultados son compactos (sin campos vacíos) y llevan las rutas de la app, para que la
     respuesta enlace lo que menciona. El Markdown se pinta con un subconjunto propio
     (`markdown.ts`): nada de HTML, y solo enlaces a rutas de la app.
-  - La conversación se guarda en el navegador y viaja con cada pregunta: el texto de los
-    últimos 20 turnos, sin los resultados de las herramientas.
+  - Con cada pregunta viaja el texto de los últimos 20 turnos de la conversación, sin los
+    resultados de las herramientas. Al principio la conversación se guardaba en el navegador;
+    ahora, en la base de datos (actualización de abajo).
   - Cada respuesta apunta su coste en `ai_chat_turns`. Límite de 5 $ por usuario y mes natural
     (`AI_ASSISTANT_MONTHLY_USD`); `/admin` enseña el gasto de 30 días.
   - Medido el 2026-09-14 con los datos reales del usuario:
@@ -843,7 +844,24 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - Dejar que escriba SQL: más flexible, pero un error o una inyección leería datos de otros.
   - Managed Agents o el Agent SDK: un bucle con herramientas propias cabe en una ruta de Next.
   - Opus 5 por defecto (2,5 veces más caro) o Haiku 4.5 (más barato, peor en bucles largos).
-  - Guardar las conversaciones en la base de datos, y que haga cambios: de momento no hace
-    falta. Los cambios, si llegan, con confirmación.
-- **Revisar cuando:** se quiera que haga cambios o que recuerde las conversaciones entre
-  dispositivos, o el gasto real se aleje de lo medido.
+  - Que haga cambios: de momento no hace falta. Si llegan, con confirmación.
+- **Revisar cuando:** se quiera que haga cambios, o el gasto real se aleje de lo medido.
+- **Actualización (2026-09-14, el mismo día):** el usuario quiere no perder las conversaciones
+  al empezar otra, y un chat flotante para ir preguntando mientras mira mazos o colecciones.
+  - Las conversaciones se guardan en la base de datos (`ai_chat_threads`, `ai_chat_messages`),
+    solo el texto de cada pregunta y respuesta: se ven igual en el móvil y en el ordenador.
+    «Nueva conversación» ya no borra la anterior; hay una lista para abrirlas, seguirlas o
+    borrarlas. `/api/assistant` recibe la pregunta y la conversación, y lee el historial de ahí.
+  - Cada usuario solo ve las suyas, pero quedan en la base de datos de la app: el dueño, con
+    acceso directo a ella, podría leer las de los colegas. Se les dijo al decidirlo.
+  - **Chat flotante** (`dock.tsx`, en el layout): un botón en todas las páginas menos el escáner
+    y la del asistente. Abre un panel a la derecha en el ordenador y una hoja desde abajo en el
+    móvil, y sigue abierto (y respondiendo) al navegar. En el móvil, pinchar un enlace de la
+    respuesta lo cierra para ver la página. `/assistant` queda como vista grande, con la lista.
+  - **Sabe qué página tienes abierta:** con cada pregunta va la ruta, y el servidor la convierte
+    en una línea de contexto con el nombre y el id («[Page: the user is looking at their deck
+    «Pantlaza» …]», `pageContext`), que va al modelo pero no se guarda. Así «este mazo» es el de
+    la pantalla, y las sugerencias cambian con la página.
+  - **Coste:** igual. Las conversaciones antiguas no se envían; solo la que se está usando, como
+    antes. La línea de contexto son unas decenas de tokens y ahorra buscar de qué mazo se habla.
+  - **Descartado:** guardarlas solo en el navegador (cada dispositivo tendría las suyas).

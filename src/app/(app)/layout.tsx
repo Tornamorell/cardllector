@@ -1,9 +1,10 @@
-import { SearchIcon, ShieldIcon, SparklesIcon } from "lucide-react";
+import { SearchIcon, ShieldIcon } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
 import { isAdmin, requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
+import { AssistantDock } from "./assistant/dock";
 import { DesktopNav, MobileTabBar } from "./nav-links";
 import { SignOutButton } from "./sign-out-button";
 
@@ -26,14 +27,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             >
               <SearchIcon />
             </Link>
-            {/* The phone's tab bar is full: the assistant is up here. */}
-            <Link
-              href="/assistant"
-              className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "md:hidden")}
-              aria-label="Asistente"
-            >
-              <SparklesIcon />
-            </Link>
             {isAdmin(user) && (
               <Link
                 href="/admin"
@@ -53,6 +46,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         {children}
       </main>
       <MobileTabBar />
+      {/* The assistant, floating over every page, open or not, as the user moves around (D37). */}
+      {process.env.ANTHROPIC_API_KEY ? <AssistantDock userId={user.id} /> : null}
     </div>
   );
 }

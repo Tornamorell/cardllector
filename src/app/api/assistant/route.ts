@@ -1,15 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { aiChatTurns } from "@/db/schema";
+import { aiChatMessages, aiChatThreads, aiChatTurns } from "@/db/schema";
 import { addUsage, ASSISTANT_MODEL, chatCostUsd, NO_USAGE } from "@/lib/assistant/cost";
 import type { ChatEvent } from "@/lib/assistant/events";
-import { toApiMessages } from "@/lib/assistant/history";
+import { MAX_TURN_CHARS, titleFrom, toApiMessages } from "@/lib/assistant/history";
 import { systemPrompt } from "@/lib/assistant/prompt";
 import { assistantTools } from "@/lib/assistant/tools";
 import { auth } from "@/lib/auth";
-import { assistantAllowance } from "@/lib/queries/assistant";
+import { assistantAllowance, pageContext, threadHistory, threadOf } from "@/lib/queries/assistant";
 
 // A few lookups and a long answer fit well within this.
 export const maxDuration = 120;
@@ -18,18 +19,20 @@ export const maxDuration = 120;
 const MAX_STEPS = 10;
 
 const bodySchema = z.object({
-  messages: z
-    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(50_000) }))
-    .min(1)
-    .max(200),
+  /** The conversation to go on with; none starts a new one. */
+  threadId: z.uuid().nullish(),
+  question: z.string().trim().min(1).max(MAX_TURN_CHARS),
+  /** The page the user has open, for «este mazo». */
+  path: z.string().max(300).nullish(),
 });
 
 let client: Anthropic | null = null;
+const logError = (what: string) => (error: unknown) => console.error(`[assistant] ${what}`, error);
 
 /**
- * The assistant (D37): the conversation so far goes to Claude with read-only tools over the
- * user's data, and the answer streams back as NDJSON (ChatEvent). Each answer's cost is
- * recorded against the user's monthly allowance.
+ * The assistant (D37): a question, in a saved conversation, goes to Claude with read-only tools
+ * over the user's data and the page they have open; the answer streams back as NDJSON
+ * (ChatEvent) and is saved. Each answer's cost counts against the user's monthly allowance.
  */
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -38,8 +41,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "El asistente no está configurado." }, { status: 503 });
   }
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
-  const messages = parsed.success ? toApiMessages(parsed.data.messages) : [];
-  if (messages.at(-1)?.role !== "user") return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  const { threadId, question, path } = parsed.data;
 
   const ownerId = session.user.id;
   const { spentUsd, limitUsd } = await assistantAllowance(ownerId);
@@ -50,6 +53,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // The conversation: one of this user's, or a new one named after its first question.
+  const existing = threadId ? await threadOf(ownerId, threadId) : null;
+  if (threadId && !existing) return NextResponse.json({ error: "Esa conversación ya no existe." }, { status: 404 });
+  const history = existing ? await threadHistory(existing.id) : [];
+  const thread =
+    existing ??
+    (
+      await db
+        .insert(aiChatThreads)
+        .values({ ownerId, title: titleFrom(question) })
+        .returning({ id: aiChatThreads.id, title: aiChatThreads.title })
+    )[0];
+  await db.insert(aiChatMessages).values({ threadId: thread.id, role: "user", content: question });
+  // What's on screen goes to the model with the question, not into the saved conversation.
+  const context = path ? await pageContext(ownerId, path).catch(() => null) : null;
+  const messages = toApiMessages([...history, { role: "user", content: context ? `${context}\n\n${question}` : question }]);
+
   client ??= new Anthropic();
   const api = client;
   const encoder = new TextEncoder();
@@ -59,12 +79,18 @@ export async function POST(request: NextRequest) {
         try {
           controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
         } catch {
-          // The browser left; the answer is still recorded below.
+          // The browser left; the answer is still saved below.
         }
       };
+      let written = "";
+      const say = (text: string) => {
+        written += text;
+        send({ type: "text", text });
+      };
+      send({ type: "thread", id: thread.id, title: thread.title });
+
       let usage = NO_USAGE;
       let toolCalls = 0;
-      let wrote = false;
       let lastStop: string | null = null;
       try {
         const runner = api.beta.messages.toolRunner(
@@ -88,12 +114,11 @@ export async function POST(request: NextRequest) {
         );
         for await (const step of runner) {
           // Text before a lookup and text after it are separate paragraphs.
-          let separate = wrote;
+          let separate = written.length > 0;
           for await (const event of step) {
             if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-              send({ type: "text", text: (separate ? "\n\n" : "") + event.delta.text });
+              say((separate ? "\n\n" : "") + event.delta.text);
               separate = false;
-              wrote = true;
             }
           }
           const message = await step.finalMessage();
@@ -101,23 +126,36 @@ export async function POST(request: NextRequest) {
           lastStop = message.stop_reason;
         }
         if (lastStop === "tool_use") {
-          send({ type: "text", text: "\n\n_He tenido que parar: necesitaba demasiadas consultas. Prueba con una pregunta más concreta._" });
-        } else if (!wrote) {
-          send({ type: "text", text: "No tengo una respuesta para eso." });
+          say("\n\n_He tenido que parar: necesitaba demasiadas consultas. Prueba con una pregunta más concreta._");
+        } else if (!written) {
+          say("No tengo una respuesta para eso.");
         }
       } catch (error) {
         if (!request.signal.aborted) {
-          console.error("[assistant]", error);
+          logError("answering")(error);
           send({ type: "error", message: "La IA no ha respondido. Prueba otra vez." });
         }
       }
 
+      // Saved even if the browser left halfway: the conversation shows what was answered.
+      if (written.trim()) {
+        await db
+          .insert(aiChatMessages)
+          .values({ threadId: thread.id, role: "assistant", content: written })
+          .catch(logError("saving the answer"));
+      }
+      await db
+        .update(aiChatThreads)
+        .set({ updatedAt: new Date() })
+        .where(eq(aiChatThreads.id, thread.id))
+        .catch(logError("touching the conversation"));
       const costUsd = chatCostUsd(usage);
       if (usage.input + usage.output + usage.cacheRead + usage.cacheWrite > 0) {
         await db
           .insert(aiChatTurns)
           .values({
             ownerId,
+            threadId: thread.id,
             model: ASSISTANT_MODEL,
             inputTokens: usage.input,
             outputTokens: usage.output,
@@ -126,7 +164,7 @@ export async function POST(request: NextRequest) {
             toolCalls,
             costUsd: costUsd.toFixed(6),
           })
-          .catch((error) => console.error("[assistant] recording usage", error));
+          .catch(logError("recording usage"));
       }
       send({ type: "done", costUsd, remainingUsd: Math.max(0, limitUsd - spentUsd - costUsd) });
       try {

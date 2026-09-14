@@ -386,8 +386,38 @@ export const aiIdentifications = pgTable(
   (t) => [index("ai_identifications_owner_idx").on(t.ownerId, t.createdAt)],
 );
 
-// The assistant's answers (D37): what each cost, for the monthly allowance and /admin. The
-// conversations themselves stay in the browser.
+// The assistant's conversations (D37), each user's own, kept to reopen on any device.
+export const aiChatThreads = pgTable(
+  "ai_chat_threads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** Its first question, shortened. */
+    title: text("title").notNull(),
+    ...timestamps,
+  },
+  (t) => [index("ai_chat_threads_owner_idx").on(t.ownerId, t.updatedAt)],
+);
+
+/** The text of each question and answer; what the tools looked up isn't kept. */
+export const aiChatMessages = pgTable(
+  "ai_chat_messages",
+  {
+    // In the order they were written: a question and its answer can share a timestamp.
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => aiChatThreads.id, { onDelete: "cascade" }),
+    role: text("role").$type<"user" | "assistant">().notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("ai_chat_messages_thread_idx").on(t.threadId, t.createdAt)],
+);
+
+// The assistant's answers (D37): what each cost, for the monthly allowance and /admin.
 export const aiChatTurns = pgTable(
   "ai_chat_turns",
   {
@@ -395,6 +425,8 @@ export const aiChatTurns = pgTable(
     ownerId: text("owner_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    /** The conversation it answered in; null once that's deleted (the cost still counts). */
+    threadId: uuid("thread_id").references(() => aiChatThreads.id, { onDelete: "set null" }),
     model: text("model").notNull(),
     inputTokens: integer("input_tokens").notNull(),
     outputTokens: integer("output_tokens").notNull(),

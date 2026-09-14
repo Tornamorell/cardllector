@@ -1,6 +1,8 @@
 // What /api/assistant streams to the chat (D37): one JSON object per line.
 
 export type ChatEvent =
+  /** First: the conversation the answer is saved in (a new one gets its id here). */
+  | { type: "thread"; id: string; title: string }
   /** It's looking something up: `tool` is the tool's name. */
   | { type: "tool"; tool: string }
   /** More of the answer. */

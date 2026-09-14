@@ -3,7 +3,7 @@ import { Fragment, type ReactNode } from "react";
 import { parseMarkdown, type Block, type Inline } from "@/lib/assistant/markdown";
 import { cn } from "@/lib/utils";
 
-function inline(nodes: Inline[]): ReactNode {
+function inline(nodes: Inline[], onLinkClick?: () => void): ReactNode {
   return nodes.map((n, i) => {
     switch (n.type) {
       case "text":
@@ -11,11 +11,11 @@ function inline(nodes: Inline[]): ReactNode {
       case "strong":
         return (
           <strong key={i} className="font-semibold">
-            {inline(n.children)}
+            {inline(n.children, onLinkClick)}
           </strong>
         );
       case "em":
-        return <em key={i}>{inline(n.children)}</em>;
+        return <em key={i}>{inline(n.children, onLinkClick)}</em>;
       case "code":
         return (
           <code key={i} className="bg-muted rounded px-1 py-0.5 text-[0.9em]">
@@ -24,22 +24,22 @@ function inline(nodes: Inline[]): ReactNode {
         );
       case "link":
         return (
-          <Link key={i} href={n.href} className="text-primary underline underline-offset-2">
-            {inline(n.children)}
+          <Link key={i} href={n.href} onClick={onLinkClick} className="text-primary underline underline-offset-2">
+            {inline(n.children, onLinkClick)}
           </Link>
         );
     }
   });
 }
 
-function block(b: Block, key: number): ReactNode {
+function block(b: Block, key: number, onLinkClick?: () => void): ReactNode {
   switch (b.type) {
     case "paragraph":
-      return <p key={key}>{inline(b.children)}</p>;
+      return <p key={key}>{inline(b.children, onLinkClick)}</p>;
     case "heading":
       return (
         <h3 key={key} className="pt-1 font-semibold">
-          {inline(b.children)}
+          {inline(b.children, onLinkClick)}
         </h3>
       );
     case "list": {
@@ -47,7 +47,7 @@ function block(b: Block, key: number): ReactNode {
       return (
         <List key={key} className={cn("space-y-1 pl-5", b.ordered ? "list-decimal" : "list-disc")}>
           {b.items.map((item, i) => (
-            <li key={i}>{inline(item)}</li>
+            <li key={i}>{inline(item, onLinkClick)}</li>
           ))}
         </List>
       );
@@ -60,7 +60,7 @@ function block(b: Block, key: number): ReactNode {
               <tr className="border-b">
                 {b.head.map((cell, i) => (
                   <th key={i} className="px-2 py-1 font-medium">
-                    {inline(cell)}
+                    {inline(cell, onLinkClick)}
                   </th>
                 ))}
               </tr>
@@ -70,7 +70,7 @@ function block(b: Block, key: number): ReactNode {
                 <tr key={i} className="border-b last:border-0">
                   {row.map((cell, j) => (
                     <td key={j} className="px-2 py-1 align-top">
-                      {inline(cell)}
+                      {inline(cell, onLinkClick)}
                     </td>
                   ))}
                 </tr>
@@ -83,6 +83,8 @@ function block(b: Block, key: number): ReactNode {
 }
 
 /** An assistant's answer: its Markdown, rendered safely (markdown.ts). */
-export function Answer({ text }: { text: string }) {
-  return <div className="space-y-3 text-sm leading-relaxed">{parseMarkdown(text).map(block)}</div>;
+export function Answer({ text, onLinkClick }: { text: string; onLinkClick?: () => void }) {
+  return (
+    <div className="space-y-3 text-sm leading-relaxed">{parseMarkdown(text).map((b, i) => block(b, i, onLinkClick))}</div>
+  );
 }

@@ -1,5 +1,5 @@
-// The conversation the browser keeps and sends with each question (D37). Only the text of
-// each turn travels: the tools' results stay on the server, and are fetched again if needed.
+// The assistant's conversations (D37): saved in the database (ai_chat_messages), the text of
+// each turn only. The tools' results aren't kept; the model looks things up again if needed.
 
 export type ChatTurn = { role: "user" | "assistant"; content: string };
 
@@ -7,6 +7,7 @@ export type ChatTurn = { role: "user" | "assistant"; content: string };
 export const MAX_TURNS = 20;
 /** Characters per turn: a pasted deck list fits; a runaway answer is cut. */
 export const MAX_TURN_CHARS = 8000;
+const MAX_TITLE = 80;
 
 /**
  * The turns as the API wants them: no empty ones, the same speaker's consecutive turns joined,
@@ -24,4 +25,10 @@ export function toApiMessages(turns: ChatTurn[], maxTurns = MAX_TURNS): ChatTurn
   const recent = out.slice(-maxTurns);
   while (recent.length && recent[0].role !== "user") recent.shift();
   return recent;
+}
+
+/** A conversation's name: its first question, on one line and shortened. */
+export function titleFrom(question: string): string {
+  const line = question.replace(/\s+/g, " ").trim();
+  return line.length > MAX_TITLE ? `${line.slice(0, MAX_TITLE - 1).trimEnd()}…` : line || "Conversación";
 }

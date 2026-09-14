@@ -2,8 +2,20 @@
 // data. Every result carries the app paths the answer may link to.
 import { and, asc, desc, eq, ilike, isNotNull, isNull, sql } from "drizzle-orm";
 import { db, pool } from "@/db/client";
-import { aiChatTurns, catalogCards, items, locationSections, locations, sets } from "@/db/schema";
+import {
+  aiChatMessages,
+  aiChatThreads,
+  aiChatTurns,
+  catalogCards,
+  items,
+  locationSections,
+  locations,
+  sets,
+} from "@/db/schema";
 import { MONTHLY_LIMIT_USD } from "@/lib/assistant/cost";
+import { MAX_TURNS, type ChatTurn } from "@/lib/assistant/history";
+import { parsePagePath } from "@/lib/assistant/page";
+import { gameBySlug } from "@/lib/games";
 import { itemValueEurSql } from "@/lib/collection/pricing";
 import { analyzeDeck } from "@/lib/decks/analysis";
 import { cardRoles, roleCounts, type Role } from "@/lib/decks/roles";
@@ -33,6 +45,110 @@ export async function assistantAllowance(ownerId: string) {
     .from(aiChatTurns)
     .where(and(eq(aiChatTurns.ownerId, ownerId), sql`${aiChatTurns.createdAt} >= date_trunc('month', now())`));
   return { spentUsd: row.spent, limitUsd };
+}
+
+export type ThreadSummary = { id: string; title: string; updatedAt: Date };
+
+/** The user's conversations, the latest first. */
+export async function listThreads(ownerId: string): Promise<ThreadSummary[]> {
+  return db
+    .select({ id: aiChatThreads.id, title: aiChatThreads.title, updatedAt: aiChatThreads.updatedAt })
+    .from(aiChatThreads)
+    .where(eq(aiChatThreads.ownerId, ownerId))
+    .orderBy(desc(aiChatThreads.updatedAt))
+    .limit(100);
+}
+
+/** One of the user's conversations, or null if it isn't theirs. */
+export async function threadOf(ownerId: string, id: string) {
+  const [row] = await db
+    .select({ id: aiChatThreads.id, title: aiChatThreads.title })
+    .from(aiChatThreads)
+    .where(and(eq(aiChatThreads.id, id), eq(aiChatThreads.ownerId, ownerId)));
+  return row ?? null;
+}
+
+/** A conversation with all its messages, oldest first. */
+export async function getThread(ownerId: string, id: string) {
+  const thread = await threadOf(ownerId, id);
+  if (!thread) return null;
+  const messages: ChatTurn[] = await db
+    .select({ role: aiChatMessages.role, content: aiChatMessages.content })
+    .from(aiChatMessages)
+    .where(eq(aiChatMessages.threadId, id))
+    .orderBy(asc(aiChatMessages.id));
+  return { ...thread, messages };
+}
+
+/** The last turns of a conversation, oldest first: what goes to the model with a new question. */
+export async function threadHistory(threadId: string): Promise<ChatTurn[]> {
+  const rows = await db
+    .select({ role: aiChatMessages.role, content: aiChatMessages.content })
+    .from(aiChatMessages)
+    .where(eq(aiChatMessages.threadId, threadId))
+    .orderBy(desc(aiChatMessages.id))
+    .limit(MAX_TURNS);
+  return rows.reverse();
+}
+
+const LIST_PAGES = {
+  home: "the dashboard (the value of everything they own and how it moved)",
+  inventory: "«Mis cartas», their inventory",
+  decks: "the list of their decks",
+  collections: "the list of their collections",
+  locations: "the list of their locations",
+  review: "the cards they saved to identify later",
+  search: "the card search",
+  catalog: "the catalog",
+} as const;
+
+/** What the user has open (a path from the chat), as a line for the model; null if nothing useful. */
+export async function pageContext(ownerId: string, path: string): Promise<string | null> {
+  const page = parsePagePath(path);
+  if (!page) return null;
+  const line = (what: string) => `[Page: the user is looking at ${what}.]`;
+  switch (page.kind) {
+    case "deck": {
+      const deck = await getDeck(ownerId, page.id);
+      return deck && line(`their deck «${deck.name}» (deck_id ${deck.id}, /decks/${deck.id})`);
+    }
+    case "collection": {
+      const collection = await getCollection(ownerId, page.id);
+      return collection && line(`their collection «${collection.name}» (collection_id ${page.id}, /collections/${page.id})`);
+    }
+    case "location": {
+      if (page.id === "none") return line("their copies with no location (location_id none, /locations/none)");
+      const [place] = await db
+        .select({ name: locations.name })
+        .from(locations)
+        .where(and(eq(locations.id, page.id), eq(locations.ownerId, ownerId)));
+      return place ? line(`their location «${place.name}» (location_id ${page.id}, /locations/${page.id})`) : null;
+    }
+    case "card": {
+      const [card] = await db
+        .select({ name: catalogCards.name, game: catalogCards.game, setCode: catalogCards.setCode, number: catalogCards.collectorNumber })
+        .from(catalogCards)
+        .where(eq(catalogCards.id, page.id));
+      return card
+        ? line(`the ${card.game} card «${card.name}», printing ${card.setCode.toUpperCase()} ${card.number} (/cards/${page.id})`)
+        : null;
+    }
+    case "set": {
+      const game = gameBySlug(page.gameSlug);
+      if (!game) return null;
+      const [set] = await db
+        .select({ name: sets.name, code: sets.code })
+        .from(sets)
+        .where(and(eq(sets.game, game.id), eq(sets.code, page.setCode)));
+      return set ? line(`the ${game.id} set «${set.name}» (set_code ${set.code}) in the catalog`) : null;
+    }
+    case "game": {
+      const game = gameBySlug(page.gameSlug);
+      return game && line(`the ${game.id} catalog`);
+    }
+    default:
+      return line(LIST_PAGES[page.kind]);
+  }
 }
 
 /** Totals, by game; collections with their progress; decks; locations. */

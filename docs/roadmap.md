@@ -71,8 +71,9 @@ que se vaya necesitando (ver `docs/decisions.md`). Actualízalo al terminar o re
     recuadro. Falta probarlo en el móvil.
 - **Asistente** (D37): un chat con Claude Sonnet 5 que responde sobre tus cartas, colecciones,
   mazos y precios buscando en tus datos con herramientas de solo lectura, con un límite de gasto
-  al mes por usuario. Pendiente, si hace falta: acciones con confirmación (añadir al mazo, traer a
-  la caja) y guardar las conversaciones.
+  al mes por usuario. Flota sobre todas las páginas y sabe cuál tienes abierta; las
+  conversaciones se guardan y se pueden retomar en cualquier dispositivo. Pendiente, si hace
+  falta: acciones con confirmación (añadir al mazo, traer a la caja).
 - **Cuentas para colegas** (D34): roles `admin` y `user`, y `/admin` para crear cuentas,
   cambiar el rol, desactivarlas y ver el gasto de IA de cada una. Los admins borran fotos
   compartidas.
