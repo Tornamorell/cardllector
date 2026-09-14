@@ -295,6 +295,10 @@ la caja algo holgada que da `findCard`:
 Por eso se prueban las dos. El slinger no se pudo volver a medir, porque sus fotos no se
 guardaron: su franja sigue siendo la misma.
 
+Con el cambio, en el móvil, «Ver lo que lee» enseñaba la franja buena (`G SVP EN 053 ☆` y el
+copyright), pero Tesseract no sacaba nada. La franja ya cae en su sitio; lo que no se puede es
+leer ese pie.
+
 ## Parámetros de ajuste
 
 En `scanner.tsx`:
@@ -331,6 +335,11 @@ En `queries/scan.ts`:
 - **Probar «Buscar la carta» (D36) en el móvil:** cuánto tarda por fotograma y si confunde el
   hueco del card slinger con la carta.
 - **Promos y full art de Pokémon sin IA:** la franja de datos no se lee (mediciones del
-  2026-09-14) y el título da varias candidatas. Lo que falta por probar es reconocerlas por la
-  imagen del catálogo, con huellas (D33) de las imágenes de TCGdex y Scryfall y no solo de las
-  fotos compartidas. Hay que decidirlo: son huellas de todo el catálogo.
+  2026-09-14) y el título da varias candidatas.
+  - Se probó la huella de D33 contra las imágenes del catálogo (2026-09-14): dos capturas del
+    móvil con la Mew ex SVP 053 en la pantalla del ordenador, frente a 644 imágenes de TCGdex
+    (SVP, 151 y Paldean Fates).
+  - La Mew quedó a 14 y 20 bits, y otras cartas a 16–18, así que `bestMatch` la rechaza. En
+    fotos tan borrosas, `detectCardQuad` tampoco endereza del todo la carta.
+  - La imagen del catálogo emborronada sí se encuentra: a 6 bits, con la siguiente a 18.
+  - Haría falta una huella más fina o fotos más nítidas. Queda por decidir.
