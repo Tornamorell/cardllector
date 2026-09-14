@@ -8,6 +8,7 @@ import {
   GUIDE_FILL,
   guideIn,
   guideRect,
+  pickFoundStrip,
   placeGuide,
   stripRect,
   stripUnion,
@@ -86,6 +87,23 @@ describe("stripUnion", () => {
       y0: 0.895,
       y1: 1.08,
     });
+  });
+});
+
+describe("pickFoundStrip", () => {
+  it("takes turns until one strip has read a card", () => {
+    expect([0, 1, 2, 3].map((turn) => pickFoundStrip(null, 0, turn))).toEqual(["card", "frame", "card", "frame"]);
+  });
+
+  it("keeps the one that read, and looks at the other every fourth miss in a row", () => {
+    expect([0, 1, 3, 4, 5, 8].map((misses) => pickFoundStrip("card", misses, 7))).toEqual([
+      "card",
+      "card",
+      "card",
+      "frame",
+      "card",
+      "frame",
+    ]);
   });
 });
 

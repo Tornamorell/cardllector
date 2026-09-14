@@ -62,7 +62,11 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
 - **Lecturas ambiguas:** si caben varias cartas, se muestran hasta 24 candidatas, las más
   recientes primero, para elegir por la imagen.
 - **Añadir la misma carta dos veces:** tras añadir una, no se vuelve a añadir hasta que se lean 3
-  fotogramas sin nada (la carta ha salido del encuadre). Para otra copia está el **+**.
+  fotogramas sin nada (la carta ha salido del encuadre) y, con «Buscar la carta», hasta que deje
+  de encontrarse una carta en la imagen: una que se mueve o hace un reflejo no lee nada un
+  momento, y se añadía dos veces. Si en ese caso se vuelve a leer, avisa «ya está añadida: si es
+  otra copia, pulsa +». También si «Identificar con IA» da la carta que se acaba de añadir. Para
+  otra copia está el **+**.
 - **El idioma impreso** ("EN", "ES"…) manda sobre el idioma por defecto de la sesión.
 
 ## Pantalla (`/scan`)
@@ -125,9 +129,10 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
         - **por debajo**, hasta un 8 % bajo lo encontrado, si solo se ha encontrado el marco de
           dentro: en un slinger, el borde negro no se distingue del fondo oscuro, y el número va
           impreso en ese borde.
-      - Se prueban por turnos, y la que da una línea que está en el catálogo se queda mientras
-        no se pierda la carta. La franja amarilla marca las dos hasta entonces, y después solo
-        esa.
+      - Se prueban por turnos, y la primera que da una línea que está en el catálogo se queda
+        para toda la sesión: la mesa o el slinger no cambian de una carta a otra. Si falla 4
+        lecturas seguidas (`FOUND_STRIP_PROBE`), se mira una vez la otra (`pickFoundStrip`). La
+        franja amarilla marca las dos hasta entonces, y después solo esa.
       - Si la pierde dos lecturas seguidas, vuelve al recuadro. Si tras tres lecturas no lee
         nada, una de cada dos es del recuadro, por si lo encontrado no era la carta.
       - Así el recuadro solo hace falta ajustarlo si no la encuentra.
@@ -206,7 +211,9 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
       límite de 150 cada 24 horas (`AI_IDENTIFY_DAILY_LIMIT`).
     - Medido el 2026-09-12 con dos Megacracks (una base y una Élite Power): Sonnet 5 acertó el
       jugador y la serie en las dos; Haiku 4.5 y Opus 5 fallaron alguna serie.
-  - «Ver lo que lee», en los ajustes, muestra la última franja procesada y el texto de Tesseract.
+  - «Ver lo que lee», en los ajustes, muestra la última franja procesada, el texto de Tesseract y
+    cuánto ha tardado cada paso de la lectura: buscar la carta, la foto, el número, el título,
+    el catálogo y añadirla («buscar 80 · número 420 ms»).
 - **PWA:** manifest, iconos y `appleWebApp`. Añadida a la pantalla de inicio, se abre sin la barra
   del navegador. Aún no hay service worker.
 
@@ -299,6 +306,30 @@ Con el cambio, en el móvil, «Ver lo que lee» enseñaba la franja buena (`G SV
 copyright), pero Tesseract no sacaba nada. La franja ya cae en su sitio; lo que no se puede es
 leer ese pie.
 
+## Mediciones (2026-09-14, un mazo de Commander de 100 cartas)
+
+El usuario escaneó un mazo entero a su caja, con cartas reales y «Buscar la carta». Salió
+«bastante bien», pero algo lento y a veces duplicando la carta.
+
+- **Ritmo:** entraron 89 montones (los básicos se juntan). Entre una carta nueva y la siguiente:
+  - mediana de 5,9 s, y 58 de 89 en menos de 8 s;
+  - 26 tardaron más de 8 s, y 4 más de un minuto: las que fueron a la IA o costaron.
+- **Con IA, 5 cartas:**
+  - dos con marco especial y el número sobre la ilustración: Skullspore Nexus LCI 340 y Etali
+    MOM 298;
+  - Worldly Tutor, sin número ni código en la lectura;
+  - Garruk's Uprising FDN 220.
+- **Etali se identificó dos veces con IA en 11 s**, y cada vez se añadía: la IA no miraba si era
+  la carta recién añadida. Al final del mazo solo sobraba una Mountain; los demás duplicados se
+  quitaron con «−» sobre la marcha, así que no se pueden contar.
+- **Dos causas en el código:**
+  - La franja de una carta encontrada se olvidaba al sacar cada carta, así que la siguiente
+    empezaba alternando y la mitad de sus lecturas eran con la franja que no toca.
+  - Una carta se soltaba tras 3 lecturas sin nada aunque siguiera a la vista.
+
+  Arreglado el mismo día (franja para toda la sesión, no soltar la carta mientras se vea, la IA
+  no repite), y el tiempo de cada paso en «Ver lo que lee». **Falta volver a medir.**
+
 ## Parámetros de ajuste
 
 En `scanner.tsx`:
@@ -313,7 +344,8 @@ En `geometry.ts`:
   uno (del 30 al 100 %, `GUIDE_SCALE_MIN`; `guideScale`, `guideDx` y `guideDy` en los valores
   recordados del dispositivo).
 - `FOUND_INFO_STRIPS`: las dos franjas de datos de una carta encontrada, entera o solo su
-  marco (D36).
+  marco (D36), y `FOUND_STRIP_PROBE` (4): cada cuántas lecturas seguidas sin línea se mira la
+  otra.
 
 En `find-card.ts` (D36): cuántas rectas se prueban (`LINES`, 30), la inclinación máxima
 (`MAX_SLOPE`, ±14°), el tamaño mínimo (`MIN_AREA`, 6 % de la imagen), la tolerancia de forma

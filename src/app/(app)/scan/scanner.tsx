@@ -47,6 +47,7 @@ import {
   coverTransform,
   fromVideo,
   guideRect,
+  pickFoundStrip,
   placeGuide,
   stripRect,
   stripUnion,
@@ -101,6 +102,20 @@ const describe = (line: CollectorLine) =>
     .join(" ");
 
 const clock = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" });
+
+/** How long each step of a read takes, for «Ver lo que lee»: "buscar 80 · número 420 ms". */
+function stopwatch() {
+  let last = performance.now();
+  const laps: string[] = [];
+  return {
+    lap(step: string) {
+      const now = performance.now();
+      laps.push(`${step} ${Math.round(now - last)}`);
+      last = now;
+    },
+    toString: () => (laps.length ? `${laps.join(" · ")} ms` : ""),
+  };
+}
 
 /** Crops `rect` of `source` into `canvas` at `height` px, as contrast-stretched grayscale. */
 function captureRegion(source: CanvasImageSource, r: Rect, canvas: HTMLCanvasElement, height: number) {
@@ -237,6 +252,8 @@ export function Scanner({
   const [stage, setStage] = useState<{ w: number; h: number } | null>(null);
   const [status, setStatus] = useState("Encaja la carta en el recuadro.");
   const [lastText, setLastText] = useState("");
+  // How long the last read's steps took, for «Ver lo que lee».
+  const [timing, setTiming] = useState("");
   const [showDebug, setShowDebug] = useState(false);
   // The card found in the view (D36), on the stage: its outline, and the box that's read.
   const [found, setFound] = useState<{ points: string; box: Rect } | null>(null);
@@ -277,10 +294,13 @@ export function Scanner({
     tick: 0,
     choicesKey: "",
     mode: "",
-    /** The strip that read the found card (D36), kept until the card is lost. */
+    /** The strip that read a found card the catalog knows (D36), kept for the session. */
     foundStrip: null as FoundStrip | null,
-    /** Until then, both take turns. */
+    /** Until then, both take turns; after, the reads in a row without a line (pickFoundStrip). */
     stripTurn: 0,
+    stripMisses: 0,
+    /** The card just added went unread a while but was kept, still being in view (noRead). */
+    heldBack: false,
     /** The last name read from the title of the card in the guide: the hint for «Para luego». */
     lastTitle: null as string | null,
     cache: new Map<string, ScanMatch[]>(),
@@ -378,7 +398,7 @@ export function Scanner({
     return v && toVideo(placeGuide(v.area, settings.current.place), v.t);
   }
 
-  /** Keeps the strip that read the found card, or forgets it (null) when the card is lost. */
+  /** Keeps the strip that reads found cards, for the session; null forgets it («Buscar la carta» off). */
   function keepStrip(strip: FoundStrip | null) {
     if (readState.current.foundStrip === strip) return;
     readState.current.foundStrip = strip;
@@ -420,7 +440,6 @@ export function Scanner({
     } else if (last && ++last.missed >= 2) {
       foundRef.current = null;
     }
-    if (!foundRef.current) keepStrip(null);
     const kept = foundRef.current && foundRef.current.seen >= 2 ? foundRef.current.quad : null;
     if (!kept) {
       setFound(null);
@@ -486,9 +505,15 @@ export function Scanner({
     const s = readState.current;
     vote(null);
     // The card left the frame: the same card may be added again, and its title no longer applies.
+    // Not while a card is still found in the view (D36): one moving or catching the light reads
+    // nothing for a moment, and was being added twice.
     if (++s.empty >= EMPTY_READS_TO_RELEASE) {
-      s.holdId = null;
-      s.lastTitle = null;
+      if (foundRef.current) {
+        s.heldBack = true;
+      } else {
+        s.holdId = null;
+        s.lastTitle = null;
+      }
     }
   }
 
@@ -509,7 +534,12 @@ export function Scanner({
       return;
     }
     const match = matches[0];
-    if (s.holdId === match.id) return; // Still the card we just added.
+    if (s.holdId === match.id) {
+      // Still the card just added. Read again after going unread with the card still in view —
+      // when it used to be added twice — say how to add another copy.
+      if (s.heldBack) setStatus(`«${match.name}» ya está añadida: si es otra copia, pulsa +.`);
+      return;
+    }
     s.holdId = match.id;
     s.votes = [];
     await add(match, lang);
@@ -592,7 +622,9 @@ export function Scanner({
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const s = readState.current;
+    const watch = stopwatch();
     const located = video && canvas && workerRef.current ? locateCard() : null;
+    if (settings.current.defaults.findCard) watch.lap("buscar");
     // A found card that doesn't read may not be the card: then every other read is of the guide.
     const onCard = located && !(s.empty >= 3 && s.tick % 2 === 1) ? located : null;
     const card = onCard ? quadBounds(onCard) : cardInVideo();
@@ -600,7 +632,9 @@ export function Scanner({
       s.tick++;
       try {
         // Every third read, by the photo; the rest, by the text.
-        if (s.tick % 3 === 0 && (await readByImage(video, card))) {
+        const byImage = s.tick % 3 === 0 && (await readByImage(video, card));
+        if (s.tick % 3 === 0) watch.lap("foto");
+        if (byImage) {
           if (runningRef.current) setTimeout(tick, TICK_MS);
           return;
         }
@@ -610,13 +644,15 @@ export function Scanner({
           return;
         }
         // On a found card (D36) the number is on it, where the guide has it, or below it when
-        // only its inner frame was found (a slinger): the strip that read the last card, else
-        // each in turn.
-        const foundStrip = onCard ? (s.foundStrip ?? (s.stripTurn++ % 2 ? "frame" : "card")) : null;
+        // only its inner frame was found (a slinger): the strip that has read cards this
+        // session, else each in turn.
+        const foundStrip = onCard ? pickFoundStrip(s.foundStrip, s.stripMisses, s.stripTurn++) : null;
         const infoStrip = foundStrip ? FOUND_INFO_STRIPS[foundStrip] : INFO_STRIP;
         captureRegion(video, stripRect(card, infoStrip), canvas, INFO_HEIGHT);
         const text = await ocr(canvas, "info");
+        watch.lap("número");
         const line = parseCollectorLine(text);
+        if (foundStrip) s.stripMisses = line ? 0 : s.stripMisses + 1;
         if (line) {
           setLastText(text.trim());
           s.empty = 0;
@@ -624,23 +660,28 @@ export function Scanner({
           const key = `c:${numberVariants(line.number)[1]}/${line.total ?? ""}/${line.setCodes[0] ?? ""}`;
           if (vote(key) >= VOTES_NEEDED) {
             const matches = await lookupLine(line);
-            // A line the catalog knows: this is where this card's number is.
+            watch.lap("catálogo");
+            // A line the catalog knows: this strip is where the cards' number is, for the session.
             if (foundStrip && matches.length) keepStrip(foundStrip);
             await resolve(matches, line.lang, `Leído ${describe(line)}`);
+            watch.lap("añadir");
           }
         } else if (s.tick % 2 === 0) {
           // No collector line: try the title (old Magic frames, full arts, glare on the corner).
           captureRegion(video, stripRect(card, TITLE_STRIP), canvas, TITLE_HEIGHT);
           const titleText = await ocr(canvas, "title");
+          watch.lap("título");
           setLastText(`${text.trim() || "—"}\ntítulo: ${titleText.trim() || "—"}`);
           const name = parseTitle(titleText);
           if (name) s.lastTitle = name;
           const matches = name ? await lookupName(name) : [];
+          if (name) watch.lap("catálogo");
           if (name && matches.length) {
             s.empty = 0;
             setStatus(`Leyendo «${name}»…`);
             if (vote(`n:${matches.map((m) => m.id).join()}`) >= VOTES_NEEDED) {
               await resolve(matches, null, `Leído «${name}»`);
+              watch.lap("añadir");
             }
           } else {
             noRead();
@@ -651,6 +692,8 @@ export function Scanner({
         }
       } catch (error) {
         console.error("[scan]", error);
+      } finally {
+        setTiming(watch.toString());
       }
     }
     if (runningRef.current) setTimeout(tick, TICK_MS);
@@ -681,6 +724,7 @@ export function Scanner({
       setChoices(null);
       readState.current.choicesKey = "";
       readState.current.lastTitle = null;
+      readState.current.heldBack = false;
       setEntries((list) => {
         const [top, ...rest] = list;
         if (top?.itemId === r.itemId) return [{ ...top, count: top.count + 1 }, ...rest];
@@ -840,6 +884,11 @@ export function Scanner({
         return;
       }
       if (matches.length === 1) {
+        // The card just added, identified again (a second tap): not a second copy.
+        if (s.holdId === matches[0].id) {
+          setStatus(`«${matches[0].name}» ya está añadida: si es otra copia, pulsa +.`);
+          return;
+        }
         s.holdId = matches[0].id;
         s.votes = [];
         await add(matches[0], null);
@@ -1454,6 +1503,7 @@ export function Scanner({
           <div className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+5.5rem)] left-3 z-10 max-w-[55%] space-y-1 rounded-lg bg-black/70 p-2">
             <canvas ref={canvasRef} className="max-h-16 max-w-full rounded bg-white" />
             <pre className="max-h-24 overflow-auto text-[10px] text-white/80">{lastText || "—"}</pre>
+            {timing && <p className="text-[10px] text-white/60 tabular-nums">{timing}</p>}
           </div>
         )}
         {/* The read loop needs the canvas even when the debug view is hidden. */}

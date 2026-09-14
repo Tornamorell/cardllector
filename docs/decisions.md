@@ -790,6 +790,12 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
       turnos y se queda la que da una línea del catálogo, hasta que se pierde la carta.
       Descartada una sola franja que cubra las dos: mete más texto de la carta en el slinger, y
       sin sus fotos no se podía comprobar que no empeorara.
+    - **Actualización (2026-09-14, tras escanear un mazo de 100 cartas):**
+      - La franja que lee se queda para toda la sesión, no hasta perder la carta. Se perdía al
+        sacar cada una, y la siguiente empezaba alternando. Cada 4 lecturas seguidas sin línea
+        se mira una vez la otra, por si se cambia de la mesa al slinger.
+      - Una carta encontrada no se suelta, y por tanto no se vuelve a añadir, mientras siga a la
+        vista, aunque no se lea nada en varias lecturas seguidas: así se duplicaban.
   - Se puede apagar en los ajustes del escáner («Buscar la carta», `findCard` en el dispositivo).
   - `detectCardQuad` sigue enderezando la carta dentro de esa caja (D32), donde sí la llena.
   - Medido el 2026-09-14 con 5 fotos del slinger del usuario, recortadas a 16:9 como las ve el

@@ -79,6 +79,21 @@ export function stripUnion(a: Strip, b: Strip): Strip {
   return { x0: Math.min(a.x0, b.x0), x1: Math.max(a.x1, b.x1), y0: Math.min(a.y0, b.y0), y1: Math.max(a.y1, b.y1) };
 }
 
+/** Reads in a row without a line on the kept strip before the other one gets a look. */
+export const FOUND_STRIP_PROBE = 4;
+
+/**
+ * Which strip to read a found card with (D36). The one that last read a card the catalog knows
+ * is kept for the whole session: the setup (a table, a slinger) doesn't change from one card to
+ * the next. Until one has, they take turns (`turn`); and every FOUND_STRIP_PROBE reads in a row
+ * without a line (`misses`), the other one gets a look, in case the setup did change.
+ */
+export function pickFoundStrip(kept: FoundStrip | null, misses: number, turn: number): FoundStrip {
+  if (!kept) return turn % 2 ? "frame" : "card";
+  const other: FoundStrip = kept === "card" ? "frame" : "card";
+  return misses > 0 && misses % FOUND_STRIP_PROBE === 0 ? other : kept;
+}
+
 /** Title line: the fallback when the info strip can't be read. */
 export const TITLE_STRIP = { x0: 0.04, x1: 0.76, y0: 0.025, y1: 0.1 };
 
