@@ -38,7 +38,7 @@ import { gameById, rarityLabel, rarityRank } from "@/lib/games";
 import type { ScanMatch } from "@/lib/queries/scan";
 import {
   DEFAULT_GUIDE,
-  FOUND_INFO_STRIP,
+  FOUND_INFO_STRIPS,
   GUIDE_FILL,
   INFO_STRIP,
   NAME_LAYOUTS,
@@ -49,7 +49,9 @@ import {
   guideRect,
   placeGuide,
   stripRect,
+  stripUnion,
   toVideo,
+  type FoundStrip,
   type GuidePlace,
   type NameLayout,
   type Rect,
@@ -238,6 +240,8 @@ export function Scanner({
   const [showDebug, setShowDebug] = useState(false);
   // The card found in the view (D36), on the stage: its outline, and the box that's read.
   const [found, setFound] = useState<{ points: string; box: Rect } | null>(null);
+  // Which strip reads the found card: on it, or below its inner frame. Null until one reads.
+  const [lockedStrip, setLockedStrip] = useState<FoundStrip | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
   // «Ajustar recuadro»: the guide being moved and resized, saved on «Listo».
   const [adjusting, setAdjusting] = useState(false);
@@ -273,6 +277,10 @@ export function Scanner({
     tick: 0,
     choicesKey: "",
     mode: "",
+    /** The strip that read the found card (D36), kept until the card is lost. */
+    foundStrip: null as FoundStrip | null,
+    /** Until then, both take turns. */
+    stripTurn: 0,
     /** The last name read from the title of the card in the guide: the hint for «Para luego». */
     lastTitle: null as string | null,
     cache: new Map<string, ScanMatch[]>(),
@@ -370,6 +378,13 @@ export function Scanner({
     return v && toVideo(placeGuide(v.area, settings.current.place), v.t);
   }
 
+  /** Keeps the strip that read the found card, or forgets it (null) when the card is lost. */
+  function keepStrip(strip: FoundStrip | null) {
+    if (readState.current.foundStrip === strip) return;
+    readState.current.foundStrip = strip;
+    setLockedStrip(strip);
+  }
+
   /**
    * Looks for the card in everything shown between the bars (D36). It counts once found in two
    * reads in a row in about the same place, and is dropped when missed in two. The card in video
@@ -379,6 +394,7 @@ export function Scanner({
     const v = view();
     if (!v || !settings.current.defaults.findCard) {
       foundRef.current = null;
+      keepStrip(null);
       setFound(null);
       return null;
     }
@@ -404,6 +420,7 @@ export function Scanner({
     } else if (last && ++last.missed >= 2) {
       foundRef.current = null;
     }
+    if (!foundRef.current) keepStrip(null);
     const kept = foundRef.current && foundRef.current.seen >= 2 ? foundRef.current.quad : null;
     if (!kept) {
       setFound(null);
@@ -592,7 +609,12 @@ export function Scanner({
           if (runningRef.current) setTimeout(tick, TICK_MS);
           return;
         }
-        captureRegion(video, stripRect(card, onCard ? FOUND_INFO_STRIP : INFO_STRIP), canvas, INFO_HEIGHT);
+        // On a found card (D36) the number is on it, where the guide has it, or below it when
+        // only its inner frame was found (a slinger): the strip that read the last card, else
+        // each in turn.
+        const foundStrip = onCard ? (s.foundStrip ?? (s.stripTurn++ % 2 ? "frame" : "card")) : null;
+        const infoStrip = foundStrip ? FOUND_INFO_STRIPS[foundStrip] : INFO_STRIP;
+        captureRegion(video, stripRect(card, infoStrip), canvas, INFO_HEIGHT);
         const text = await ocr(canvas, "info");
         const line = parseCollectorLine(text);
         if (line) {
@@ -601,7 +623,10 @@ export function Scanner({
           setStatus(`Leyendo ${describe(line)}…`);
           const key = `c:${numberVariants(line.number)[1]}/${line.total ?? ""}/${line.setCodes[0] ?? ""}`;
           if (vote(key) >= VOTES_NEEDED) {
-            await resolve(await lookupLine(line), line.lang, `Leído ${describe(line)}`);
+            const matches = await lookupLine(line);
+            // A line the catalog knows: this is where this card's number is.
+            if (foundStrip && matches.length) keepStrip(foundStrip);
+            await resolve(matches, line.lang, `Leído ${describe(line)}`);
           }
         } else if (s.tick % 2 === 0) {
           // No collector line: try the title (old Magic frames, full arts, glare on the corner).
@@ -924,7 +949,9 @@ export function Scanner({
         holdId: null,
         choicesKey: "",
         lastTitle: null,
+        foundStrip: null,
       };
+      setLockedStrip(null);
       setStatus("Encaja la carta en el recuadro, con buena luz.");
       void tick();
     } catch (error) {
@@ -1111,11 +1138,15 @@ export function Scanner({
   function endDrag() {
     dragRef.current = null;
   }
-  // The yellow strip marks what's read: on the card found in the view (D36), or on the guide.
+  // The yellow strip marks what's read: on the card found in the view (D36), the strip that
+  // reads it or, until one does, both; else on the guide.
   const onFound = !adjusting && found ? found.box : null;
   const readBox = onFound ?? guide;
+  const foundInfo = lockedStrip
+    ? FOUND_INFO_STRIPS[lockedStrip]
+    : stripUnion(FOUND_INFO_STRIPS.card, FOUND_INFO_STRIPS.frame);
   const strip = readBox
-    ? stripRect(readBox, nameLayout?.strip ?? (onFound ? FOUND_INFO_STRIP : INFO_STRIP))
+    ? stripRect(readBox, nameLayout?.strip ?? (onFound ? foundInfo : INFO_STRIP))
     : null;
   const fixedCode = fixedSet?.code.toUpperCase();
 

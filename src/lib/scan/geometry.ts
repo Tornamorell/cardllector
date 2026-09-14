@@ -57,13 +57,27 @@ export function guideIn(area: Rect, fill = 0.92): Rect {
  */
 export const INFO_STRIP = { x0: 0.02, x1: 0.5, y0: 0.895, y1: 0.99 };
 
+type Strip = { x0: number; x1: number; y0: number; y1: number };
+
 /**
- * The info strip of a card found in the view (D36), reaching below it. Down a card slinger a
- * black border doesn't stand out from the dark floor, so what's found is the frame inside it,
- * and the number is printed in that border. Where the whole card is found (a light table), the
- * strip still covers the number, and a little of the table under it.
+ * What a card found in the view (D36) can be, and where its info strip is then:
+ * - card: the whole card was found (a table, a mat, a screen), so the number is on it, where
+ *   the guide has it;
+ * - frame: down a card slinger a black border doesn't stand out from the dark floor, so what's
+ *   found is the frame inside it, and the number is printed in that border, below it.
+ * Neither strip covers the other's number (measured 2026-09-14, docs/scanner.md): the scanner
+ * tries both in turn and keeps the one that reads.
  */
-export const FOUND_INFO_STRIP = { x0: 0, x1: 0.55, y0: 0.93, y1: 1.08 };
+export type FoundStrip = "card" | "frame";
+export const FOUND_INFO_STRIPS: Record<FoundStrip, Strip> = {
+  card: INFO_STRIP,
+  frame: { x0: 0, x1: 0.55, y0: 0.93, y1: 1.08 },
+};
+
+/** The smallest strip covering both: what the scanner marks while it doesn't know which reads. */
+export function stripUnion(a: Strip, b: Strip): Strip {
+  return { x0: Math.min(a.x0, b.x0), x1: Math.max(a.x1, b.x1), y0: Math.min(a.y0, b.y0), y1: Math.max(a.y1, b.y1) };
+}
 
 /** Title line: the fallback when the info strip can't be read. */
 export const TITLE_STRIP = { x0: 0.04, x1: 0.76, y0: 0.025, y1: 0.1 };

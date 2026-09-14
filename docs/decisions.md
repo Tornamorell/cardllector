@@ -784,6 +784,12 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - La franja del número de una carta encontrada llega hasta un 8 % por debajo de ella
     (`FOUND_INFO_STRIP`). En el slinger, el borde negro de la carta no se distingue del fondo
     oscuro, así que lo que encuentra es el marco de dentro, y el número va impreso en ese borde.
+    - **Actualización (2026-09-14):** cuando se encuentra la carta entera (una mesa, una
+      pantalla), esa franja cae por debajo del número y no lo lee en ninguna de 20 muestras.
+      Ahora hay dos franjas (`FOUND_INFO_STRIPS`): sobre la carta y por debajo. Se prueban por
+      turnos y se queda la que da una línea del catálogo, hasta que se pierde la carta.
+      Descartada una sola franja que cubra las dos: mete más texto de la carta en el slinger, y
+      sin sus fotos no se podía comprobar que no empeorara.
   - Se puede apagar en los ajustes del escáner («Buscar la carta», `findCard` en el dispositivo).
   - `detectCardQuad` sigue enderezando la carta dentro de esa caja (D32), donde sí la llena.
   - Medido el 2026-09-14 con 5 fotos del slinger del usuario, recortadas a 16:9 como las ve el

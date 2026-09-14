@@ -4,11 +4,13 @@ import {
   coverTransform,
   fromVideo,
   DEFAULT_GUIDE,
+  FOUND_INFO_STRIPS,
   GUIDE_FILL,
   guideIn,
   guideRect,
   placeGuide,
   stripRect,
+  stripUnion,
   toVideo,
 } from "./geometry";
 
@@ -73,6 +75,17 @@ describe("stripRect", () => {
     expect(s.y).toBeCloseTo(50 + 880 * 0.895);
     expect(s.w).toBeCloseTo(630 * 0.48);
     expect(s.h).toBeCloseTo(880 * 0.095);
+  });
+});
+
+describe("stripUnion", () => {
+  it("covers both strips of a found card: on the card and below its inner frame", () => {
+    expect(stripUnion(FOUND_INFO_STRIPS.card, FOUND_INFO_STRIPS.frame)).toEqual({
+      x0: 0,
+      x1: 0.55,
+      y0: 0.895,
+      y1: 1.08,
+    });
   });
 });
 

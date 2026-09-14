@@ -13,8 +13,9 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
   → el recuadro, pasado de coordenadas de pantalla a píxeles de vídeo      src/lib/scan/geometry.ts
     (object-fit: cover recorta el vídeo: coverTransform + toVideo)
   → «Buscar la carta» (D36): findCard() en todo lo que se ve, a 360 px    src/lib/scan/find-card.ts
-    → si sale dos lecturas seguidas en el mismo sitio, se lee su caja en lugar del recuadro,
-      con la franja de datos más baja (x 0–55 %, y 93–108 %)
+    → si sale dos lecturas seguidas en el mismo sitio, se lee su caja en lugar del recuadro.
+      La franja de datos va sobre la carta, como en el recuadro, o por debajo de ella (x 0–55 %,
+      y 93–108 %) si lo encontrado es el marco de dentro: se prueban por turnos y se queda la que lee
   → 1. franja de datos (abajo a la izquierda: x 2–50 %, y 89,5–99 %), escalada a 140 px de alto,
        en gris con el contraste estirado → Tesseract (A–Z 0–9 / • ., PSM 6)
        → parseCollectorLine(): número, total, códigos, idioma           src/lib/scan/parse.ts
@@ -118,9 +119,15 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
       - Cuando la encuentra dos lecturas seguidas en el mismo sitio, dibuja su contorno en verde,
         el recuadro pasa a segundo plano y se lee la carta encontrada en lugar del recuadro: el
         número, el título, la huella, «Para luego», la IA y la foto compartida.
-      - La franja amarilla va con la carta y llega hasta un 8 % por debajo de ella
-        (`FOUND_INFO_STRIP`): en un slinger, el borde negro no se distingue del fondo oscuro, lo
-        que se encuentra es el marco de dentro, y el número va impreso en ese borde.
+      - La franja de datos puede estar en dos sitios (`FOUND_INFO_STRIPS`):
+        - **sobre la carta**, donde la pone el recuadro, si se ha encontrado la carta entera (una
+          mesa, un tapete, una pantalla);
+        - **por debajo**, hasta un 8 % bajo lo encontrado, si solo se ha encontrado el marco de
+          dentro: en un slinger, el borde negro no se distingue del fondo oscuro, y el número va
+          impreso en ese borde.
+      - Se prueban por turnos, y la que da una línea que está en el catálogo se queda mientras
+        no se pierda la carta. La franja amarilla marca las dos hasta entonces, y después solo
+        esa.
       - Si la pierde dos lecturas seguidas, vuelve al recuadro. Si tras tres lecturas no lee
         nada, una de cada dos es del recuadro, por si lo encontrado no era la carta.
       - Así el recuadro solo hace falta ajustarlo si no la encuentra.
@@ -270,6 +277,24 @@ En Magic la franja de siempre lee igual de bien, así que se dejó como estaba.
 | Grafaiai ex SVP 100, Great Tusk ex SVI 230 | `ll GrafaiaiX`, `ap- Great Tuskg` | Solo la base | También la ex |
 | Magic: Lightning Bolt, MKM 1, `Aerial EE` | | | Sin cambios |
 
+## Mediciones (2026-09-14, franja de una carta encontrada entera)
+
+En el móvil, con la Mew ex en la pantalla del ordenador, se encontraba la carta entera, pero la
+franja amarilla quedaba casi toda por debajo de ella, sobre la pantalla: estaba pensada para el
+marco de dentro del slinger.
+
+Se simuló con las 20 muestras de arriba, con un margen oscuro del 3 % alrededor de cada una, como
+la caja algo holgada que da `findCard`:
+
+- **La franja de debajo** (y 93–108 % de la caja) no lee el número de **ninguna**. Empieza por
+  debajo de él y solo coge `DMU EN` y el artista.
+- **La franja sobre la carta** (la del recuadro) lo lee en las 7 de Magic (`107/281 M` +
+  `DMU EN`, `U 0001` + `MKM EN`…) y en varias Pokémon normales (`001/165`, `001/191`,
+  `001/195`, `230/198`).
+
+Por eso se prueban las dos. El slinger no se pudo volver a medir, porque sus fotos no se
+guardaron: su franja sigue siendo la misma.
+
 ## Parámetros de ajuste
 
 En `scanner.tsx`:
@@ -283,7 +308,8 @@ En `geometry.ts`:
 - El relleno del recuadro guía, `GUIDE_FILL` (0,94), con el tamaño y la posición que elija cada
   uno (del 30 al 100 %, `GUIDE_SCALE_MIN`; `guideScale`, `guideDx` y `guideDy` en los valores
   recordados del dispositivo).
-- `FOUND_INFO_STRIP`: la franja de datos de una carta encontrada (D36).
+- `FOUND_INFO_STRIPS`: las dos franjas de datos de una carta encontrada, entera o solo su
+  marco (D36).
 
 En `find-card.ts` (D36): cuántas rectas se prueban (`LINES`, 30), la inclinación máxima
 (`MAX_SLOPE`, ±14°), el tamaño mínimo (`MIN_AREA`, 6 % de la imagen), la tolerancia de forma
