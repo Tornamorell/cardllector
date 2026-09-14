@@ -1,4 +1,4 @@
-import { SearchIcon, ShieldIcon } from "lucide-react";
+import { SearchIcon, ShieldIcon, SparklesIcon } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
@@ -25,6 +25,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
               aria-label="Buscar"
             >
               <SearchIcon />
+            </Link>
+            {/* The phone's tab bar is full: the assistant is up here. */}
+            <Link
+              href="/assistant"
+              className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "md:hidden")}
+              aria-label="Asistente"
+            >
+              <SparklesIcon />
             </Link>
             {isAdmin(user) && (
               <Link

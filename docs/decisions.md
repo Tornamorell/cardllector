@@ -800,3 +800,50 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
 - **Revisar cuando:** se pruebe en el móvil (el tiempo por fotograma, si la lectura se hace más
   lenta) y con más fondos; si confunde el hueco del slinger a menudo, usar el recuadro como pista
   de dónde buscar.
+
+## D37 · Asistente: preguntas a la IA sobre tus propios datos — 2026-09-14 · provisional
+
+- **Contexto:** el usuario quiere preguntarle a la IA por sus colecciones, mazos y precios, en
+  una app que ya comparte con colegas (D34) y que ya tenía clave de Anthropic para
+  «Identificar con IA» (D31).
+- **Decisión:**
+  - Un chat (`/assistant`) con Claude Sonnet 5 y siete herramientas de solo lectura
+    (`src/lib/assistant/tools.ts`):
+    - resumen (totales por juego, colecciones, mazos y ubicaciones);
+    - buscar en tus cartas, con filtros;
+    - tus cartas de Magic por sus reglas: identidad de color, tipo, texto, función, sueltas o
+      no, y sin las que ya tiene un mazo, para montar y mejorar mazos;
+    - una colección, con lo que falta;
+    - un mazo, con su análisis y dónde están sus copias;
+    - la evolución del valor y los precios que la han movido;
+    - el catálogo.
+  - Cada herramienta es una consulta de `src/lib/queries/assistant.ts` con el usuario de la
+    sesión: el modelo nunca escribe SQL ni puede pedir datos de otro.
+  - El bucle lo lleva el SDK (`toolRunner` en streaming), con hasta 10 llamadas por respuesta
+    y esfuerzo medio. `/api/assistant` devuelve una línea JSON por evento: texto, qué está
+    consultando y, al final, lo que ha costado.
+  - Las instrucciones y las herramientas (unos 4.200 tokens) van a la caché de la API: después
+    de la primera pregunta se leen a 0,1× el precio. La conversación también (`cache_control`
+    en la petición): cada paso del bucle reenvía los resultados de las consultas anteriores.
+  - Los resultados son compactos (sin campos vacíos) y llevan las rutas de la app, para que la
+    respuesta enlace lo que menciona. El Markdown se pinta con un subconjunto propio
+    (`markdown.ts`): nada de HTML, y solo enlaces a rutas de la app.
+  - La conversación se guarda en el navegador y viaja con cada pregunta: el texto de los
+    últimos 20 turnos, sin los resultados de las herramientas.
+  - Cada respuesta apunta su coste en `ai_chat_turns`. Límite de 5 $ por usuario y mes natural
+    (`AI_ASSISTANT_MONTHLY_USD`); `/admin` enseña el gasto de 30 días.
+  - Medido el 2026-09-14 con los datos reales del usuario:
+    - «¿Cuáles son mis 3 cartas más valiosas y dónde están?»: una consulta, 0,017 $, la primera
+      palabra a los 2,7 s y 5 s en total.
+    - «¿A mi mazo de Pantlaza le falta rampa o robo? ¿Qué tengo suelto que encaje?»: cuatro
+      consultas y 15 s. El mazo ocupa unos 6.000 tokens y se reenvía en cada paso: 0,072 $ con
+      solo las instrucciones en la caché, 0,052 $ con la conversación también.
+- **Descartado:**
+  - Pasarle toda la colección en cada pregunta: con miles de cartas, caro y lento.
+  - Dejar que escriba SQL: más flexible, pero un error o una inyección leería datos de otros.
+  - Managed Agents o el Agent SDK: un bucle con herramientas propias cabe en una ruta de Next.
+  - Opus 5 por defecto (2,5 veces más caro) o Haiku 4.5 (más barato, peor en bucles largos).
+  - Guardar las conversaciones en la base de datos, y que haga cambios: de momento no hace
+    falta. Los cambios, si llegan, con confirmación.
+- **Revisar cuando:** se quiera que haga cambios o que recuerde las conversaciones entre
+  dispositivos, o el gasto real se aleje de lo medido.

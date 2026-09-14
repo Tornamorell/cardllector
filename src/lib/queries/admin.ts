@@ -12,6 +12,8 @@ export type AdminUserRow = {
   /** AI identifications in the last 24 hours, the window of the daily limit (D31). */
   aiToday: number;
   aiCost30d: number;
+  /** What the assistant's answers cost (D37). */
+  chatCost30d: number;
 };
 
 /** Every account, with its copies and what its AI identifications cost (D34). */
@@ -23,7 +25,9 @@ export async function listUsersForAdmin(): Promise<AdminUserRow[]> {
            (select count(*)::int from ai_identifications a
             where a.owner_id = u.id and a.created_at > now() - interval '1 day') as "aiToday",
            (select coalesce(sum(a.cost_usd), 0)::float8 from ai_identifications a
-            where a.owner_id = u.id and a.created_at > now() - interval '30 days') as "aiCost30d"
+            where a.owner_id = u.id and a.created_at > now() - interval '30 days') as "aiCost30d",
+           (select coalesce(sum(t.cost_usd), 0)::float8 from ai_chat_turns t
+            where t.owner_id = u.id and t.created_at > now() - interval '30 days') as "chatCost30d"
     from "user" u
     order by u.created_at`);
   return rows;

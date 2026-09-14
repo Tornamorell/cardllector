@@ -23,6 +23,7 @@ export function UsersTable({ users, meId }: { users: AdminUserRow[]; meId: strin
             <TableHead className="text-right">Cartas</TableHead>
             <TableHead className="text-right">IA hoy</TableHead>
             <TableHead className="text-right">IA, 30 días</TableHead>
+            <TableHead className="text-right">Asistente, 30 días</TableHead>
             <TableHead>Última vez</TableHead>
             <TableHead>Estado</TableHead>
           </TableRow>
@@ -83,6 +84,7 @@ function UserRow({ user: u, isMe }: { user: AdminUserRow; isMe: boolean }) {
       <TableCell className="text-right tabular-nums">{u.copies}</TableCell>
       <TableCell className="text-right tabular-nums">{u.aiToday}</TableCell>
       <TableCell className="text-right tabular-nums">{u.aiCost30d.toFixed(2)} $</TableCell>
+      <TableCell className="text-right tabular-nums">{u.chatCost30d.toFixed(2)} $</TableCell>
       <TableCell className="text-muted-foreground text-sm">{date(u.lastSeen)}</TableCell>
       <TableCell>
         <div className="flex items-center gap-2">

@@ -18,6 +18,7 @@ const LINKS = [
   { href: "/inventory", label: "Mis cartas" },
   { href: "/collections", label: "Colecciones" },
   { href: "/decks", label: "Mazos" },
+  { href: "/assistant", label: "Asistente" },
   { href: "/locations", label: "Ubicaciones" },
   { href: "/scan", label: "Escanear" },
   { href: "/search", label: "Buscar" },

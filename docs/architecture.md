@@ -47,6 +47,8 @@ Navegador ── páginas (Server Components) + Server Actions ┘
 | `/collections`, `/collections/[id]` | Tus colecciones: listas de ediciones con la cantidad que quieres de cada una. Se ve lo que tienes y lo que te falta, lo que vale lo que tienes y lo que costaría completarla. Filtros: todas, tengo y me faltan. Se pueden crear llenas con una expansión entera o una de sus rarezas: aquí mismo, o con «Guardar como colección…» en la página de la expansión. |
 | `/locations`, `/locations/[id]` | Ubicaciones físicas: qué hay en cada una y cuánto vale. `/locations/none` muestra las copias sin ubicación. Una ubicación puede tener separadores (Opciones › Separadores). Se ven como fichas con lo lleno que está cada uno, y filtran con `?section=<id>` o `?section=none` (D28). |
 | `/search` | Búsqueda por nombre, en inglés o en español. |
+| `/assistant` | **Asistente:** preguntas a la IA sobre tus cartas, colecciones, mazos y precios, con respuestas que enlazan a lo que mencionan. La conversación se guarda en el navegador. En el móvil se entra por el icono de la barra de arriba (D37). |
+| `/api/assistant` | Lo que hay detrás del asistente: pasa la conversación a Claude con herramientas de solo lectura sobre los datos del usuario (`src/lib/assistant/tools.ts`, consultas en `src/lib/queries/assistant.ts`) y devuelve la respuesta en streaming, una línea JSON por evento. Comprueba la sesión y el límite del mes, y apunta lo que cuesta cada respuesta (D37). |
 | `/api/card-photos/[id]` | La foto compartida de una carta sin imagen de catálogo (D30). Pide sesión y se guarda en caché un año, porque la URL lleva la versión. |
 | `/scan` | Escáner con la cámara: lee el número y el código de expansión de la carta y la añade a tus cartas, en la ubicación y la colección de la sesión si las has elegido. `?set=mtg:m10` arranca en modo expansión fija. Detalles en `docs/scanner.md`. |
 | `/review` | **Por revisar:** las cartas que guardaste con «Para luego» en el escáner, con su foto (servida por `/api/pending-scans/[id]`, solo para su dueño) y una búsqueda para identificarlas y añadirlas (D25). |
@@ -186,8 +188,9 @@ Importa el repo desde vercel.com. Detecta Next.js solo. Variables de entorno (Pr
 | `DATABASE_URL` | La cadena **pooled** de Neon |
 | `BETTER_AUTH_SECRET` | Uno nuevo, distinto del local: `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | La URL de producción, por ejemplo `https://cardllector.vercel.app` |
-| `ANTHROPIC_API_KEY` | Opcional: activa «Identificar con IA» en el escáner (D31). Sin ella, el botón no sale |
+| `ANTHROPIC_API_KEY` | Opcional: activa «Identificar con IA» en el escáner (D31) y el asistente (D37). Sin ella, el botón no sale y el asistente dice que no está configurado |
 | `AI_IDENTIFY_DAILY_LIMIT` | Opcional: identificaciones con IA por usuario cada 24 horas (150 por defecto) |
+| `AI_ASSISTANT_MONTHLY_USD` | Opcional: lo que puede gastar cada usuario en el asistente por mes natural, en dólares (5 por defecto) |
 En *Settings → Functions*, pon la región `fra1`, la misma zona que Neon.
 
 - El script `vercel-build` aplica las migraciones **solo** en producción (`VERCEL_ENV=production`),

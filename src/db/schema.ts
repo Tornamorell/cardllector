@@ -386,6 +386,28 @@ export const aiIdentifications = pgTable(
   (t) => [index("ai_identifications_owner_idx").on(t.ownerId, t.createdAt)],
 );
 
+// The assistant's answers (D37): what each cost, for the monthly allowance and /admin. The
+// conversations themselves stay in the browser.
+export const aiChatTurns = pgTable(
+  "ai_chat_turns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    model: text("model").notNull(),
+    inputTokens: integer("input_tokens").notNull(),
+    outputTokens: integer("output_tokens").notNull(),
+    cacheWriteTokens: integer("cache_write_tokens").notNull().default(0),
+    cacheReadTokens: integer("cache_read_tokens").notNull().default(0),
+    /** How many times it looked something up in the user's data. */
+    toolCalls: integer("tool_calls").notNull().default(0),
+    costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("ai_chat_turns_owner_idx").on(t.ownerId, t.createdAt)],
+);
+
 // ---------------------------------------------------------------------------
 // Magic decks (D35): the cards by board, by card (oracle) rather than printing, and a box —
 // a location — holding the copies that are in the deck.
