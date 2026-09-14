@@ -35,7 +35,8 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
   | Magic 2003–2013 | `146/249` junto al copyright, **ilegible** | **Título**. Con la expansión fija sale una sola carta. |
   | Pokémon Escarlata y Púrpura en adelante | `G [PAL EN] 001/193`: código (`sets.print_code`) o total | Título |
   | Pokémon Espada y Escudo y anteriores | `F 001/195`: total (`sets.printed_total`) y número | Título |
-  | Full art / ilustraciones especiales | Texto sobre la ilustración, suele fallar | Título; si no, búsqueda manual |
+  | Pokémon promos Escarlata y Púrpura (SVP) | `G [SVP EN] 053 ★`: sin total, y «SVP EN» en blanco sobre negro. **Ilegible** | Título |
+  | Full art / ilustraciones especiales | Texto blanco con contorno sobre la ilustración. En Pokémon, **ilegible** | Título; si no, IA o búsqueda manual |
 
 - **Correcciones del OCR** en `parseCollectorLine`:
   - Letras en lugar de dígitos dentro de números (`0O1/I93` → `001/193`) y un símbolo pegado
@@ -51,6 +52,10 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     español, 0,45), que casi empata con cuatro cartas "Aerial …" (0,44).
   - En los empates gana el nombre más corto: la carta de la serie de arte "Lightning Bolt //
     Lightning Bolt" empata con "Lightning Bolt".
+  - **Pokémon:** el «ex», «V», «GX» o «VMAX» del título es un logotipo que el OCR no lee
+    («Mew ex» sale «BE Mew XA», que se parece más a «Mew»). Por eso un nombre de Pokémon trae
+    también las cartas que se llaman igual más un sufijo (`Mew`, `Mew ex`, `Mew V`, `Mew-EX`…),
+    las más recientes primero, y se elige por la imagen (`titleLogoSuffixes` en `games.ts`).
   - Devuelve las ediciones de esa carta. Sin expansión fija suelen ser varias y se elige por la
     imagen; con expansión fija, normalmente una.
 - **Lecturas ambiguas:** si caben varias cartas, se muestran hasta 24 candidatas, las más
@@ -232,6 +237,39 @@ Una franja de ancho completo (y 93,5–99 %) no mejoraba el conjunto y se descar
 | DMU 107 | `I Shdlired ic gncaljiie` | ❌ (el número sí se lee) |
 | Pokémon 151 #199 | `BES Charizard GX` | ⚠️ da Charizard GX, que es otra carta |
 
+## Mediciones (2026-09-14, Pokémon promos, full art y ex)
+
+Con imágenes de TCGdex (600×825), las mismas que se ven en una pantalla. La prueba del usuario
+fue escanear desde la pantalla del ordenador una Mew ex promo (SVP 053), y no la reconocía.
+
+**Franja de datos:** en las cartas normales se leen el número y el total (`001/195`,
+`230/198`), pero nunca el código de expansión. En las promos SVP y las full art no sale nada útil:
+
+| Muestra | Lectura | Resultado |
+| --- | --- | --- |
+| SVP 053 Mew ex, SVP 100 Grafaiai ex | Ruido | ❌ |
+| SVP 001 Sprigatito | `BZ 001` | ❌ (sin total ni código) |
+| 151 #199, 151 #205, SIT 186 (full art) | `1991658`, `20571658 3`, ruido | ❌ |
+
+Se probaron varias variantes, y ninguna lee «SVP EN» ni el número de las full art:
+- una franja más estrecha (x 2–38 %, y 93–99 %), que además lee mal alguna normal (`001/198`
+  por `001/195`);
+- la franja invertida o binarizada (Otsu);
+- PSM 7 y 11;
+- un recorte ajustado a la línea.
+
+En Magic la franja de siempre lee igual de bien, así que se dejó como estaba.
+
+**Título:** el nombre sí se lee, pero el sufijo no:
+
+| Muestra | OCR del título | Antes | Ahora (familia del nombre) |
+| --- | --- | --- | --- |
+| Mew ex (SVP 053, 151 #151) | `BE Mew XA`, `Mew ZX A` | 24 Mew, ninguna Mew ex | Mew ex, Mew V, Mew…; la SVP 053 es la 6.ª. Con la SVP fija, solo ella |
+| Charizard ex 151 #199 | `al Charizard X AS` | Charizard | La #199 es la 6.ª. Con la 151 fija, sus tres Charizard ex |
+| Pikachu ex SSP 238 | `Pikachu gw` | Pikachu | La 11.ª. Con la SSP fija, sus cuatro Pikachu ex |
+| Grafaiai ex SVP 100, Great Tusk ex SVI 230 | `ll GrafaiaiX`, `ap- Great Tuskg` | Solo la base | También la ex |
+| Magic: Lightning Bolt, MKM 1, `Aerial EE` | | | Sin cambios |
+
 ## Parámetros de ajuste
 
 En `scanner.tsx`:
@@ -266,3 +304,7 @@ En `queries/scan.ts`:
 - **Service worker** (Serwist), para uso sin conexión.
 - **Probar «Buscar la carta» (D36) en el móvil:** cuánto tarda por fotograma y si confunde el
   hueco del card slinger con la carta.
+- **Promos y full art de Pokémon sin IA:** la franja de datos no se lee (mediciones del
+  2026-09-14) y el título da varias candidatas. Lo que falta por probar es reconocerlas por la
+  imagen del catálogo, con huellas (D33) de las imágenes de TCGdex y Scryfall y no solo de las
+  fotos compartidas. Hay que decidirlo: son huellas de todo el catálogo.

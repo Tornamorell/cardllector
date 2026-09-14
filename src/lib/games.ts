@@ -38,6 +38,11 @@ export interface GameConfig {
   setTypeLabels: Record<string, string>;
   /** Our finishes are generic; each game names them its own way (D18). */
   finishLabels: Record<Finish, string>;
+  /**
+   * The title prints the card's mechanic after the name as a logo (Pokémon ex, V, GX, VMAX…)
+   * that OCR can't read: a name the scanner reads also stands for its suffixed cards.
+   */
+  titleLogoSuffixes?: boolean;
 }
 
 export const GAMES: GameConfig[] = [
@@ -97,6 +102,7 @@ export const GAMES: GameConfig[] = [
     hasMarketPrices: true,
     sourceName: "TCGdex",
     cardmarketCategory: "Pokemon",
+    titleLogoSuffixes: true,
     // TCGdex rarities, lowercased (see normalizeRarity); labels restore the official casing.
     rarities: [
       { value: "common", label: "Common" },

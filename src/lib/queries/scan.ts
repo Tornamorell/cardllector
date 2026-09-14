@@ -141,22 +141,23 @@ export async function lookupByName(
   );
 
   // Best similarity per card across all variants.
-  const byOracle = new Map<string, { oracle_id: string; sim: number; len: number }>();
+  type NameHit = { oracle_id: string; game: string; sim: number; len: number };
+  const byOracle = new Map<string, NameHit>();
   for (const variant of variants) {
-    const { rows } = await pool.query<{ oracle_id: string; sim: number; len: number }>(
-      `select oracle_id, max(sim)::float8 as sim, min(len) as len
+    const { rows } = await pool.query<NameHit>(
+      `select oracle_id, game, max(sim)::float8 as sim, min(len) as len
        from (
-         select c.oracle_id, similarity(c.search_name, $1) as sim, length(c.search_name) as len
+         select c.oracle_id, c.game, similarity(c.search_name, $1) as sim, length(c.search_name) as len
          from catalog_cards c
          where c.search_name % $1
          union all
-         select c.oracle_id, similarity(n.search_name, $1), length(n.search_name)
+         select c.oracle_id, c.game, similarity(n.search_name, $1), length(n.search_name)
          from card_names n
          join catalog_cards c on c.id = n.catalog_card_id
          where n.search_name % $1
        ) m
        where oracle_id is not null
-       group by oracle_id
+       group by oracle_id, game
        order by sim desc, len asc
        limit 3`,
       [variant],
@@ -175,14 +176,20 @@ export async function lookupByName(
   const clear = best.sim >= NAME_SIMILARITY_MIN && (!second || best.sim - second.sim >= NAME_MARGIN);
   if (!sure && !clear) return [];
 
+  // Pokémon prints the mechanic after the name as a logo (ex, V, GX…) that OCR can't read:
+  // "Mew ex" comes out as "BE Mew XA", closest to plain "Mew". So the name also brings the
+  // cards named like it plus a suffix ("pokemon:mew ex", "pokemon:mew-ex"), and the image decides.
+  const cards = gameById(best.game)?.titleLogoSuffixes
+    ? "(c.oracle_id = $1 or starts_with(c.oracle_id, $1 || ' ') or starts_with(c.oracle_id, $1 || '-'))"
+    : "c.oracle_id = $1";
   if (fixedSet) {
-    return find("c.oracle_id = $1 and s.game = $2 and lower(s.code) = lower($3)", [
+    return find(`${cards} and s.game = $2 and lower(s.code) = lower($3)`, [
       best.oracle_id,
       fixedSet.game,
       fixedSet.code,
     ]);
   }
-  return find("c.oracle_id = $1", [best.oracle_id]);
+  return find(cards, [best.oracle_id]);
 }
 
 type FixedSetRef = { game: string; code: string };

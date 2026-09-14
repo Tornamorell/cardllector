@@ -88,6 +88,12 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
     reconocimiento por imagen o IA como respaldo, y las dos requieren decisión del usuario.
 - **Actualización (2026-09-12):** el usuario elige la IA como respaldo, con un botón y no
   para cada carta. El OCR sigue siendo la vía principal (D31).
+- **Actualización (2026-09-14, una Mew ex promo escaneada desde la pantalla):**
+  - En Pokémon, el nombre leído en el título trae también las cartas que se llaman igual más
+    un sufijo (ex, V, GX…). El sufijo es un logotipo que el OCR no lee, y sin esto «Mew ex»
+    se quedaba en «Mew».
+  - Descartado insistir con la franja de datos en las promos SVP y las full art: Tesseract no
+    la lee ni más estrecha, ni invertida, ni binarizada. Mediciones en `docs/scanner.md`.
 
 ## D07 · Idioma por copia; precio de la edición inglesa — 2026-09-11 · provisional
 
