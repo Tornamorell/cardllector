@@ -31,7 +31,7 @@ La respuesta ya no incluye `download_uri`.
 - Un 429 bloquea el acceso 30 s, y abusar puede suponer un veto. Hay que usar el bulk para
   búsquedas rápidas y cachear al menos 24 h.
 
-**Cabeceras obligatorias:** un `User-Agent` propio (usamos `Cardllector/0.1`) y `Accept`.
+**Cabeceras obligatorias:** un `User-Agent` propio (usamos `Tapmat/0.1`) y `Accept`.
 
 **Condiciones de uso:**
 - No se puede cobrar por acceder a sus datos.
@@ -77,7 +77,7 @@ Verificado el 2026-09-11 contra `api.tcgdex.net/v2`. Ver D17, D18 y D19 en `docs
 
 **Qué es.** [TCGdex](https://tcgdex.dev) es una base de datos abierta (MIT) con API REST y
 GraphQL en 14 idiomas. No documenta límites de peticiones y dice atender unos 10 millones al
-mes. Mandamos `User-Agent: Cardllector/0.1` y como mucho 6 peticiones en paralelo. Con 8 en
+mes. Mandamos `User-Agent: Tapmat/0.1` y como mucho 6 peticiones en paralelo. Con 8 en
 paralelo sirvió 80 cartas en 4 s sin errores.
 
 **Endpoints que usamos** (todos bajo `https://api.tcgdex.net/v2/{idioma}`):

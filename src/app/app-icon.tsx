@@ -1,7 +1,7 @@
 import { LogoMark } from "@/components/logo";
 
 /**
- * The app icon: the «Abanico» mark on the indigo table, lit from the top left. Shared by
+ * The app icon: the «Carta girada» mark on the indigo mat, lit from the top left. Shared by
  * icon.tsx (browser tab, install) and apple-icon.tsx (home screen); the OS rounds the corners.
  */
 export function AppIcon({ size }: { size: number }) {

@@ -8,7 +8,7 @@ const API = "https://api.scryfall.com";
 
 // Scryfall requires an accurate User-Agent and an Accept header on every API request.
 const HEADERS = {
-  "User-Agent": "Cardllector/0.1",
+  "User-Agent": "Tapmat/0.1",
   Accept: "application/json",
 };
 

@@ -125,6 +125,11 @@ los diálogos y el botón +.
 
 ## Pendiente del usuario
 
+- **Nombre nuevo, Tapmat (D38):** renombrar el repo en GitHub a `tapmat` (*Settings → General*;
+  `gh` no está instalado en el Mac), y entonces actualizar el remoto local. Si se quiere
+  `tapmat.vercel.app`, añadirlo en Vercel (*Settings → Domains*), cambiar a la vez
+  `BETTER_AUTH_URL` y redirigir el dominio viejo al nuevo.
+
 - Crear su usuario en producción (`npm run seed:user` contra Neon).
 - Añadir el secreto `DATABASE_URL` (conexión directa) en GitHub Actions para las
   sincronizaciones diarias.

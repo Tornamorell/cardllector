@@ -1,6 +1,6 @@
 # Arquitectura
 
-Cardllector es una aplicación personal para registrar colecciones de cartas (Magic, Pokémon y
+Tapmat (hasta el 2026-09-14, Cardllector; D38) es una aplicación personal para registrar colecciones de cartas (Magic, Pokémon y
 fútbol) con su precio de mercado y la evolución de su valor. La usan su dueño y unos pocos
 colegas: cada uno ve sus cartas (todo lleva `owner_id`), el catálogo y las fotos compartidas son
 comunes, y las cuentas las crea un admin (D34).
@@ -92,7 +92,7 @@ hacia arriba se ven todos los enlaces en texto en la barra superior
   duros (2 peticiones/s en `/cards/search`, `/cards/named` y `/cards/collection`; un 429 supone un
   bloqueo) y Scryfall exige usar los ficheros bulk para búsquedas rápidas. Toda búsqueda y todo
   escaneo van contra nuestra base de datos.
-- Las peticiones a `api.scryfall.com` llevan `User-Agent: Cardllector/0.1` y `Accept`
+- Las peticiones a `api.scryfall.com` llevan `User-Agent: Tapmat/0.1` y `Accept`
   (`src/lib/scryfall/client.ts`).
 - Los datos de Scryfall no se pueden cobrar. Si la app se abre algún día, el catálogo tiene que
   seguir siendo accesible gratis.
@@ -152,7 +152,7 @@ Vercel (app) + Neon (Postgres) + GitHub (código y Actions). Todo en los planes 
 Crea un repositorio **privado** y vacío (sin README) y sube el código:
 
 ```bash
-git remote add origin git@github.com:<usuario>/cardllector.git
+git remote add origin git@github.com:<usuario>/tapmat.git
 git push -u origin main
 ```
 

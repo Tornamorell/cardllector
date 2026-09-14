@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Cardllector — guide for agents
+# Tapmat — guide for agents
 
 Personal trading-card collection tracker (Magic now, Pokémon next, sports later): catalog,
 prices (Cardmarket €), the owner's cards (inventory, with optional physical locations),

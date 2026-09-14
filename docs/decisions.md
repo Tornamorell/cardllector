@@ -865,3 +865,29 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - **Coste:** igual. Las conversaciones antiguas no se envían; solo la que se está usando, como
     antes. La línea de contexto son unas decenas de tokens y ahorra buscar de qué mazo se habla.
   - **Descartado:** guardarlas solo en el navegador (cada dispositivo tendría las suyas).
+
+## D38 · La app se llama Tapmat — 2026-09-14 · provisional
+
+- **Contexto:** «Cardllector» costaba de leer y de decir (la «dll» parece una errata), y
+  «collector» se había quedado corto: la app tiene también mazos, escáner, asistente y álbumes
+  de cromos. El usuario pidió darle una vuelta al nombre y al logo, y lo quería en inglés.
+- **Decisión:**
+  - **Tapmat:** *tap*, girar una carta en Magic (y tocar la pantalla), y *mat*, el tapete. Corto,
+    se dice igual en español y en inglés y no es un nombre genérico.
+  - **Logo «Carta girada»:** una carta dorada girada sobre su zona del tapete, con el rombo de
+    rareza de la app (docs/design.md). Dibuja las dos mitades del nombre.
+  - Cambian la interfaz, el logo y el icono, el manifiesto de la PWA, `package.json`, el
+    `User-Agent` para Scryfall y TCGdex (`Tapmat/0.1`) y los documentos.
+  - **No cambian** las claves internas `cardllector:*` del navegador (ajustes recordados, sesión
+    del escáner, conversación abierta del asistente): cambiarlas perdería lo guardado en cada
+    dispositivo, y nadie las ve. Tampoco la carpeta local del proyecto.
+  - Repo y dominio: lo hace el usuario (roadmap, «Pendiente del usuario»). GitHub redirige el
+    nombre viejo.
+- **Descartado:**
+  - Tapete: gustó, pero se prefirió en inglés.
+  - Playmat: es un objeto que se compra, no suena a app, y es imposible de encontrar.
+  - Tap-it: el guion estorba, y suena a la instrucción de un botón.
+  - Pulls: más de coleccionista que de jugador; encaja peor con los mazos.
+  - Los logos Abanico (el anterior: continuidad, pero un recurso muy visto) y Zona de juego
+    (mejor para «Tapete»).
+- **Revisar cuando:** se abra la app a más gente y haga falta comprobar marcas o dominios.

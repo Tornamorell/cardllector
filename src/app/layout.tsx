@@ -12,11 +12,11 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Cardllector", template: "%s · Cardllector" },
+  title: { default: "Tapmat", template: "%s · Tapmat" },
   description: "Tu colección de cartas, con precio.",
-  applicationName: "Cardllector",
+  applicationName: "Tapmat",
   // Full-screen when added to the iPhone home screen.
-  appleWebApp: { capable: true, title: "Cardllector", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Tapmat", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

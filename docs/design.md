@@ -100,11 +100,14 @@ siendo los de shadcn por si algún día se añade un selector de tema.
 - `src/components/holo-card.tsx`: la carta grande que se inclina.
 - `src/components/rarity-mark.tsx` y `rarityTier()` en `src/lib/games.ts`: rombo del color de la
   rareza.
-- `src/components/logo.tsx`: el logo, **«Abanico»**.
-  - Tres cartas en la mano, la de delante dorada con el rombo de rareza. Recuerda al abanico
-    del Resumen y se reconoce a 16 px.
+- `src/components/logo.tsx`: el logo de **Tapmat**, **«Carta girada»** (D38).
+  - Una carta dorada girada, como en el *tap* de Magic, sobre su zona del tapete: el recuadro
+    discontinuo que llevan los tapetes para marcar dónde va cada carta. Dibuja las dos mitades
+    del nombre. La carta lleva el rombo de rareza de la app.
+  - A 16 px el recuadro se pierde y queda la carta dorada inclinada, que se sigue reconociendo.
   - El nombre va en Archivo expandida (`wdth` 125) y extranegrita.
   - `<LogoMark>` es el símbolo solo y `<Logo>`, símbolo y nombre para la cabecera y la entrada.
-  - Se eligió el 2026-09-12 entre tres propuestas: Abanico, Rombo y Carpeta.
-- `src/app/app-icon.tsx`: el icono de la app, para el móvil, la instalación y la pestaña. Es el
-  abanico sobre el tapete, con una luz suave arriba a la izquierda.
+  - Se eligió el 2026-09-14 entre Abanico (el anterior, del 2026-09-12), Carta girada y Zona de
+    juego.
+- `src/app/app-icon.tsx`: el icono de la app, para el móvil, la instalación y la pestaña. Es la
+  carta girada sobre el tapete, con una luz suave arriba a la izquierda.

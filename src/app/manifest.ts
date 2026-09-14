@@ -4,8 +4,8 @@ import type { MetadataRoute } from "next";
 // opens full screen like a native app.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Cardllector",
-    short_name: "Cardllector",
+    name: "Tapmat",
+    short_name: "Tapmat",
     description: "Tu colección de cartas, con precio.",
     start_url: "/",
     display: "standalone",

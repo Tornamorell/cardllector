@@ -15,7 +15,7 @@ export default async function AdminPage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Administración</h1>
         <p className="text-muted-foreground max-w-prose text-sm">
-          Quién puede entrar en Cardllector. No hay registro abierto: las cuentas de tus colegas las
+          Quién puede entrar en Tapmat. No hay registro abierto: las cuentas de tus colegas las
           creas aquí. Cada uno ve solo sus cartas, colecciones y ubicaciones; el catálogo y las fotos
           compartidas son de todos. Cada cuenta puede identificar hasta 150 cartas al día con la IA,
           que se paga con tu clave.

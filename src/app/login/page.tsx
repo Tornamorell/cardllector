@@ -29,7 +29,7 @@ export default function LoginPage() {
           <div className="space-y-1">
             <h1 className="flex items-center justify-center gap-2 text-3xl font-extrabold tracking-tight">
               <LogoMark className="size-10" />
-              Cardllector
+              Tapmat
             </h1>
             <p className="text-muted-foreground text-sm">Entra para ver tu colección.</p>
           </div>

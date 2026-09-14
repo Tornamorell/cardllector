@@ -1,7 +1,7 @@
 import type { TcgdexCard, TcgdexCardBrief, TcgdexSet, TcgdexSetBrief } from "./types";
 
 const API = "https://api.tcgdex.net/v2";
-const HEADERS = { "User-Agent": "Cardllector/0.1", Accept: "application/json" };
+const HEADERS = { "User-Agent": "Tapmat/0.1", Accept: "application/json" };
 const RETRIES = 4;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
