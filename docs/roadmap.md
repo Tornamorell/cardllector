@@ -179,6 +179,11 @@ Lo principal está hecho (ver "Hecho", D24). Falta:
 
 ## Más adelante / ideas
 
+- **Sacar las fotos compartidas de Postgres** (a Cloudflare R2 o Vercel Blob). Medido el
+  2026-09-14: la base ocupa 230 MB de los 500 MB de Neon gratis, casi todo catálogo; cada foto
+  ocupa unos 68 KB, así que con unas 4.000 fotos (unos seis álbumes de fútbol con foto) se
+  llenaría. Los álbumes sin foto ocupan menos de 1 MB cada uno. Neon Launch no tiene mínimo pero
+  saldría por unos 5–12 $ al mes, casi todo cómputo. El usuario lo deja para más adelante.
 - **Pokémon, cartas antiguas:** 1ª edición y shadowless con precio propio (hueco de D18).
 - **Pokémon en el escáner:** las cartas modernas llevan impresos el código de expansión
   (`abbreviation.official`, por ejemplo "MEW") y el número. Encaja con el mismo enfoque de OCR.
