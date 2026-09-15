@@ -62,6 +62,8 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
   const listed = new Map<string, number>();
   for (const r of rows) listed.set(r.oracleId, (listed.get(r.oracleId) ?? 0) + r.quantity);
   const extras = box.filter((b) => b.copies > (listed.get(b.oracleId) ?? 0));
+  // Copies in the box beyond what the list asks for: a double scan, or a card of another deck.
+  const extraCopies = extras.reduce((n, e) => n + e.copies - (listed.get(e.oracleId) ?? 0), 0);
 
   // What each card does: the owner's choice, or the guess from its text.
   const rolesOf = (r: DeckCardRow) => (r.manualRoles as Role[] | null) ?? cardRoles(r);
@@ -155,6 +157,14 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
               )}
               : <strong>{covered}</strong> de {a.size}
               {toBuy > 0 && <span className="text-muted-foreground"> · comprar lo que falta, ~{formatEur(toBuy)}</span>}
+              {extraCopies > 0 && (
+                <>
+                  {" · "}
+                  <a href="#de-mas" className="text-amber-700 hover:underline dark:text-amber-400">
+                    {extraCopies} de más
+                  </a>
+                </>
+              )}
             </p>
             <ProgressMeter value={covered} max={Math.max(a.size, 1)} showLabel={false} className="w-full" />
           </div>
@@ -177,14 +187,34 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
           {section(BOARD_LABELS.side, onBoard("side"))}
           {section(BOARD_LABELS.maybe, onBoard("maybe"))}
           {extras.length > 0 && (
-            <section className="space-y-1">
-              <h3 className="text-muted-foreground border-b pb-1 text-sm font-semibold">En la caja, pero no en la lista</h3>
+            <section id="de-mas" className="scroll-mt-20 space-y-1">
+              <h3 className="text-muted-foreground border-b pb-1 text-sm font-semibold">
+                En la caja, de más <span className="font-normal tabular-nums">({extraCopies})</span>
+              </h3>
+              <p className="text-muted-foreground text-xs">
+                Copias que la lista no pide: un escaneo repetido o una carta de otro mazo. Quítalas o muévelas{" "}
+                {deck.locationId ? (
+                  <Link href={`/locations/${deck.locationId}`} className="hover:text-foreground underline">
+                    desde la caja
+                  </Link>
+                ) : (
+                  "desde la caja"
+                )}
+                .
+              </p>
               <ul className="text-sm">
-                {extras.map((e) => (
-                  <li key={e.oracleId}>
-                    {e.copies - (listed.get(e.oracleId) ?? 0)} {e.name}
-                  </li>
-                ))}
+                {extras.map((e) => {
+                  const inList = listed.get(e.oracleId) ?? 0;
+                  return (
+                    <li key={e.oracleId}>
+                      {e.copies - inList} {e.name}
+                      <span className="text-muted-foreground">
+                        {" "}
+                        · {inList ? `la lista pide ${inList} y hay ${e.copies}` : "no está en la lista"}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           )}
