@@ -41,38 +41,31 @@ import { Textarea } from "@/components/ui/textarea";
 import type { CONDITIONS } from "@/lib/format";
 import { gameById } from "@/lib/games";
 import { GRADING_COMPANIES, GRADING_LABELS } from "@/lib/grading";
+import { useSteppedValue } from "@/lib/use-stepped-value";
+import { cn } from "@/lib/utils";
 
 export function QuantityControl({ itemId, quantity }: { itemId: string; quantity: number }) {
-  const [pending, startTransition] = useTransition();
-  const change = (delta: 1 | -1) =>
-    startTransition(async () => {
-      try {
-        await changeQuantity(itemId, delta);
-      } catch {
-        toast.error("No se ha podido cambiar la cantidad.");
-      }
-    });
+  // Each click counts at once and the server catches up (useSteppedValue).
+  const { shown, pending, step } = useSteppedValue(
+    quantity,
+    (_next, delta) => changeQuantity(itemId, delta > 0 ? 1 : -1),
+    "No se ha podido cambiar la cantidad.",
+  );
 
   return (
-    <div className="flex items-center justify-center gap-1">
+    <div className="flex items-center justify-center gap-1" aria-busy={pending || undefined}>
       <Button
         variant="ghost"
         size="icon-xs"
-        onClick={() => change(-1)}
+        onClick={() => step(shown - 1)}
         // Removing the last copy is a deletion: done from the menu, on purpose.
-        disabled={pending || quantity <= 1}
+        disabled={shown <= 1}
         aria-label="Una copia menos"
       >
         <MinusIcon />
       </Button>
-      <span className="w-8 text-center tabular-nums">{quantity}</span>
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        onClick={() => change(1)}
-        disabled={pending}
-        aria-label="Una copia más"
-      >
+      <span className={cn("w-8 text-center tabular-nums transition-opacity", pending && "opacity-50")}>{shown}</span>
+      <Button variant="ghost" size="icon-xs" onClick={() => step(shown + 1)} aria-label="Una copia más">
         <PlusIcon />
       </Button>
     </div>
@@ -531,6 +524,7 @@ function DeleteDialog({ item, onClose }: { item: ActionItem; onClose: () => void
           <Button
             variant="destructive"
             disabled={pending}
+            aria-busy={pending || undefined}
             onClick={() =>
               startTransition(async () => {
                 try {
@@ -542,7 +536,7 @@ function DeleteDialog({ item, onClose }: { item: ActionItem; onClose: () => void
               })
             }
           >
-            Eliminar
+            {pending ? "Eliminando…" : "Eliminar"}
           </Button>
         </DialogFooter>
       </DialogContent>

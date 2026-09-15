@@ -743,45 +743,61 @@ export function Scanner({
     }
   }
 
-  async function mutate(fn: () => Promise<void>) {
+  /**
+   * Saves a change to the session's copies. `show` puts it on screen at once, before the server
+   * answers, and `undo` takes it back if saving fails: a tap that shows nothing gets tapped again.
+   */
+  async function mutate(fn: () => Promise<void>, show?: () => void, undo?: () => void) {
+    show?.();
     setBusy(true);
     try {
       await fn();
     } catch {
+      undo?.();
       toast.error("No se ha podido guardar el cambio.");
     } finally {
       setBusy(false);
     }
   }
 
+  /** A session line's copies, `delta` more or fewer. */
+  const shift = (key: string, delta: number) =>
+    setEntries((list) => list.map((x) => (x.key === key ? { ...x, count: x.count + delta } : x)));
+
   const plusOne = (e: Entry) =>
-    mutate(async () => {
-      const { defaults, locations } = settings.current;
-      const r = await addItem({
-        catalogCardId: e.match.id,
-        quantity: 1,
-        finish: e.finish,
-        condition: defaults.condition,
-        language: e.lang ?? defaults.language,
-        ...targetFor(defaults, locations),
-        source: "scan",
-      });
-      if (!follow(r)) return;
-      setEntries((list) =>
-        list.map((x) => (x.key === e.key ? { ...x, itemId: r.itemId, count: x.count + 1 } : x)),
-      );
-    });
+    mutate(
+      async () => {
+        const { defaults, locations } = settings.current;
+        const r = await addItem({
+          catalogCardId: e.match.id,
+          quantity: 1,
+          finish: e.finish,
+          condition: defaults.condition,
+          language: e.lang ?? defaults.language,
+          ...targetFor(defaults, locations),
+          source: "scan",
+        });
+        if (!follow(r)) {
+          shift(e.key, -1);
+          return;
+        }
+        setEntries((list) => list.map((x) => (x.key === e.key ? { ...x, itemId: r.itemId } : x)));
+      },
+      () => shift(e.key, 1),
+      () => shift(e.key, -1),
+    );
 
   const minusOne = (e: Entry) =>
-    mutate(async () => {
-      await changeQuantity(e.itemId, -1);
-      setEntries((list) =>
-        list.flatMap((x) =>
-          x.key !== e.key ? [x] : x.count > 1 ? [{ ...x, count: x.count - 1 }] : [],
-        ),
-      );
-      if (readState.current.holdId === e.match.id) readState.current.holdId = null;
-    });
+    mutate(
+      async () => {
+        await changeQuantity(e.itemId, -1);
+        // The last copy of a line takes the line away: only once the server has done it.
+        if (e.count <= 1) setEntries((list) => list.filter((x) => x.key !== e.key));
+        if (readState.current.holdId === e.match.id) readState.current.holdId = null;
+      },
+      e.count > 1 ? () => shift(e.key, -1) : undefined,
+      e.count > 1 ? () => shift(e.key, 1) : undefined,
+    );
 
   const setFinish = (e: Entry, finish: Finish) =>
     mutate(async () => {

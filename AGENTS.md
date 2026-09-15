@@ -56,6 +56,9 @@ sources, decisions and roadmap.
 - shadcn/ui here is the Base UI flavour: use the `render` prop, not `asChild`; style links as
   buttons with `buttonVariants()`.
 - Pure logic gets Vitest tests next to it (`*.test.ts`).
+- Give feedback on the current frame for anything that waits on the server: −/+ counts use
+  `useSteppedValue` (optimistic, `src/lib/use-stepped-value.ts`), and a button that runs an
+  action says it's working while pending («Eliminando…») rather than only going disabled.
 
 ## Commands
 

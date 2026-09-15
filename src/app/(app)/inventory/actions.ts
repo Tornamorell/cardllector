@@ -284,12 +284,15 @@ export async function updateItem(itemId: string, input: UpdateItemInput) {
 
 export async function changeQuantity(itemId: string, delta: 1 | -1) {
   const user = await requireUser();
-  const item = await ownedItem(user.id, itemId);
-  if (item.quantity + delta <= 0) {
-    await db.delete(items).where(eq(items.id, itemId));
-  } else {
-    await db.update(items).set({ quantity: item.quantity + delta }).where(eq(items.id, itemId));
-  }
+  const step = z.union([z.literal(1), z.literal(-1)]).parse(delta);
+  await ownedItem(user.id, itemId);
+  // One statement, not read-then-write: quick clicks, or two devices, mustn't lose a copy.
+  const [kept] = await db
+    .update(items)
+    .set({ quantity: sql`${items.quantity} + ${step}` })
+    .where(and(eq(items.id, itemId), sql`${items.quantity} + ${step} > 0`))
+    .returning({ id: items.id });
+  if (!kept) await db.delete(items).where(eq(items.id, itemId));
   refresh();
 }
 

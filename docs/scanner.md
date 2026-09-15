@@ -137,7 +137,8 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
         nada, una de cada dos es del recuadro, por si lo encontrado no era la carta.
       - Así el recuadro solo hace falta ajustarlo si no la encuentra.
   - **Abajo, flotando, la última carta añadida** en una línea: imagen, nombre, expansión, precio para su acabado y
-    - **cantidad** −/+: `changeQuantity(-1)` o un `addItem` más;
+    - **cantidad** −/+: `changeQuantity(-1)` o un `addItem` más. El número cambia al instante y
+      vuelve atrás si falla;
     - **acabado** con un toque, que pasa al siguiente (Normal/Foil/Etched en Magic, Estándar/Reverse holo en
       Pokémon): `changeFinish()` mueve esas copias al montón con el acabado nuevo, fusionándolas
       si ya existe.

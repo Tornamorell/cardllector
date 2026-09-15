@@ -4,9 +4,11 @@ import { MinusIcon, PlusIcon, XIcon } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useSteppedValue } from "@/lib/use-stepped-value";
+import { cn } from "@/lib/utils";
 import { removeCardFromCollection, setWanted } from "../actions";
 
-/** Copies wanted (−/+) and taking the card off the list. */
+/** Copies wanted (−/+, counted at once) and taking the card off the list. */
 export function EntryControls({
   collectionId,
   catalogCardId,
@@ -18,45 +20,47 @@ export function EntryControls({
   wanted: number;
   name: string;
 }) {
-  const [pending, startTransition] = useTransition();
-  const run = (fn: () => Promise<void>) =>
+  const { shown, pending: saving, step } = useSteppedValue(wanted, (next) =>
+    setWanted(collectionId, catalogCardId, next),
+  );
+  const [removing, startTransition] = useTransition();
+  const remove = () =>
     startTransition(async () => {
       try {
-        await fn();
+        await removeCardFromCollection(collectionId, catalogCardId);
       } catch {
         toast.error("No se ha podido guardar el cambio.");
       }
     });
 
   return (
-    <div className="text-muted-foreground mt-1 flex items-center gap-1">
+    <div
+      className={cn("text-muted-foreground mt-1 flex items-center gap-1", removing && "opacity-50")}
+      aria-busy={saving || removing || undefined}
+    >
       <span className="mr-auto">Quieres</span>
       <Button
         variant="ghost"
         size="icon-xs"
-        disabled={pending || wanted <= 1}
-        onClick={() => run(() => setWanted(collectionId, catalogCardId, wanted - 1))}
+        disabled={removing || shown <= 1}
+        onClick={() => step(shown - 1)}
         aria-label={`Querer una copia menos de ${name}`}
       >
         <MinusIcon />
       </Button>
-      <span className="text-foreground w-5 text-center tabular-nums">{wanted}</span>
+      <span className={cn("text-foreground w-5 text-center tabular-nums transition-opacity", saving && "opacity-50")}>
+        {shown}
+      </span>
       <Button
         variant="ghost"
         size="icon-xs"
-        disabled={pending}
-        onClick={() => run(() => setWanted(collectionId, catalogCardId, wanted + 1))}
+        disabled={removing}
+        onClick={() => step(shown + 1)}
         aria-label={`Querer una copia más de ${name}`}
       >
         <PlusIcon />
       </Button>
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        disabled={pending}
-        onClick={() => run(() => removeCardFromCollection(collectionId, catalogCardId))}
-        aria-label={`Quitar ${name} de la colección`}
-      >
+      <Button variant="ghost" size="icon-xs" disabled={removing} onClick={remove} aria-label={`Quitar ${name} de la colección`}>
         <XIcon />
       </Button>
     </div>

@@ -84,6 +84,15 @@ siendo los de shadcn por si algún día se añade un selector de tema.
 - `src/components/owned-card-tile.tsx`: la carta en la cuadrícula de una expansión o una
   colección. El **+** cuenta al instante (`useOptimistic`): la carta pierde el gris y el número
   sube antes de que conteste el servidor, y vuelve atrás si falla.
+- `src/lib/use-stepped-value.ts` (`useSteppedValue`): los −/+ que guarda el servidor (copias en
+  Mis cartas, copias queridas en una colección, copias en un mazo) funcionan igual.
+  - El número cambia al instante, se atenúa mientras se guarda y vuelve atrás si falla.
+  - Los clics se encolan, porque Next ejecuta las acciones de una en una, y cada uno parte del
+    número ya cambiado.
+  - Antes el botón solo se desactivaba y el número no cambiaba hasta que llegaba la página
+    nueva. En Mis cartas eso tarda, así que se volvía a pulsar. En colecciones y mazos, dos
+    clics seguidos guardaban el mismo número y uno se perdía (2026-09-15).
+  - Lo mismo en el panel del escáner.
 - `src/components/submit-button.tsx`: botón de envío que dice «Creando…» y no se puede pulsar
   dos veces. Los selectores con «+ Nueva…» hacen lo mismo. Además, el servidor reutiliza una
   colección con el mismo nombre creada hace menos de 15 segundos.

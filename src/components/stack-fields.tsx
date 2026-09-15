@@ -103,10 +103,13 @@ export function QuantityStepper({
   value,
   onChange,
   label = "Cantidad",
+  pending = false,
 }: {
   value: number;
   onChange: (value: number) => void;
   label?: string;
+  /** The server hasn't saved it yet (useSteppedValue): the number shows dimmed. */
+  pending?: boolean;
 }) {
   const set = (v: number) => onChange(Math.min(999, Math.max(1, Math.round(v) || 1)));
   const stepClass =
@@ -115,6 +118,7 @@ export function QuantityStepper({
     <div
       role="group"
       aria-label={label}
+      aria-busy={pending || undefined}
       className="border-input bg-background flex h-9 items-center rounded-md border shadow-xs"
     >
       <button
@@ -135,7 +139,10 @@ export function QuantityStepper({
         onChange={(e) => set(Number(e.target.value))}
         onFocus={(e) => e.target.select()}
         aria-label={label}
-        className="h-full w-10 [appearance:textfield] bg-transparent text-center text-sm tabular-nums outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className={cn(
+          "h-full w-10 [appearance:textfield] bg-transparent text-center text-sm tabular-nums outline-none transition-opacity [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+          pending && "opacity-50",
+        )}
       />
       <button
         type="button"

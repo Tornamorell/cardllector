@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { BOARD_LABELS, BOARDS, type Board } from "@/lib/decks/decklist";
 import { ROLE_LABELS, ROLES, type Role } from "@/lib/decks/roles";
 import { formatEur } from "@/lib/format";
+import { useSteppedValue } from "@/lib/use-stepped-value";
 import { cn } from "@/lib/utils";
 import { moveDeckCard, pullIntoDeck, setDeckCardQuantity, setDeckCardRoles } from "../actions";
 
@@ -33,6 +34,8 @@ export type DeckCardView = {
 /** One card of the deck: copies, board, and whether its copies are in the box. */
 export function DeckCardRow({ deckId, card }: { deckId: string; card: DeckCardView }) {
   const [pending, startTransition] = useTransition();
+  // Copies count at once, before the server answers: two quick clicks used to save the same number.
+  const copies = useSteppedValue(card.quantity, (n) => setDeckCardQuantity(deckId, card.board, card.oracleId, n));
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Role[]>(card.roles);
 
@@ -159,8 +162,9 @@ export function DeckCardRow({ deckId, card }: { deckId: string; card: DeckCardVi
         ))}
       </select>
       <QuantityStepper
-        value={card.quantity}
-        onChange={(n) => run(() => setDeckCardQuantity(deckId, card.board, card.oracleId, n))}
+        value={copies.shown}
+        onChange={copies.step}
+        pending={copies.pending}
         label={`Copias de ${card.name}`}
       />
       <Button
