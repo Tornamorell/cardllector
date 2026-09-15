@@ -267,6 +267,17 @@
     color: #1b1630;
   }
 
+  /* The + that adds a foil copy (a Pokémon card's reverse holo): the foil film, so it reads as
+     that finish at a glance. Its text colour comes from the button's classes. */
+  .foil-button {
+    background-image: var(--foil);
+    background-size: 200% 200%;
+    transition: background-position 600ms ease;
+  }
+  .foil-button:hover {
+    background-position: 100% 100%;
+  }
+
   /* Set-symbol colours, as a small diamond before a rarity. */
   .rarity-mark {
     display: inline-block;
@@ -302,6 +313,9 @@
     transform: none !important;
   }
   .card-frame[data-foil]::after {
+    transition: none;
+  }
+  .foil-button {
     transition: none;
   }
 }

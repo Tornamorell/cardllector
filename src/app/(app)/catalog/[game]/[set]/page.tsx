@@ -212,6 +212,7 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
                 number={c.collectorNumber}
                 imageSmall={c.imageSmall}
                 finishes={c.finishes}
+                game={game.id}
                 owned={c.owned}
               />
               <div className="text-xs leading-tight">

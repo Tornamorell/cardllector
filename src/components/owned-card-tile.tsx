@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useOptimistic } from "react";
 import { AddCopyButton } from "@/components/add-copy-button";
 import { CardThumb } from "@/components/card-thumb";
+import { gameById } from "@/lib/games";
 import { cn } from "@/lib/utils";
 
 /**
  * A card in a set or collection grid: grey while you don't have it, with how many you have and
  * a + to add one. The + counts at once (optimistic): the card lights up and the number goes up
- * before the server answers, and goes back if it fails.
+ * before the server answers, and goes back if it fails. A Pokémon card that also comes in
+ * reverse holo gets a + for each finish, the second with the foil film (quickAddFinish).
  */
 export function OwnedCardTile({
   printingId,
@@ -17,6 +19,7 @@ export function OwnedCardTile({
   number,
   imageSmall,
   finishes,
+  game,
   owned,
   wanted,
   withCollection = true,
@@ -27,6 +30,8 @@ export function OwnedCardTile({
   number?: string;
   imageSmall: string | null;
   finishes: string[];
+  /** The card's game: whether it gets a second + (games.ts). */
+  game?: string | null;
   owned: number;
   /** On a collection's page: copies wanted, shown as "owned/wanted" until complete. */
   wanted?: number;
@@ -34,6 +39,10 @@ export function OwnedCardTile({
 }) {
   const [shown, addShown] = useOptimistic(owned, (current, added: number) => current + added);
   const complete = wanted == null ? shown > 0 : shown >= wanted;
+  const config = gameById(game);
+  const quick = config?.quickAddFinish;
+  // Both finishes: each + says which it adds, so the remembered finish doesn't make them the same.
+  const both = !!quick && finishes.includes(quick) && finishes.includes("nonfoil");
 
   return (
     <div className="relative">
@@ -65,7 +74,22 @@ export function OwnedCardTile({
         name={name}
         withCollection={withCollection}
         onStart={() => addShown(1)}
+        finish={both ? "nonfoil" : undefined}
+        finishName={both ? config?.finishLabels.nonfoil : undefined}
       />
+      {both && quick && (
+        <AddCopyButton
+          printingId={printingId}
+          finishes={finishes}
+          name={name}
+          withCollection={withCollection}
+          onStart={() => addShown(1)}
+          finish={quick}
+          finishName={config?.finishLabels[quick]}
+          look="foil"
+          className="top-11"
+        />
+      )}
     </div>
   );
 }

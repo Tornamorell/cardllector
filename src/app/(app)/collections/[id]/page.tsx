@@ -155,6 +155,7 @@ export default async function CollectionPage({
                   number={c.collectorNumber}
                   imageSmall={c.imageSmall}
                   finishes={c.finishes}
+                  game={c.game}
                   owned={c.owned}
                   wanted={c.wanted}
                   withCollection={false}

@@ -43,6 +43,11 @@ export interface GameConfig {
    * that OCR can't read: a name the scanner reads also stands for its suffixed cards.
    */
   titleLogoSuffixes?: boolean;
+  /**
+   * A second + on card tiles (a set, a collection) that adds a copy in this finish at once, for
+   * cards that come in it besides the standard one: Pokémon's reverse holo.
+   */
+  quickAddFinish?: Finish;
 }
 
 export const GAMES: GameConfig[] = [
@@ -103,6 +108,7 @@ export const GAMES: GameConfig[] = [
     sourceName: "TCGdex",
     cardmarketCategory: "Pokemon",
     titleLogoSuffixes: true,
+    quickAddFinish: "foil",
     // TCGdex rarities, lowercased (see normalizeRarity); labels restore the official casing.
     rarities: [
       { value: "common", label: "Common" },

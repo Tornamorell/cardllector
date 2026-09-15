@@ -84,6 +84,11 @@ siendo los de shadcn por si algún día se añade un selector de tema.
 - `src/components/owned-card-tile.tsx`: la carta en la cuadrícula de una expansión o una
   colección. El **+** cuenta al instante (`useOptimistic`): la carta pierde el gris y el número
   sube antes de que conteste el servidor, y vuelve atrás si falla.
+  - Una carta de Pokémon que también sale en reverse holo lleva dos **+**, uno encima del otro.
+    El de arriba añade la «Estándar»; el de abajo, con la película foil (`.foil-button`), la
+    «Reverse holo» (`quickAddFinish` en `games.ts`, 2026-09-15).
+  - Cada uno dice qué acabado añade, en vez del recordado: si no, con «Foil» por defecto los dos
+    harían lo mismo. Es foil de verdad, así que el iridiscente no es de adorno.
 - `src/lib/use-stepped-value.ts` (`useSteppedValue`): los −/+ que guarda el servidor (copias en
   Mis cartas, copias queridas en una colección, copias en un mazo) funcionan igual.
   - El número cambia al instante, se atenúa mientras se guarda y vuelve atrás si falla.
