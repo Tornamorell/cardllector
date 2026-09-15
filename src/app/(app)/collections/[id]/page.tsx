@@ -3,12 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { EntryCopyFields, EntryTarget } from "@/components/entry-target";
-import { OwnedCardTile } from "@/components/owned-card-tile";
 import { ProgressMeter } from "@/components/progress-meter";
-import { RarityMark } from "@/components/rarity-mark";
 import { formatEur, formatInt } from "@/lib/format";
-import { gameById, rarityLabel } from "@/lib/games";
-import { getCollection, listCollectionCards } from "@/lib/queries/collections";
+import { collectionOptions, getCollection, listCollectionCards } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -16,7 +13,7 @@ import { AddSetToCollection } from "./add-set";
 import { CollectionCardAdder } from "./card-adder";
 import { CollectionNotes } from "./collection-notes";
 import { CollectionSettings } from "./collection-settings";
-import { EntryControls } from "./entry-controls";
+import { CollectionGrid } from "./collection-grid";
 
 export const metadata: Metadata = { title: "Colección" };
 
@@ -42,7 +39,13 @@ export default async function CollectionPage({
 
   const collection = await getCollection(user.id, id);
   if (!collection) notFound();
-  const [cards, locations] = await Promise.all([listCollectionCards(user.id, id), locationOptions(user.id)]);
+  const [cards, locations, allCollections] = await Promise.all([
+    listCollectionCards(user.id, id),
+    locationOptions(user.id),
+    collectionOptions(user.id),
+  ]);
+  // Where this collection's cards can be moved or copied to.
+  const others = allCollections.filter((c) => c.id !== collection.id);
 
   const sp = await searchParams;
   const owned = pick(OWNED_FILTERS, param(sp.owned), "all");
@@ -160,39 +163,12 @@ export default async function CollectionPage({
       ) : !shown.length ? (
         <p className="text-muted-foreground py-8 text-center text-sm">No hay cartas con este filtro.</p>
       ) : (
-        <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-          {shown.map((c) => {
-            const game = gameById(c.game);
-            return (
-              <li key={c.id} className="space-y-1.5">
-                <OwnedCardTile
-                  printingId={c.id}
-                  name={c.name}
-                  number={c.collectorNumber}
-                  imageSmall={c.imageSmall}
-                  finishes={c.finishes}
-                  game={c.game}
-                  owned={c.owned}
-                  wanted={c.wanted}
-                  withCollection={false}
-                />
-                <div className="text-xs leading-tight">
-                  <p className="truncate font-medium" title={c.name}>
-                    {c.name}
-                  </p>
-                  <p className="text-muted-foreground flex justify-between gap-1">
-                    <span title={game ? rarityLabel(game, c.rarity) : undefined}>
-                      <RarityMark rarity={c.rarity} />
-                      {c.setCode.toUpperCase()} #{c.collectorNumber}
-                    </span>
-                    <span className="tabular-nums">{formatEur(c.priceEur)}</span>
-                  </p>
-                  <EntryControls collectionId={collection.id} catalogCardId={c.id} wanted={c.wanted} name={c.name} />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <CollectionGrid
+          collectionId={collection.id}
+          collectionName={collection.name}
+          cards={shown}
+          collections={others}
+        />
       )}
     </div>
   );

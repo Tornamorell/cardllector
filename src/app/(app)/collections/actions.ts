@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -206,4 +206,64 @@ export async function removeCardFromCollection(collectionId: string, catalogCard
       ),
     );
   refresh();
+}
+
+const cardIds = z.array(z.uuid()).min(1).max(2000);
+
+const moveCardsInput = z.object({
+  from: z.uuid(),
+  to: z.uuid(),
+  catalogCardIds: cardIds,
+  /** Copy instead of move: they stay in `from` too. */
+  keep: z.boolean().default(false),
+});
+
+/**
+ * Moves printings from one collection to another (or copies them, `keep`), each with its copies
+ * wanted. One the target already lists keeps the larger count (addToCollection): each list
+ * counts owned copies on its own, so adding the two up would ask for copies that aren't needed.
+ */
+export async function moveCollectionCards(input: z.input<typeof moveCardsInput>) {
+  const user = await requireUser();
+  const { from, to, catalogCardIds, keep } = moveCardsInput.parse(input);
+  if (from === to) throw new Error("Es la misma colección");
+  await ownedCollection(user.id, from);
+  const target = await ownedCollection(user.id, to);
+  const rows = await db
+    .select({ catalogCardId: collectionCards.catalogCardId, quantity: collectionCards.quantity })
+    .from(collectionCards)
+    .where(and(eq(collectionCards.collectionId, from), inArray(collectionCards.catalogCardId, catalogCardIds)));
+  await addToCollection(target.id, rows);
+  if (!keep && rows.length) {
+    await db
+      .delete(collectionCards)
+      .where(
+        and(
+          eq(collectionCards.collectionId, from),
+          inArray(
+            collectionCards.catalogCardId,
+            rows.map((r) => r.catalogCardId),
+          ),
+        ),
+      );
+  }
+  refresh();
+  return { moved: rows.length, collectionName: target.name };
+}
+
+/** Takes several printings off the list at once. Owned copies stay in the inventory. */
+export async function removeCardsFromCollection(collectionId: string, catalogCardIds: string[]) {
+  const user = await requireUser();
+  await ownedCollection(user.id, collectionId);
+  const gone = await db
+    .delete(collectionCards)
+    .where(
+      and(
+        eq(collectionCards.collectionId, collectionId),
+        inArray(collectionCards.catalogCardId, cardIds.parse(catalogCardIds)),
+      ),
+    )
+    .returning({ id: collectionCards.catalogCardId });
+  refresh();
+  return { removed: gone.length };
 }
