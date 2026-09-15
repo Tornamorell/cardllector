@@ -162,6 +162,13 @@
       "when": 1789498329839,
       "tag": "0022_collection_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1789505860307,
+      "tag": "0023_photo_review",
+      "breakpoints": true
     }
   ]
 }

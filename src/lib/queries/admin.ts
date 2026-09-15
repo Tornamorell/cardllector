@@ -32,3 +32,34 @@ export async function listUsersForAdmin(): Promise<AdminUserRow[]> {
     order by u.created_at`);
   return rows;
 }
+
+export type AdminPhotoRow = {
+  catalogCardId: string;
+  name: string;
+  setCode: string;
+  number: string;
+  /** "scan" or "upload". */
+  source: string;
+  /** Null if the account that shared it was deleted. */
+  contributor: string | null;
+  updatedAt: Date;
+  reviewedAt: Date | null;
+  reviewer: string | null;
+};
+
+/** The shared photos (D30) for /admin: the ones waiting for review first, then the newest. */
+export async function listPhotosForReview(limit = 200): Promise<AdminPhotoRow[]> {
+  const { rows } = await pool.query<AdminPhotoRow>(
+    `select p.catalog_card_id as "catalogCardId", c.name, c.set_code as "setCode",
+            c.collector_number as number, p.source, u.name as contributor,
+            p.updated_at as "updatedAt", p.reviewed_at as "reviewedAt", r.name as reviewer
+     from catalog_card_photos p
+     join catalog_cards c on c.id = p.catalog_card_id
+     left join "user" u on u.id = p.contributed_by
+     left join "user" r on r.id = p.reviewed_by
+     order by p.reviewed_at is not null, p.updated_at desc
+     limit $1`,
+    [limit],
+  );
+  return rows;
+}

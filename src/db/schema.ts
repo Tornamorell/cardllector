@@ -361,6 +361,12 @@ export const catalogCardPhotos = pgTable("catalog_card_photos", {
   /** Perceptual hash of the photo (src/lib/scan/card-hash.ts): the scanner recognises the card by it (D33). */
   hash: text("hash"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  /**
+   * When an admin checked it was right («Correcta» in /admin), and who. A new photo of the card
+   * clears both: it's a different image, waiting to be reviewed again.
+   */
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  reviewedBy: text("reviewed_by").references(() => user.id, { onDelete: "set null" }),
 });
 
 // ---------------------------------------------------------------------------

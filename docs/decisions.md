@@ -687,6 +687,16 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   pantalla para eso), más roles (por ejemplo, quien importe álbumes), o límites de IA por
   cuenta.
 
+- **Actualización (2026-09-15):**
+  - **Restablecer contraseñas.** Un admin pone una contraseña nueva a otra cuenta, escrita o de
+    14 caracteres al azar, sin letras que se confundan. Se enseña una sola vez, para pasarla, y
+    por defecto se cierran las sesiones de esa cuenta (`setUserPassword` y `revokeUserSessions`
+    del plugin `admin` de Better Auth). La propia no se cambia desde aquí, como el rol.
+  - **Revisar las fotos compartidas (D30).** En `/admin`, las fotos que suben los usuarios,
+    primero las pendientes. «Correcta» las marca como revisadas (`reviewed_at`, `reviewed_by`) y
+    «Eliminar» las borra, y la carta se queda sin imagen. Si alguien sube otra foto de la carta,
+    vuelve a estar pendiente.
+
 ## D35 · Mazos de Magic (Commander), con análisis y copias físicas — 2026-09-13 · provisional
 
 - **Contexto:** el usuario quiere montar sus mazos de Magic, sobre todo de Commander, con un

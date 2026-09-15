@@ -46,7 +46,16 @@ export async function saveCardPhoto(
     .values({ catalogCardId, image: bytes, contributedBy: user.id, source, hash, updatedAt: now })
     .onConflictDoUpdate({
       target: catalogCardPhotos.catalogCardId,
-      set: { image: sql`excluded.image`, contributedBy: user.id, source, hash, updatedAt: now },
+      // A new image: whatever an admin reviewed was the old one.
+      set: {
+        image: sql`excluded.image`,
+        contributedBy: user.id,
+        source,
+        hash,
+        updatedAt: now,
+        reviewedAt: null,
+        reviewedBy: null,
+      },
     });
   const url = cardPhotoUrl(catalogCardId, now);
   await db

@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { user } from "@/db/auth-schema";
+import { catalogCardPhotos } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { ROLES, type Role } from "@/lib/roles";
 import { requireAdmin } from "@/lib/session";
@@ -64,6 +65,41 @@ export async function setDeactivated(userId: string, deactivated: boolean): Prom
   } else {
     await auth.api.unbanUser({ body: { userId: id }, headers: h });
   }
+  revalidatePath("/admin");
+  return {};
+}
+
+/**
+ * Sets a colleague's password — forgotten, or gone somewhere it shouldn't — for the admin to pass
+ * on. `closeSessions` signs them out everywhere, so a device left signed in with the old one stops
+ * working too. Not for one's own account, like the rest of this page.
+ */
+export async function resetPassword(userId: string, password: string, closeSessions: boolean): Promise<Result> {
+  const me = await requireAdmin();
+  const id = z.string().min(1).parse(userId);
+  if (id === me.id) return { error: "Tu propia contraseña no se cambia desde aquí." };
+  const parsed = z.string().min(8).max(128).safeParse(password);
+  if (!parsed.success) return { error: "La contraseña tiene que tener entre 8 y 128 caracteres." };
+  const h = await headers();
+  try {
+    await auth.api.setUserPassword({ body: { userId: id, newPassword: parsed.data }, headers: h });
+    if (closeSessions) await auth.api.revokeUserSessions({ body: { userId: id }, headers: h });
+  } catch (error) {
+    console.error("[admin] setUserPassword", error);
+    return { error: "No se ha podido cambiar la contraseña." };
+  }
+  revalidatePath("/admin");
+  return {};
+}
+
+/** Marks a shared photo as right (D30): it leaves the ones waiting for review. */
+export async function markPhotoReviewed(catalogCardId: string): Promise<Result> {
+  const me = await requireAdmin();
+  const id = z.uuid().parse(catalogCardId);
+  await db
+    .update(catalogCardPhotos)
+    .set({ reviewedAt: new Date(), reviewedBy: me.id })
+    .where(eq(catalogCardPhotos.catalogCardId, id));
   revalidatePath("/admin");
   return {};
 }
