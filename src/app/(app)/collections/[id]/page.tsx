@@ -12,6 +12,7 @@ import { getCollection, listCollectionCards } from "@/lib/queries/collections";
 import { locationOptions } from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
+import { AddSetToCollection } from "./add-set";
 import { CollectionCardAdder } from "./card-adder";
 import { CollectionSettings } from "./collection-settings";
 import { EntryControls } from "./entry-controls";
@@ -118,6 +119,7 @@ export default async function CollectionPage({
       </div>
 
       <CollectionCardAdder collectionId={collection.id} />
+      <AddSetToCollection collectionId={collection.id} />
 
       {/* How the + on each card adds a copy to «Mis cartas»: it used to use these unseen. */}
       {cards.length > 0 && (

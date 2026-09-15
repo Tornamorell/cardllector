@@ -44,13 +44,19 @@ export function SetPicker({
   value,
   onChange,
   label = "Expansión fija",
+  placeholder = "Ninguna",
+  defaultOpen = false,
 }: {
   sets: SetOption[];
   value: SetRef | null;
   onChange: (set: SetRef | null) => void;
   label?: string;
+  /** Shown when nothing is picked. */
+  placeholder?: string;
+  /** Opens the search straight away: a picker that appears because of a click. */
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const selected = value ? (sets.find((s) => keyOf(s) === keyOf(value)) ?? null) : null;
   const groups = GAME_ORDER.map((game) => ({ game, sets: sets.filter((s) => s.game === game.id) })).filter(
     (g) => g.sets.length,
@@ -73,7 +79,7 @@ export function SetPicker({
               <span className="text-muted-foreground shrink-0 text-xs">{selected.code.toUpperCase()}</span>
             </>
           ) : (
-            <span className="text-muted-foreground">Ninguna</span>
+            <span className="text-muted-foreground">{placeholder}</span>
           )}
           <ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4 shrink-0" />
         </button>
