@@ -200,7 +200,10 @@ Importa el repo desde vercel.com. Detecta Next.js solo. Variables de entorno (Pr
 | `AI_ASSISTANT_MONTHLY_USD` | Opcional: lo que puede gastar cada usuario en el asistente por mes natural, en dólares (5 por defecto) |
 
 Las funciones corren en `fra1` (Fráncfort), la misma zona que Neon. Lo fija `vercel.json`
-(`"regions": ["fra1"]`), no el panel.
+(`"regions": ["fra1"]`), no el panel. También deja Fluid compute activado (`"fluid": true`):
+Vercel lo activa por defecto en los proyectos nuevos desde abril de 2025, pero así no depende
+del panel. Reutiliza instancias entre peticiones, aunque tras un rato sin uso la primera sigue
+arrancando en frío, en cualquier plan.
 - Vercel pone `iad1` (Washington) por defecto en los proyectos nuevos. El 2026-09-15 producción
   seguía ahí (`x-vercel-id: cdg1::iad1::…`), aunque esta guía decía que se cambiara en
   *Settings → Functions*.
@@ -209,6 +212,20 @@ Las funciones corren en `fra1` (Fráncfort), la misma zona que Neon. Lo fija `ve
   Pasaba lo mismo con cada búsqueda del escáner en el catálogo y con cada consulta del asistente.
 - Para comprobarlo: `curl -sI https://<dominio>/api/auth/get-session | grep x-vercel-id`. La
   segunda parte es donde corre la función.
+
+**Cambiar de página.** Todas las páginas de la app son dinámicas (datos del usuario), y Next no
+precarga las rutas dinámicas sin un `loading.tsx`. Por eso, al pulsar un enlace no pasaba nada
+visible hasta que llegaba la página entera.
+- `src/app/(app)/loading.tsx` (2026-09-15) es un esqueleto que se precarga y sale al instante;
+  la cabecera y la barra de pestañas se quedan.
+- Medido ese día desde España:
+  - una función en caliente responde en 0,15–0,22 s;
+  - la primera, en frío, en 1,2 s;
+  - conectar a Neon, 250–340 ms, y cada consulta, unos 40 ms, sin arranque en frío de la base
+    de datos.
+- **Descartado:** la caché de sesión de Better Auth en cookie. Con la región ya en `fra1`,
+  ahorraría un par de milisegundos por página, y una cuenta desactivada seguiría entrando hasta
+  que caducara la cookie.
 
 - El script `vercel-build` aplica las migraciones **solo** en producción (`VERCEL_ENV=production`),
   para que un preview no cambie el esquema de la base de datos compartida (D13). Un cambio de
