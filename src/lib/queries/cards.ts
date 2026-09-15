@@ -59,7 +59,7 @@ export async function getSpanishName(oracleId: string) {
   return row?.printedName ?? null;
 }
 
-/** The user's stacks of any printing of this card. */
+/** The user's stacks of any printing of this card, with what the card page's ⋯ menu edits. */
 export async function getOwnedStacks(ownerId: string, oracleId: string) {
   return db
     .select({
@@ -72,6 +72,12 @@ export async function getOwnedStacks(ownerId: string, oracleId: string) {
       grade: items.grade,
       certNumber: items.certNumber,
       estimatedValueEur: items.estimatedValueEur,
+      purchasePriceEur: items.purchasePriceEur,
+      notes: items.notes,
+      sectionId: items.sectionId,
+      name: catalogCards.name,
+      game: catalogCards.game,
+      finishes: catalogCards.finishes,
       /** Cardmarket's price for the finish: "raw" for a graded copy. */
       marketPriceEur: sql<number | null>`${unitPriceEurSql}::float8`,
       locationId: locations.id,

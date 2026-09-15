@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ConditionBadge, LanguageFlag } from "@/components/card-attributes";
 import { SetIcon } from "@/components/card-thumb";
 import { HoloCard } from "@/components/holo-card";
+import { ItemActions, QuantityControl, type ActionItem } from "@/components/item-actions";
 import { RarityMark } from "@/components/rarity-mark";
 import {
   Table,
@@ -26,6 +27,7 @@ import { isAdmin, requireUser } from "@/lib/session";
 import { ValueChart } from "@/components/value-chart";
 import { cn } from "@/lib/utils";
 import { isCardPhoto } from "@/lib/card-photo";
+import { EntryControls } from "../../collections/[id]/entry-controls";
 import { AddCopy } from "./add-copy";
 import { CardPhotoButton } from "./card-photo-button";
 import { WantInCollection } from "./want-in-collection";
@@ -180,37 +182,46 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
           {owned.length > 0 && (
             <div className="space-y-2">
               <h2 className="text-sm font-medium">En tus cartas</h2>
-              <ul className="space-y-1 text-sm">
+              {/* Each stack with the same −/+ and ⋯ menu as in «Mis cartas»: edit, grade, move, split, delete. */}
+              <ul className="space-y-2 text-sm">
                 {owned.map((s) => (
-                  <li key={s.id}>
-                    <span className="font-medium tabular-nums">{s.quantity}×</span>{" "}
-                    {s.setCode.toUpperCase()} #{s.collectorNumber}, {finishLabel(printing.game, s.finish)}{" "}
-                    <ConditionBadge condition={s.condition} /> <LanguageFlag code={s.language} withName />
-                    {s.gradingCompany && (
-                      <>
-                        , <strong>{gradeLabel(s.gradingCompany, s.grade)}</strong>
-                        {s.certNumber && ` (certificado ${s.certNumber})`}
-                        {s.marketPriceEur != null && (
-                          <span className="text-muted-foreground" title="Precio de Cardmarket sin gradear">
-                            , raw {formatEur(s.marketPriceEur)}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {s.estimatedValueEur != null && (
-                      <>
-                        , valor estimado{" "}
-                        <span className="text-primary font-medium">{formatEur(s.estimatedValueEur)}</span>
-                      </>
-                    )}
-                    {s.locationId && (
-                      <>
-                        {" en "}
-                        <Link href={`/locations/${s.locationId}`} className="underline">
-                          {s.locationName}
-                        </Link>
-                      </>
-                    )}
+                  <li
+                    key={s.id}
+                    className="bg-card flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border px-3 py-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      {s.setCode.toUpperCase()} #{s.collectorNumber}, {finishLabel(printing.game, s.finish)}{" "}
+                      <ConditionBadge condition={s.condition} /> <LanguageFlag code={s.language} withName />
+                      {s.gradingCompany && (
+                        <>
+                          , <strong>{gradeLabel(s.gradingCompany, s.grade)}</strong>
+                          {s.certNumber && ` (certificado ${s.certNumber})`}
+                          {s.marketPriceEur != null && (
+                            <span className="text-muted-foreground" title="Precio de Cardmarket sin gradear">
+                              , raw {formatEur(s.marketPriceEur)}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {s.estimatedValueEur != null && (
+                        <>
+                          , valor estimado{" "}
+                          <span className="text-primary font-medium">{formatEur(s.estimatedValueEur)}</span>
+                        </>
+                      )}
+                      {s.locationId && (
+                        <>
+                          {" en "}
+                          <Link href={`/locations/${s.locationId}`} className="underline">
+                            {s.locationName}
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <QuantityControl itemId={s.id} quantity={s.quantity} />
+                      <ItemActions item={actionItem(s)} locations={locations} collections={collections} />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -220,16 +231,14 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
           {lists.length > 0 && (
             <div className="space-y-2">
               <h2 className="text-sm font-medium">En tus colecciones</h2>
-              <ul className="flex flex-wrap gap-2 text-sm">
+              {/* This printing in each list: copies wanted −/+ and taking it off, as on the collection's page. */}
+              <ul className="grid gap-2 text-sm sm:grid-cols-2">
                 {lists.map((l) => (
-                  <li key={l.id}>
-                    <Link
-                      href={`/collections/${l.id}`}
-                      className="bg-card hover:border-primary/60 inline-block rounded-md border px-2.5 py-1"
-                    >
+                  <li key={l.id} className="bg-card rounded-lg border px-3 py-2">
+                    <Link href={`/collections/${l.id}`} className="font-medium hover:underline">
                       {l.name}
-                      {l.wanted > 1 && <span className="text-muted-foreground"> (quieres {l.wanted})</span>}
                     </Link>
+                    <EntryControls collectionId={l.id} catalogCardId={printing.id} wanted={l.wanted} name={printing.name} />
                   </li>
                 ))}
               </ul>
@@ -288,6 +297,29 @@ export default async function CardPage({ params }: PageProps<"/cards/[id]">) {
       )}
     </div>
   );
+}
+
+/** A stack as the ⋯ menu wants it (the same menu as in «Mis cartas»). */
+function actionItem(s: Awaited<ReturnType<typeof getOwnedStacks>>[number]): ActionItem {
+  return {
+    id: s.id,
+    catalogCardId: s.printingId,
+    game: s.game,
+    name: s.name,
+    quantity: s.quantity,
+    finish: s.finish,
+    condition: s.condition,
+    language: s.language,
+    locationId: s.locationId,
+    sectionId: s.sectionId,
+    notes: s.notes,
+    purchasePriceEur: s.purchasePriceEur,
+    estimatedValueEur: s.estimatedValueEur,
+    gradingCompany: s.gradingCompany,
+    grade: s.grade,
+    certNumber: s.certNumber,
+    finishes: s.finishes,
+  };
 }
 
 function Price({
