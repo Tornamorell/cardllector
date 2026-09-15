@@ -72,6 +72,7 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
       oracleId: r.oracleId,
       name: r.name,
       imageSmall: r.imageSmall,
+      imageNormal: r.imageNormal,
       printingId: r.printingId,
       isLand: typeGroup(r.typeLine) === "land",
       quantity: r.quantity,
@@ -157,7 +158,9 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
             </p>
             <ProgressMeter value={covered} max={Math.max(a.size, 1)} showLabel={false} className="w-full" />
           </div>
-          <DeckTools deckId={deck.id} name={deck.name} pullable={pullable} exportText={exportText} />
+          <DeckTools deckId={deck.id} name={deck.name} pullable={pullable} exportText={exportText}>
+            <OpeningHand cards={library} />
+          </DeckTools>
         </div>
       </div>
 
@@ -173,10 +176,6 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
           {TYPE_GROUPS.map((g) => section(TYPE_LABELS[g], onBoard("main").filter((r) => typeGroup(r.typeLine) === g)))}
           {section(BOARD_LABELS.side, onBoard("side"))}
           {section(BOARD_LABELS.maybe, onBoard("maybe"))}
-          <section className="space-y-2">
-            <h3 className="text-muted-foreground border-b pb-1 text-sm font-semibold">Mano de prueba</h3>
-            <OpeningHand cards={library} />
-          </section>
           {extras.length > 0 && (
             <section className="space-y-1">
               <h3 className="text-muted-foreground border-b pb-1 text-sm font-semibold">En la caja, pero no en la lista</h3>

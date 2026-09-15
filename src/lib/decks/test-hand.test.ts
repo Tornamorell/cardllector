@@ -5,6 +5,7 @@ const card = (oracleId: string, quantity: number, isLand = false) => ({
   oracleId,
   name: oracleId,
   imageSmall: null,
+  imageNormal: null,
   printingId: null,
   isLand,
   quantity,

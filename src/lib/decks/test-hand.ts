@@ -5,6 +5,8 @@ export type LibraryCard = {
   oracleId: string;
   name: string;
   imageSmall: string | null;
+  /** The bigger picture, to read the card in the hand; the small one if there's none. */
+  imageNormal: string | null;
   printingId: string | null;
   isLand: boolean;
   quantity: number;

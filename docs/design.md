@@ -107,6 +107,16 @@ siendo los de shadcn por si algún día se añade un selector de tema.
     veía.
 - `src/components/card-fan.tsx`: cartas en abanico.
 - `src/components/holo-card.tsx`: la carta grande que se inclina.
+- `src/app/(app)/decks/[id]/opening-hand.tsx`: la mano de prueba de un mazo.
+  - Se abre desde «Mano de prueba», junto a «Copiar lista», en una vista propia: grande en el
+    ordenador y a pantalla completa en el móvil. Antes eran miniaturas de 56 px al final de la
+    columna del mazo, que no se leían (2026-09-15).
+  - En el ordenador, las cartas en abanico, como una mano en la mesa, con la imagen grande
+    (`image_normal`) y hasta 13,5rem de ancho. Se estrechan al robar para que quepan, y la del
+    puntero sube y se endereza.
+  - En el móvil, una carta grande cada vez, deslizando de lado, con la siguiente asomando; los
+    botones abajo, a mano del pulgar.
+  - Tras un mulligan, cada carta lleva «Al fondo», en vez de tener que atinar en ella.
 - `src/components/rarity-mark.tsx` y `rarityTier()` en `src/lib/games.ts`: rombo del color de la
   rareza.
 - `src/components/logo.tsx`: el logo de **Tapmat**, **«Carta girada»** (D38).

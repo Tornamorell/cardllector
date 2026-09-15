@@ -18,12 +18,15 @@ export function DeckTools({
   name,
   pullable,
   exportText,
+  children,
 }: {
   deckId: string;
   name: string;
   /** Copies the box lacks that are free elsewhere. */
   pullable: number;
   exportText: string;
+  /** More tools in the same row, after copying the list (the test hand). */
+  children?: React.ReactNode;
 }) {
   const [mode, setMode] = useState<Mode>(null);
   const [text, setText] = useState("");
@@ -92,6 +95,7 @@ export function DeckTools({
           <ClipboardCopyIcon />
           Copiar lista
         </Button>
+        {children}
         <Button
           size="sm"
           variant="ghost"

@@ -49,6 +49,8 @@ export type DeckCardRow = DeckCardInfo & {
   /** The printing of the owner's copy in the box, if there's one there. */
   boxedPrintingId: string | null;
   imageSmall: string | null;
+  /** The same printing's bigger picture (Scryfall's «normal»): the test hand shows cards big. */
+  imageNormal: string | null;
   setCode: string | null;
   collectorNumber: string | null;
   /** Copies of this card (any printing, ungraded) in the deck's box. */
@@ -75,6 +77,7 @@ export async function deckCardRows(ownerId: string, deckId?: string): Promise<De
             coalesce(boxed.id, pref.id, latest.id) as "printingId",
             boxed.id as "boxedPrintingId",
             coalesce(boxed.image_small, pref.image_small, latest.image_small) as "imageSmall",
+            coalesce(boxed.image_normal, pref.image_normal, latest.image_normal) as "imageNormal",
             coalesce(boxed.set_code, pref.set_code, latest.set_code) as "setCode",
             coalesce(boxed.collector_number, pref.collector_number, latest.collector_number) as "collectorNumber",
             coalesce(boxed.value, pref.price_eur, cheap.price_eur)::float8 as "priceEur",
@@ -92,14 +95,14 @@ export async function deckCardRows(ownerId: string, deckId?: string): Promise<De
        order by c.price_eur limit 1
      ) cheap on true
      left join lateral (
-       select c.id, c.image_small, c.set_code, c.collector_number from catalog_cards c
+       select c.id, c.image_small, c.image_normal, c.set_code, c.collector_number from catalog_cards c
        where c.game = 'mtg' and c.oracle_id = dc.oracle_id and c.image_small is not null
        order by c.released_at desc nulls last limit 1
      ) latest on true
      -- The owner's copy in the box: the chosen printing if it's there, else the most valuable.
      -- Its value is itemValueEurSql's (pricing.ts): the owner's estimate, else the market price.
      left join lateral (
-       select c.id, c.image_small, c.set_code, c.collector_number,
+       select c.id, c.image_small, c.image_normal, c.set_code, c.collector_number,
               coalesce(i.estimated_value_eur,
                        case i.finish when 'nonfoil' then c.price_eur when 'foil' then c.price_eur_foil end) as value
        from items i
