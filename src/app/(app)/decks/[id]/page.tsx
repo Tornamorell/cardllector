@@ -128,7 +128,7 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
       <Breadcrumbs items={[{ label: "Mazos", href: "/decks" }, { label: deck.name }]} />
 
       <div className="flex flex-wrap items-start gap-4">
-        <div className="flex shrink-0 -space-x-10">
+        <div className="flex shrink-0 items-start -space-x-10">
           {commanders.length ? (
             commanders.map((c) => <CardThumb key={c.oracleId} src={c.imageSmall} alt={c.name} size="md" />)
           ) : (

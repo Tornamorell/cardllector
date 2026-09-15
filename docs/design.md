@@ -99,6 +99,9 @@ siendo los de shadcn por si algún día se añade un selector de tema.
 - `src/components/card-thumb.tsx`: carta con sombra; `foil` añade la película.
   - El marco no encoge en filas flexibles (`flex: none`), y la imagen lo llena en posición
     absoluta. Así se evita el recorte que hacía Safari en iOS.
+  - Tampoco debe estirarse en alto. Un grupo de miniaturas dentro de una fila flexible lleva
+    `items-start`: sin él, se estiraban hasta la altura de la ficha, perdían el 63:88 y la carta
+    salía recortada por los lados (lista de mazos, 2026-09-15).
 - `src/components/items-table-view.tsx`: las cartas de Mis cartas y de las ubicaciones.
   - En el móvil es una lista de fichas: miniatura, nombre, etiquetas, cantidad, total y el menú
     ⋯, todo a la vista.

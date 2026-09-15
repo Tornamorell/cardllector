@@ -61,7 +61,8 @@ export default async function DecksPage() {
                   href={`/decks/${d.id}`}
                   className="bg-card hover:border-primary/60 flex h-full gap-4 rounded-xl border p-4 transition-colors"
                 >
-                  <div className="flex shrink-0 -space-x-6">
+                  {/* items-start: stretched to the tile's height, the frames lost their 63:88 and cropped the card. */}
+                  <div className="flex shrink-0 items-start -space-x-6">
                     {commanders.length ? (
                       commanders.map((c) => <CardThumb key={c.oracleId} src={c.imageSmall} alt={c.name} size="sm" />)
                     ) : (
