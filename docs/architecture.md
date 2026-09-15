@@ -68,9 +68,16 @@ de `addItem`:
 - olvida un destino que ya no existe;
 - sigue el paso automático al siguiente separador y avisa de que hay que ponerlo.
 
-En las tablas de cartas, las casillas seleccionan montones. Una barra abajo permite moverlos a
-otra ubicación y separador, o añadirlos a una colección. «Mover…», en el menú de cada carta,
-mueve solo algunas copias (`moveItems`, D28).
+En las tablas de cartas, las casillas seleccionan montones. Una barra abajo permite:
+- moverlos a otra ubicación y separador;
+- añadirlos a una colección;
+- cambiarles a la vez el estado, el idioma o el acabado («Editar…», `updateItems`, 2026-09-15).
+  Lo que no se toca se queda como está. Un montón que queda igual que otro se junta con él, como
+  al mover, salvo los gradeados o con valor estimado. Si la edición no sale en ese acabado, se
+  queda con el suyo y se avisa;
+- eliminarlos (`deleteItems`), con confirmación.
+
+«Mover…», en el menú de cada carta, mueve solo algunas copias (`moveItems`, D28).
 
 La búsqueda de los formularios de alta (`useCardPicker`, `/api/search`) acepta dos cosas:
 

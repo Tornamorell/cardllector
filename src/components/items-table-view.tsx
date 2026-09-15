@@ -1,9 +1,10 @@
 "use client";
 
-import { MoveIcon, XIcon } from "lucide-react";
+import { MoveIcon, PencilIcon, Trash2Icon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { AddFilteredToCollection } from "@/components/add-filtered-to-collection";
+import { BulkDeleteDialog, BulkEditDialog } from "@/components/bulk-actions";
 import { ConditionBadge, LanguageFlag } from "@/components/card-attributes";
 import { CardThumb } from "@/components/card-thumb";
 import type { CollectionOption } from "@/components/collection-picker";
@@ -29,8 +30,8 @@ import { cn } from "@/lib/utils";
 type Context = "inventory" | "location";
 
 /**
- * Stacks of the inventory, selectable: ticking rows brings up a bar to move them elsewhere or
- * list them in a collection (D28). Phones get a list with everything in view — a wide table
+ * Stacks of the inventory, selectable: ticking rows brings up a bar to move them elsewhere, list
+ * them in a collection (D28), change their condition, language or finish, or delete them. Phones get a list with everything in view — a wide table
  * there hid the details and the menu behind a sideways scroll nobody noticed; from `md` up,
  * the table. In the full inventory each row shows where it is; on a location's page, only its
  * divider.
@@ -48,6 +49,7 @@ export function ItemsTableView({
 }) {
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [moving, setMoving] = useState(false);
+  const [bulk, setBulk] = useState<"edit" | "delete" | null>(null);
   // Rows change after an action (moved copies leave a location's page): count what's shown.
   const chosen = rows.filter((r) => selected.has(r.id));
   const allChosen = rows.length > 0 && chosen.length === rows.length;
@@ -204,7 +206,7 @@ export function ItemsTableView({
         <div
           role="region"
           aria-label="Cartas seleccionadas"
-          className="bg-popover fixed inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-xl flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 shadow-lg md:bottom-6"
+          className="bg-popover fixed inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 shadow-lg md:bottom-6"
         >
           <span className="text-sm">
             <strong className="tabular-nums">{formatInt(chosen.length)}</strong>{" "}
@@ -223,6 +225,14 @@ export function ItemsTableView({
               filter={{ itemIds: chosen.map((r) => r.id) }}
               label="A una colección"
             />
+            <Button size="sm" variant="outline" onClick={() => setBulk("edit")}>
+              <PencilIcon />
+              Editar…
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setBulk("delete")}>
+              <Trash2Icon />
+              Eliminar
+            </Button>
             <Button size="icon-sm" variant="ghost" onClick={clear} aria-label="Quitar la selección">
               <XIcon />
             </Button>
@@ -237,6 +247,12 @@ export function ItemsTableView({
           onClose={() => setMoving(false)}
           onMoved={clear}
         />
+      )}
+      {bulk === "edit" && (
+        <BulkEditDialog itemIds={chosen.map((r) => r.id)} copies={copies} onClose={() => setBulk(null)} onDone={clear} />
+      )}
+      {bulk === "delete" && (
+        <BulkDeleteDialog itemIds={chosen.map((r) => r.id)} copies={copies} onClose={() => setBulk(null)} onDone={clear} />
       )}
     </>
   );

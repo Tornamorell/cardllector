@@ -7,6 +7,7 @@ import { db } from "@/db/client";
 import { catalogCards, collections, items, locations } from "@/db/schema";
 import { addToCollection } from "@/lib/collections/entries";
 import { CONDITIONS } from "@/lib/format";
+import { applyBulkChange, sameLook } from "@/lib/items/bulk-edit";
 import { nextSection, ownedSection, sectionCount } from "@/lib/locations/sections";
 import { itemFilters } from "@/lib/queries/items";
 import { requireUser } from "@/lib/session";
@@ -331,6 +332,73 @@ export async function deleteItem(itemId: string) {
   await ownedItem(user.id, itemId);
   await db.delete(items).where(eq(items.id, itemId));
   refresh();
+}
+
+const bulkEditInput = z.object({
+  itemIds: z.array(z.uuid()).min(1).max(1000),
+  finish: z.enum(["nonfoil", "foil", "etched"]).optional(),
+  condition: z.enum(CONDITIONS).optional(),
+  language: z.string().min(2).max(3).optional(),
+});
+
+/**
+ * Changes the condition, language and/or finish of several stacks at once («Editar…» in the
+ * selection bar). A plain stack that ends up identical to another joins it, as when moving;
+ * graded or specially valued ones stay apart (sameStack). A finish the printing doesn't come in
+ * is left as it was, and counted.
+ */
+export async function updateItems(input: z.input<typeof bulkEditInput>) {
+  const user = await requireUser();
+  const { itemIds, ...change } = bulkEditInput.parse(input);
+  const stacks = await db
+    .select({ item: items, finishes: catalogCards.finishes })
+    .from(items)
+    .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
+    .where(and(eq(items.ownerId, user.id), inArray(items.id, itemIds)));
+
+  let changed = 0;
+  let joined = 0;
+  let finishSkipped = 0;
+  await db.transaction(async (tx) => {
+    for (const { item, finishes } of stacks) {
+      const { next, finishSkipped: skipped } = applyBulkChange(item, item.catalogCardId ? (finishes ?? null) : null, change);
+      if (skipped) finishSkipped++;
+      if (sameLook(next, item)) continue;
+      changed++;
+      const plain = !item.gradingCompany && item.estimatedValueEur == null;
+      const [same] = plain
+        ? await tx
+            .select({ id: items.id })
+            .from(items)
+            .where(and(sameStack(user.id, { ...item, ...next }), ne(items.id, item.id)))
+            .limit(1)
+        : [];
+      if (same) {
+        await tx
+          .update(items)
+          .set({ quantity: sql`${items.quantity} + ${item.quantity}` })
+          .where(eq(items.id, same.id));
+        await tx.delete(items).where(eq(items.id, item.id));
+        joined++;
+      } else {
+        await tx.update(items).set(next).where(eq(items.id, item.id));
+      }
+    }
+  });
+  refresh();
+  return { changed, joined, finishSkipped };
+}
+
+/** Deletes several stacks at once (the selection bar). Returns how many stacks and copies went. */
+export async function deleteItems(itemIds: string[]) {
+  const user = await requireUser();
+  const ids = z.array(z.uuid()).min(1).max(1000).parse(itemIds);
+  const gone = await db
+    .delete(items)
+    .where(and(eq(items.ownerId, user.id), inArray(items.id, ids)))
+    .returning({ quantity: items.quantity });
+  refresh();
+  return { stacks: gone.length, copies: gone.reduce((n, r) => n + r.quantity, 0) };
 }
 
 /**
