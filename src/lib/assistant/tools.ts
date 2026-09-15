@@ -16,6 +16,29 @@ import {
 
 const id = (what: string) => z.uuid().describe(`The ${what}'s id, from an earlier result`);
 
+/**
+ * The JSON Schema the SDK builds from zod is long-winded: each described field behind a `$ref`,
+ * a `$schema` URL, and a 150-character regex on every uuid. The model reads it on every question
+ * — most of the cached prefix — so it's flattened here; input is still validated with zod.
+ */
+function leanSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  const defs = (schema.$defs ?? {}) as Record<string, unknown>;
+  const inline = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(inline);
+    if (!node || typeof node !== "object") return node;
+    const { $ref, ...rest } = node as Record<string, unknown>;
+    const target = typeof $ref === "string" ? defs[$ref.replace("#/$defs/", "")] : undefined;
+    const merged: Record<string, unknown> = { ...(target && typeof target === "object" ? target : {}), ...rest };
+    if (merged.format === "uuid") delete merged.pattern;
+    for (const [key, value] of Object.entries(merged)) merged[key] = inline(value);
+    return merged;
+  };
+  const body = { ...schema };
+  delete body.$schema;
+  delete body.$defs;
+  return inline(body) as Record<string, unknown>;
+}
+
 /** The tools for one user; `onUse` hears each call, for the chat's «Buscando…» line. */
 export function assistantTools(ownerId: string, onUse: (tool: string) => void) {
   const tool = <S extends z.ZodObject>(
@@ -23,21 +46,29 @@ export function assistantTools(ownerId: string, onUse: (tool: string) => void) {
     description: string,
     inputSchema: S,
     run: (input: z.infer<S>) => Promise<unknown>,
-  ) =>
-    betaZodTool({
+  ) => {
+    const t = betaZodTool({
       name,
       description,
       inputSchema,
       run: async (input) => {
         onUse(name);
         try {
-          return JSON.stringify((await run(input)) ?? { error: "Not found among this user's data." });
+          const result = JSON.stringify((await run(input)) ?? { error: "Not found among this user's data." });
+          // Each lookup's size, in Vercel's logs: it's re-sent on every later step of the answer.
+          console.info(`[assistant] ${name}: ${result.length} characters`);
+          return result;
         } catch (error) {
           console.error(`[assistant] ${name}`, error);
           return JSON.stringify({ error: "That lookup failed." });
         }
       },
     });
+    // Always a custom tool with an input_schema; the SDK's type also allows its built-in ones.
+    const custom = t as unknown as { input_schema: Record<string, unknown> };
+    custom.input_schema = leanSchema(custom.input_schema);
+    return t;
+  };
 
   return [
     tool(
@@ -58,7 +89,7 @@ export function assistantTools(ownerId: string, onUse: (tool: string) => void) {
         min_value_eur: z.number().optional().describe("Only copies worth at least this each"),
         graded: z.boolean().optional(),
         sort: z.enum(["value", "name", "recent"]).optional().describe("'value' (default): most valuable first"),
-        limit: z.number().int().min(1).max(50).optional().describe("Stacks to return, 25 by default"),
+        limit: z.number().int().min(1).max(50).optional().describe("Stacks to return, 10 by default"),
       }),
       (i) =>
         searchOwnedCards(ownerId, {

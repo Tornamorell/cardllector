@@ -883,6 +883,42 @@ Estados posibles: `provisional`, `sustituida por Dnn` o `descartada`.
   - **Coste:** igual. Las conversaciones antiguas no se envían; solo la que se está usando, como
     antes. La línea de contexto son unas decenas de tokens y ahorra buscar de qué mazo se habla.
   - **Descartado:** guardarlas solo en el navegador (cada dispositivo tendría las suyas).
+- **Actualización (2026-09-15, el usuario lo veía caro):**
+  - **Medido en `ai_chat_turns`:** 3 respuestas en 30 días, a 0,05–0,07 $ cada una, más del
+    triple de lo medido al decidirlo. El 81 % era escritura en caché, y la caché de la
+    conversación casi no se reaprovecha entre preguntas: el usuario pregunta con horas de
+    diferencia.
+  - **Lo que pesaba:** lo que devuelven las herramientas, que se escribe en caché y se reenvía
+    en cada paso de la respuesta. Contado con `count_tokens` sobre los datos reales del usuario:
+    - `get_deck` de un mazo de 100 cartas: 12.071 tokens;
+    - `search_my_cards` por defecto: 4.674;
+    - `find_owned_magic_cards`: 4.988;
+    - las definiciones de las siete herramientas: 3.430, reescritas en cada pregunta.
+  - **Cambios:**
+    - Las cartas van en líneas con las columnas nombradas una vez (`src/lib/assistant/lines.ts`),
+      en vez de objetos JSON que repetían cada clave en cada fila. En el mazo, por tablero, y
+      dónde están las copias solo si no están todas en la caja.
+    - `search_my_cards` devuelve 10 filas por defecto, no 25, y el enlace de cada ubicación una
+      sola vez; `search_catalog`, 5 ediciones por carta, no 10.
+    - Los esquemas de las herramientas se aplanan (`leanSchema` en `tools.ts`). El SDK los
+      generaba con una `$ref` por cada campo con descripción, la URL `$schema` y una expresión
+      regular de 150 caracteres por uuid. La entrada se sigue validando con zod.
+    - Cada consulta apunta su tamaño en los logs (`[assistant] get_deck: N characters`).
+  - **Resultado, con los mismos datos:**
+    - `get_deck`: 6.581 tokens (−45 %), 11.802 con el texto de reglas (antes 17.285);
+    - `search_my_cards`: 1.237 (−74 %);
+    - `find_owned_magic_cards`: 3.832 (−23 %);
+    - `search_catalog`: 845 (−34 %);
+    - las definiciones: 2.230 (−35 %).
+
+    Estimado, sin medir en respuestas reales: una pregunta sobre el mazo pasa de ~0,05 $ a
+    ~0,033 $, y una sobre tus cartas, a menos de la mitad.
+  - **Descartado de momento:**
+    - la caché de 1 hora, porque las preguntas llegan con más de una hora de diferencia;
+    - la búsqueda de herramientas y los skills, que no compensan con 7 herramientas y 941
+      tokens de instrucciones;
+    - bajar el esfuerzo o cambiar de modelo, que cambiarían las respuestas y habría que
+      compararlas antes.
 
 ## D38 · La app se llama Tapmat — 2026-09-14 · provisional
 

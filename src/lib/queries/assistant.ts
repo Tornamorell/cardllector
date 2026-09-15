@@ -17,7 +17,9 @@ import { MAX_TURNS, type ChatTurn } from "@/lib/assistant/history";
 import { parsePagePath } from "@/lib/assistant/page";
 import { gameBySlug } from "@/lib/games";
 import { itemValueEurSql } from "@/lib/collection/pricing";
+import { toLine } from "@/lib/assistant/lines";
 import { analyzeDeck } from "@/lib/decks/analysis";
+import { BOARDS } from "@/lib/decks/decklist";
 import { cardRoles, roleCounts, type Role } from "@/lib/decks/roles";
 import { getCollection, listCollectionCards, listCollections } from "./collections";
 import { boxContents, deckCardRows, getDeck, listDecks } from "./decks";
@@ -252,13 +254,35 @@ export async function searchOwnedCards(ownerId: string, f: OwnedCardFilters) {
       .leftJoin(locationSections, eq(locationSections.id, items.sectionId))
       .where(where)
       .orderBy(...orderBy)
-      .limit(Math.min(f.limit ?? 25, 50)),
+      .limit(Math.min(f.limit ?? 10, 50)),
     db
       .select({ stacks: sql<number>`count(*)::int`, ...stackAggregates })
       .from(items)
       .leftJoin(catalogCards, eq(catalogCards.id, items.catalogCardId))
       .where(where),
   ]);
+  // Lines, not objects (lines.ts); each location's path once, not on every line.
+  const places: Record<string, string> = {};
+  const cards = rows.map((r) => {
+    const location = r.location ?? "Sin ubicación";
+    places[location] = `/locations/${r.locationId ?? "none"}`;
+    return toLine([
+      r.quantity,
+      r.name,
+      r.setCode ? `${r.setName ?? r.setCode} (${r.setCode.toUpperCase()})` : null,
+      r.number,
+      r.rarity,
+      r.finish,
+      r.condition,
+      r.language,
+      r.valueEur == null ? null : `${round2(r.valueEur)}${r.ownEstimate ? " (own estimate)" : ""}`,
+      r.grading ? `${r.grading} ${r.grade ?? ""}`.trim() : null,
+      r.section ? `${location} › ${r.section}` : location,
+      r.printingId ? `/cards/${r.printingId}` : null,
+      r.attributes ? Object.entries(r.attributes).map(([k, v]) => `${k}: ${v}`).join(", ") : null,
+      r.notes,
+    ]);
+  });
   return {
     matches: {
       stacks: totals.stacks,
@@ -266,28 +290,10 @@ export async function searchOwnedCards(ownerId: string, f: OwnedCardFilters) {
       valueEur: round2(totals.valueEur),
       unpricedCopies: totals.unpricedCount,
     },
-    cards: rows.map((r) =>
-      compact({
-        path: r.printingId ? `/cards/${r.printingId}` : null,
-        name: r.name,
-        details: r.attributes,
-        game: r.game,
-        set: r.setCode ? `${r.setName ?? r.setCode} (${r.setCode.toUpperCase()})` : null,
-        number: r.number,
-        rarity: r.rarity,
-        copies: r.quantity,
-        finish: r.finish,
-        condition: r.condition,
-        language: r.language,
-        valueEurEach: round2(r.valueEur),
-        valueIsOwnEstimate: r.ownEstimate,
-        graded: r.grading ? `${r.grading} ${r.grade ?? ""}`.trim() : null,
-        location: r.location ?? "Sin ubicación",
-        locationPath: `/locations/${r.locationId ?? "none"}`,
-        section: r.section,
-        notes: r.notes,
-      }),
-    ),
+    columns:
+      "copies | name | set | number | rarity | finish | condition | language | € each | graded | location › divider | path | details | notes",
+    cards,
+    locationPaths: places,
   };
 }
 
@@ -360,24 +366,26 @@ export async function ownedMagicByRules(ownerId: string, f: OwnedMagicFilters) {
     ],
   );
   const found = f.role ? rows.filter((r) => cardRoles(r).includes(f.role!)) : rows;
+  // Lines, not objects (lines.ts), like get_deck's.
   return {
     found: found.length,
+    columns: "name | type | mana cost | identity | roles | copies | free copies | where | notes | path | rules text",
     cards: found.slice(0, Math.min(f.limit ?? 30, 60)).map((r) =>
-      compact({
-        path: `/cards/${r.printingId}`,
-        name: r.name,
-        type: r.typeLine,
-        cost: r.manaCost,
-        cmc: r.cmc,
-        identity: r.colorIdentity.join("") || "C",
-        roles: cardRoles(r),
-        text: trimText(r.oracleText),
-        commanderLegality: r.commanderLegality === "legal" ? null : r.commanderLegality,
-        gameChanger: r.gameChanger,
-        copies: r.copies,
-        freeCopies: r.freeCopies,
-        where: r.places,
-      }),
+      toLine([
+        r.name,
+        r.typeLine,
+        r.manaCost,
+        r.colorIdentity.join("") || "C",
+        cardRoles(r).join(" "),
+        r.copies,
+        r.freeCopies,
+        r.places.join(", "),
+        [r.gameChanger && "Game Changer", r.commanderLegality && r.commanderLegality !== "legal" && `commander: ${r.commanderLegality}`]
+          .filter(Boolean)
+          .join(", "),
+        `/cards/${r.printingId}`,
+        trimText(r.oracleText),
+      ]),
     ),
   };
 }
@@ -421,6 +429,16 @@ export async function collectionDetail(ownerId: string, id: string, show: "all" 
 
 const CURVE_LABELS = ["0", "1", "2", "3", "4", "5", "6", "7+"];
 
+/** Where a played card's copies are, when not all in the deck's box; empty when they are. */
+function missingFromBox(r: { quantity: number; inBox: number; free: number; freeWhere: string[]; inOtherDecks: number }) {
+  if (r.inBox >= r.quantity) return null;
+  const parts = [`${r.quantity - r.inBox} not in the box`];
+  if (r.free > 0) parts.push(`${r.free} free in ${r.freeWhere.join(", ")}`);
+  if (r.inOtherDecks > 0) parts.push(`${r.inOtherDecks} in other decks`);
+  if (r.free <= 0 && r.inOtherDecks <= 0) parts.push("not owned");
+  return parts.join(", ");
+}
+
 /** A deck: its analysis (as its page shows it), its cards and where their copies are. */
 export async function deckDetail(ownerId: string, id: string, includeText: boolean) {
   const deck = await getDeck(ownerId, id);
@@ -460,24 +478,30 @@ export async function deckDetail(ownerId: string, id: string, includeText: boole
       unpricedCopies: a.unpriced,
       roles: roleCounts(rows.map((r) => ({ board: r.board, quantity: r.quantity, roles: rolesOf(r) }))),
     },
-    cards: rows.map((r) =>
-      compact({
-        board: r.board,
-        quantity: r.quantity,
-        name: r.name,
-        path: r.printingId ? `/cards/${r.printingId}` : null,
-        type: r.typeLine,
-        cost: r.manaCost,
-        cmc: r.cmc,
-        roles: rolesOf(r),
-        priceEur: round2(r.priceEur),
-        gameChanger: r.gameChanger,
-        commanderLegality: r.commanderLegality === "legal" ? null : r.commanderLegality,
-        copies: played(r.board)
-          ? compact({ inBox: r.inBox, free: r.free, freeWhere: r.freeWhere, inOtherDecks: r.inOtherDecks })
-          : null,
-        text: includeText ? trimText(r.oracleText) : null,
-      }),
+    // One line per card, by board (lines.ts): as objects, a hundred cards took ~12,000 tokens.
+    cardColumns: `copies | name | type | mana cost | roles | € each | path | notes | copies missing from the box (empty: all there)${includeText ? " | rules text" : ""}`,
+    cards: Object.fromEntries(
+      BOARDS.map((board) => [
+        board,
+        rows
+          .filter((r) => r.board === board)
+          .map((r) =>
+            toLine([
+              r.quantity,
+              r.name,
+              r.typeLine,
+              r.manaCost,
+              rolesOf(r).join(" "),
+              round2(r.priceEur),
+              r.printingId ? `/cards/${r.printingId}` : null,
+              [r.gameChanger && "Game Changer", r.commanderLegality && r.commanderLegality !== "legal" && `commander: ${r.commanderLegality}`]
+                .filter(Boolean)
+                .join(", "),
+              played(r.board) ? missingFromBox(r) : null,
+              includeText ? trimText(r.oracleText) : null,
+            ]),
+          ),
+      ]).filter(([, lines]) => lines.length),
     ),
     inBoxButNotListed: box
       .filter((b) => b.copies > (listed.get(b.oracleId) ?? 0))
@@ -589,7 +613,7 @@ export async function catalogLookup(ownerId: string, query: string) {
           : null,
         printings: mine.length,
         cheapestEur: prices.length ? round2(Math.min(...prices)) : null,
-        newestPrintings: mine.slice(0, 10).map((p) =>
+        newestPrintings: mine.slice(0, 5).map((p) =>
           compact({
             path: `/cards/${p.id}`,
             set: `${p.setName ?? p.setCode} (${p.setCode.toUpperCase()})`,
