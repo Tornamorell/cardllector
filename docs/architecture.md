@@ -198,7 +198,17 @@ Importa el repo desde vercel.com. Detecta Next.js solo. Variables de entorno (Pr
 | `ANTHROPIC_API_KEY` | Opcional: activa «Identificar con IA» en el escáner (D31) y el asistente (D37). Sin ella, el botón no sale y el asistente dice que no está configurado |
 | `AI_IDENTIFY_DAILY_LIMIT` | Opcional: identificaciones con IA por usuario cada 24 horas (150 por defecto) |
 | `AI_ASSISTANT_MONTHLY_USD` | Opcional: lo que puede gastar cada usuario en el asistente por mes natural, en dólares (5 por defecto) |
-En *Settings → Functions*, pon la región `fra1`, la misma zona que Neon.
+
+Las funciones corren en `fra1` (Fráncfort), la misma zona que Neon. Lo fija `vercel.json`
+(`"regions": ["fra1"]`), no el panel.
+- Vercel pone `iad1` (Washington) por defecto en los proyectos nuevos. El 2026-09-15 producción
+  seguía ahí (`x-vercel-id: cdg1::iad1::…`), aunque esta guía decía que se cambiara en
+  *Settings → Functions*.
+- Así, cada consulta a la base de datos cruzaba el Atlántico. Una página hace varias seguidas (la
+  sesión y después las suyas), y un cambio en «Mis cartas» sumaba la acción y la página entera.
+  Pasaba lo mismo con cada búsqueda del escáner en el catálogo y con cada consulta del asistente.
+- Para comprobarlo: `curl -sI https://<dominio>/api/auth/get-session | grep x-vercel-id`. La
+  segunda parte es donde corre la función.
 
 - El script `vercel-build` aplica las migraciones **solo** en producción (`VERCEL_ENV=production`),
   para que un preview no cambie el esquema de la base de datos compartida (D13). Un cambio de
