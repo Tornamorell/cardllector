@@ -84,7 +84,7 @@ export function CollectionSettings({
             </div>
             <DialogFooter>
               <Button type="submit" disabled={pending}>
-                Guardar
+                {pending ? "Guardando…" : "Guardar"}
               </Button>
             </DialogFooter>
           </form>
@@ -109,7 +109,7 @@ export function CollectionSettings({
               // deleteCollection redirects to /collections; no catch, or it would swallow it.
               onClick={() => startTransition(() => deleteCollection(id))}
             >
-              Eliminar
+              {pending ? "Eliminando…" : "Eliminar"}
             </Button>
           </DialogFooter>
         </DialogContent>

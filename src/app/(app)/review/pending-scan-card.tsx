@@ -32,6 +32,8 @@ export function PendingScanCard({ scan }: { scan: PendingScan }) {
   const [condition, setCondition] = useState(scan.condition);
   const [language, setLanguage] = useState(scan.language);
   const [pending, startTransition] = useTransition();
+  // Its own transition, so each button says what's happening: «Añadiendo…» or «Descartando…».
+  const [discarding, startDiscard] = useTransition();
   const printing = picker.printing;
   const cardFinish = printing ? (finishFor(finish, printing.finishes) as Finish) : finish;
 
@@ -53,7 +55,7 @@ export function PendingScanCard({ scan }: { scan: PendingScan }) {
   }
 
   function discard() {
-    startTransition(async () => {
+    startDiscard(async () => {
       try {
         await discardPendingScan(scan.id);
       } catch {
@@ -103,11 +105,11 @@ export function PendingScanCard({ scan }: { scan: PendingScan }) {
           </CardPickerRow>
         )}
         <div className="flex gap-2">
-          <Button id={picker.submitId} onClick={add} disabled={!printing || pending}>
+          <Button id={picker.submitId} onClick={add} disabled={!printing || pending || discarding}>
             {pending ? "Añadiendo…" : "Añadir"}
           </Button>
-          <Button variant="ghost" onClick={discard} disabled={pending}>
-            Descartar
+          <Button variant="ghost" onClick={discard} disabled={pending || discarding}>
+            {discarding ? "Descartando…" : "Descartar"}
           </Button>
         </div>
       </div>

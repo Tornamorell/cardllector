@@ -138,7 +138,7 @@ export function DeckCardRow({ deckId, card }: { deckId: string; card: DeckCardVi
               </button>
             ))}
             <Button type="button" size="xs" onClick={() => saveRoles(draft)} disabled={pending}>
-              Guardar
+              {pending ? "Guardando…" : "Guardar"}
             </Button>
             {card.manualRoles && (
               <Button type="button" size="xs" variant="ghost" onClick={() => saveRoles(null)} disabled={pending}>

@@ -43,11 +43,19 @@ export function DeckTools({
     });
   }
 
-  const pull = () =>
+  // Its own flag: `pending` is also the paste, rename and delete forms'.
+  const [pulling, setPulling] = useState(false);
+  const pull = () => {
+    setPulling(true);
     run(async () => {
-      const r = await pullIntoDeck(deckId);
-      toast.success(`${r.moved} ${r.moved === 1 ? "copia movida" : "copias movidas"} a la caja del mazo.`);
+      try {
+        const r = await pullIntoDeck(deckId);
+        toast.success(`${r.moved} ${r.moved === 1 ? "copia movida" : "copias movidas"} a la caja del mazo.`);
+      } finally {
+        setPulling(false);
+      }
     }, "No se han podido mover las copias.");
+  };
 
   const paste = () =>
     run(async () => {
@@ -84,7 +92,7 @@ export function DeckTools({
         {pullable > 0 && (
           <Button size="sm" onClick={pull} disabled={pending} aria-busy={pending}>
             <ArrowDownToLineIcon />
-            Traer a la caja lo que tienes ({pullable})
+            {pulling ? "Trayendo a la caja…" : `Traer a la caja lo que tienes (${pullable})`}
           </Button>
         )}
         <Button size="sm" variant="outline" onClick={() => setMode(mode === "import" ? null : "import")} disabled={pending}>
@@ -140,8 +148,8 @@ export function DeckTools({
       {mode === "rename" && (
         <div className="flex max-w-md gap-2">
           <Input value={text} onChange={(e) => setText(e.target.value)} maxLength={80} aria-label="Nombre del mazo" autoFocus />
-          <Button size="sm" onClick={rename} disabled={pending || !text.trim()}>
-            Guardar
+          <Button size="sm" onClick={rename} disabled={pending || !text.trim()} aria-busy={pending || undefined}>
+            {pending ? "Guardando…" : "Guardar"}
           </Button>
         </div>
       )}

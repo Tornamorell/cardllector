@@ -103,7 +103,7 @@ function UserRow({ user: u, isMe }: { user: AdminUserRow; isMe: boolean }) {
                 )
               }
             >
-              {u.banned ? "Reactivar" : "Desactivar"}
+              {pending ? (u.banned ? "Reactivando…" : "Desactivando…") : u.banned ? "Reactivar" : "Desactivar"}
             </Button>
           )}
         </div>

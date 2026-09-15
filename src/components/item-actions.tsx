@@ -495,7 +495,7 @@ function SplitDialog({ item, onClose }: { item: ActionItem; onClose: () => void 
               Cancelar
             </Button>
             <Button type="submit" disabled={pending}>
-              Dividir
+              {pending ? "Dividiendo…" : "Dividir"}
             </Button>
           </DialogFooter>
         </form>

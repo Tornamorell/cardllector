@@ -92,7 +92,7 @@ export function LocationSettings({
             </div>
             <DialogFooter>
               <Button type="submit" disabled={pending}>
-                Guardar
+                {pending ? "Guardando…" : "Guardar"}
               </Button>
             </DialogFooter>
           </form>
@@ -128,7 +128,7 @@ export function LocationSettings({
               // deleteLocation redirects to /locations; no catch, or it would swallow it.
               onClick={() => startTransition(() => deleteLocation(id))}
             >
-              Eliminar
+              {pending ? "Eliminando…" : "Eliminar"}
             </Button>
           </DialogFooter>
         </DialogContent>

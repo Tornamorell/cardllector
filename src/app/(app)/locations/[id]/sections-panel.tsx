@@ -128,7 +128,7 @@ export function SectionsPanel({
             className="text-muted-foreground hover:text-foreground hover:border-primary/60 flex h-full min-h-14 w-full items-center justify-center gap-1 rounded-lg border border-dashed text-sm"
           >
             <PlusIcon className="size-4" />
-            Añadir
+            {pending ? "Añadiendo…" : "Añadir"}
           </button>
         </li>
       </ul>
@@ -210,7 +210,7 @@ function EditSectionDialog({ section, onClose }: { section: SectionOption; onClo
               </p>
               <div className="flex gap-2">
                 <Button type="button" variant="destructive" size="sm" onClick={remove} disabled={pending}>
-                  Eliminar
+                  {pending ? "Eliminando…" : "Eliminar"}
                 </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
                   No

@@ -81,7 +81,7 @@ export function NextSectionButton({
       }
     >
       <ChevronsRightIcon />
-      Siguiente separador
+      {pending ? "Pasando al siguiente…" : "Siguiente separador"}
     </Button>
   );
 }
