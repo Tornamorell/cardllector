@@ -33,7 +33,8 @@ export interface StickyDefaults {
 const DEFAULTS: StickyDefaults = {
   finish: "nonfoil",
   condition: "NM",
-  language: "es",
+  // Most cards are in English (the owner, 2026-09-15); a Spanish collection is picked when entering it.
+  language: "en",
   lastLocationId: null,
   lastSectionId: null,
   lastSetCode: null,

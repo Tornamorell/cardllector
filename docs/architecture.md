@@ -66,8 +66,12 @@ que tiene dos partes:
 Junto a los **+** de una expansión y de una colección sale además `EntryCopyFields`: «Por
 defecto» con el idioma, el estado y el acabado con que añade el **+**.
 - Son los mismos que usan el alta rápida, la ficha de carta y el escáner.
-- Antes el **+** los usaba sin enseñarlos. Como el idioma de partida es el español (`es`), las
+- Antes el **+** los usaba sin enseñarlos. Como el idioma de partida era el español (`es`), las
   cartas del catálogo entraban en español sin avisar (2026-09-15).
+- Ahora el idioma de partida es el **inglés**, porque el dueño tiene casi todo en inglés y solo
+  algunas colecciones en español. Solo cambia en los dispositivos que no guardaron nunca los
+  valores: al cambiar cualquiera se guardan todos, así que en los demás hay que cambiarlo una
+  vez.
 - En la colección también se ve la ubicación en la que entran.
 
 Todo se recuerda en el dispositivo (`useStickyDefaults`). `useEntryResult()` aplica la respuesta
