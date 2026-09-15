@@ -60,7 +60,15 @@ que tiene dos partes:
 
 - **Guardar en:** la ubicación y, si tiene separadores, el separador, con el botón «Siguiente
   separador».
-- **Y en la colección:** la colección, opcional.
+- **Y en la colección:** la colección, opcional. En la página de una colección no sale
+  (`withCollection={false}`), porque lo que se añade allí ya está en ella.
+
+Junto a los **+** de una expansión y de una colección sale además `EntryCopyFields`: «Por
+defecto» con el idioma, el estado y el acabado con que añade el **+**.
+- Son los mismos que usan el alta rápida, la ficha de carta y el escáner.
+- Antes el **+** los usaba sin enseñarlos. Como el idioma de partida es el español (`es`), las
+  cartas del catálogo entraban en español sin avisar (2026-09-15).
+- En la colección también se ve la ubicación en la que entran.
 
 Todo se recuerda en el dispositivo (`useStickyDefaults`). `useEntryResult()` aplica la respuesta
 de `addItem`:

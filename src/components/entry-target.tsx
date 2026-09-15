@@ -6,6 +6,7 @@ import type { AddItemResult } from "@/app/(app)/inventory/actions";
 import { CollectionPicker, type CollectionOption } from "@/components/collection-picker";
 import { LocationPicker, type LocationOption } from "@/components/location-picker";
 import { NextSectionButton, SectionPicker, currentSectionId } from "@/components/section-picker";
+import { ConditionSelect, FinishSelect, LanguageSelect } from "@/components/stack-fields";
 import { type StickyDefaults, useStickyDefaults, validId } from "@/lib/use-sticky-defaults";
 
 /** The divider entries go behind: the remembered one if it's in that location, else its current one. */
@@ -32,9 +33,12 @@ export function targetFor(defaults: StickyDefaults, locations: LocationOption[])
 export function EntryTarget({
   locations,
   collections,
+  withCollection = true,
 }: {
   locations: LocationOption[];
   collections: CollectionOption[];
+  /** Off on a collection's own page: what's added there is already listed in it. */
+  withCollection?: boolean;
 }) {
   const [defaults, setDefaults] = useStickyDefaults();
   const location = locations.find((l) => l.id === defaults.lastLocationId);
@@ -65,13 +69,35 @@ export function EntryTarget({
           <NextSectionButton locationId={location.id} sectionId={sectionId} />
         </>
       )}
-      <span className="text-muted-foreground">y añadir a</span>
-      <CollectionPicker
-        value={defaults.entryCollectionId}
-        collections={collections}
-        emptyLabel="Ninguna colección"
-        onChange={(id) => setDefaults({ entryCollectionId: id })}
-      />
+      {withCollection && (
+        <>
+          <span className="text-muted-foreground">y añadir a</span>
+          <CollectionPicker
+            value={defaults.entryCollectionId}
+            collections={collections}
+            emptyLabel="Ninguna colección"
+            onChange={(id) => setDefaults({ entryCollectionId: id })}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * How entered copies are: language, condition and finish, remembered per device and shared
+ * with quick add, the card page and the scanner. Shown by the + buttons of a set or a
+ * collection, which add with them: nothing there used to say they'd go in as Spanish, the
+ * first default.
+ */
+export function EntryCopyFields({ finishLabels }: { finishLabels?: Record<"nonfoil" | "foil" | "etched", string> }) {
+  const [defaults, setDefaults] = useStickyDefaults();
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="text-muted-foreground">Por defecto</span>
+      <LanguageSelect value={defaults.language} onChange={(v) => setDefaults({ language: v })} />
+      <ConditionSelect value={defaults.condition} onChange={(v) => setDefaults({ condition: v })} />
+      <FinishSelect value={defaults.finish} onChange={(v) => setDefaults({ finish: v })} labels={finishLabels} />
     </div>
   );
 }

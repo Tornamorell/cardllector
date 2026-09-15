@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { SetIcon } from "@/components/card-thumb";
-import { EntryTarget } from "@/components/entry-target";
+import { EntryCopyFields, EntryTarget } from "@/components/entry-target";
 import { OwnedCardTile } from "@/components/owned-card-tile";
 import { ProgressMeter } from "@/components/progress-meter";
 import { RarityMark } from "@/components/rarity-mark";
@@ -195,6 +195,8 @@ export default async function SetPage({ params, searchParams }: PageProps<"/cata
             </nav>
           </div>
           <EntryTarget collections={collections} locations={locations} />
+          {/* What the + on each card adds with: before, nothing here said it'd be Spanish. */}
+          <EntryCopyFields finishLabels={game.finishLabels} />
         </div>
       </div>
 

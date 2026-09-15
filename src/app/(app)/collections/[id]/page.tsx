@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { EntryCopyFields, EntryTarget } from "@/components/entry-target";
 import { OwnedCardTile } from "@/components/owned-card-tile";
 import { ProgressMeter } from "@/components/progress-meter";
 import { RarityMark } from "@/components/rarity-mark";
 import { formatEur, formatInt } from "@/lib/format";
 import { gameById, rarityLabel } from "@/lib/games";
 import { getCollection, listCollectionCards } from "@/lib/queries/collections";
+import { locationOptions } from "@/lib/queries/locations";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { CollectionCardAdder } from "./card-adder";
@@ -38,7 +40,7 @@ export default async function CollectionPage({
 
   const collection = await getCollection(user.id, id);
   if (!collection) notFound();
-  const cards = await listCollectionCards(user.id, id);
+  const [cards, locations] = await Promise.all([listCollectionCards(user.id, id), locationOptions(user.id)]);
 
   const sp = await searchParams;
   const owned = pick(OWNED_FILTERS, param(sp.owned), "all");
@@ -116,6 +118,15 @@ export default async function CollectionPage({
       </div>
 
       <CollectionCardAdder collectionId={collection.id} />
+
+      {/* How the + on each card adds a copy to «Mis cartas»: it used to use these unseen. */}
+      {cards.length > 0 && (
+        <div className="bg-muted/40 space-y-2 rounded-lg border p-3">
+          <p className="text-muted-foreground text-xs">El + de cada carta la añade a tus cartas así:</p>
+          <EntryTarget locations={locations} collections={[]} withCollection={false} />
+          <EntryCopyFields />
+        </div>
+      )}
 
       {cards.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3">
