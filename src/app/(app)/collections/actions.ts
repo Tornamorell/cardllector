@@ -143,6 +143,15 @@ export async function updateCollection(collectionId: string, formData: FormData)
   refresh();
 }
 
+/** The collection's notes (the «Notas» on its page): free text; empty clears them. */
+export async function updateCollectionNotes(collectionId: string, notes: string) {
+  const user = await requireUser();
+  await ownedCollection(user.id, collectionId);
+  const value = z.string().max(5000).parse(notes).trim() || null;
+  await db.update(collections).set({ notes: value }).where(eq(collections.id, collectionId));
+  refresh();
+}
+
 /** Deletes the list. The copies in the inventory stay. */
 export async function deleteCollection(collectionId: string) {
   const user = await requireUser();

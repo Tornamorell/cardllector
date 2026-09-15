@@ -162,6 +162,8 @@ export const collections = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
+    /** Free notes on the whole collection, longer than the description, edited on its page. */
+    notes: text("notes"),
     ...timestamps,
   },
   (t) => [index("collections_owner_idx").on(t.ownerId)],

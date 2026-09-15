@@ -15,6 +15,8 @@ export type CollectionSummary = {
   id: string;
   name: string;
   description: string | null;
+  /** Only for one collection (getCollection): lists don't show it. */
+  notes: string | null;
   cardCount: number;
   completeCount: number;
   wanted: number;
@@ -26,7 +28,7 @@ export type CollectionSummary = {
 async function summaries(ownerId: string, collectionId?: string) {
   const result = await db.execute<CollectionSummary>(sql`
     with owned as ${ownedByPrinting(ownerId)}
-    select c.id, c.name, c.description,
+    select c.id, c.name, c.description, ${collectionId ? sql`c.notes` : sql`null`} as notes,
            count(cc.catalog_card_id)::int as "cardCount",
            (count(cc.catalog_card_id) filter (where coalesce(o.qty, 0) >= cc.quantity))::int as "completeCount",
            coalesce(sum(cc.quantity), 0)::int as wanted,
