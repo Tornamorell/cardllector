@@ -1,3 +1,4 @@
+import { LayoutGridIcon, ListIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,12 +14,14 @@ import { AddSetToCollection } from "./add-set";
 import { CollectionCardAdder } from "./card-adder";
 import { CollectionNotes } from "./collection-notes";
 import { CollectionSettings } from "./collection-settings";
-import { CollectionGrid } from "./collection-grid";
+import { CollectionCards } from "./collection-cards";
 
 export const metadata: Metadata = { title: "Colección" };
 
 const OWNED_FILTERS = { all: "Todas", have: "Tengo", missing: "Me faltan" } as const;
 const SORTS = { recent: "Recientes", name: "Nombre", price: "Precio", set: "Edición" } as const;
+/** The grid to look at cards and add copies; the list to manage them (select, move, take off). */
+const VIEWS = { grid: "Cuadrícula", list: "Lista" } as const;
 
 function param(value: string | string[] | undefined) {
   return typeof value === "string" ? value : undefined;
@@ -50,6 +53,7 @@ export default async function CollectionPage({
   const sp = await searchParams;
   const owned = pick(OWNED_FILTERS, param(sp.owned), "all");
   const sort = pick(SORTS, param(sp.sort), "recent");
+  const view = pick(VIEWS, param(sp.view), "grid");
 
   const isComplete = (c: (typeof cards)[number]) => c.owned >= c.wanted;
   let shown = cards.filter((c) => (owned === "all" ? true : owned === "have" ? isComplete(c) : !isComplete(c)));
@@ -67,6 +71,7 @@ export default async function CollectionPage({
     const merged: Record<string, string | undefined> = {
       owned: owned === "all" ? undefined : owned,
       sort: sort === "recent" ? undefined : sort,
+      view: view === "grid" ? undefined : view,
       ...patch,
     };
     const qs = new URLSearchParams(
@@ -152,6 +157,14 @@ export default async function CollectionPage({
               </FilterLink>
             ))}
           </nav>
+          <nav className="flex gap-1 text-sm" aria-label="Vista">
+            {Object.entries(VIEWS).map(([key, label]) => (
+              <FilterLink key={key} href={href({ view: key === "grid" ? undefined : key })} active={view === key}>
+                {key === "grid" ? <LayoutGridIcon className="inline size-4" /> : <ListIcon className="inline size-4" />}{" "}
+                {label}
+              </FilterLink>
+            ))}
+          </nav>
         </div>
       )}
 
@@ -163,7 +176,8 @@ export default async function CollectionPage({
       ) : !shown.length ? (
         <p className="text-muted-foreground py-8 text-center text-sm">No hay cartas con este filtro.</p>
       ) : (
-        <CollectionGrid
+        <CollectionCards
+          view={view}
           collectionId={collection.id}
           collectionName={collection.name}
           cards={shown}

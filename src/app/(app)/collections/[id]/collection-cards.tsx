@@ -1,8 +1,10 @@
 "use client";
 
 import { MoveIcon, Trash2Icon, XIcon } from "lucide-react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { CardThumb } from "@/components/card-thumb";
 import { CollectionPicker, type CollectionOption } from "@/components/collection-picker";
 import { OwnedCardTile } from "@/components/owned-card-tile";
 import { RarityMark } from "@/components/rarity-mark";
@@ -24,16 +26,21 @@ import { EntryControls } from "./entry-controls";
 
 const count = (n: number) => `${formatInt(n)} ${n === 1 ? "carta" : "cartas"}`;
 
+export type CollectionView = "grid" | "list";
+
 /**
- * A collection's cards, selectable: ticking them brings up a bar to move them to another
- * collection — or copy them, keeping them here too — or take them off this one.
+ * A collection's cards, in one of two views: the grid, to look at them and add copies with the
+ * +, and the list, to manage them — tick rows and a bar moves them to another collection (or
+ * copies them, keeping them here too) or takes them off this one.
  */
-export function CollectionGrid({
+export function CollectionCards({
+  view,
   collectionId,
   collectionName,
   cards,
   collections,
 }: {
+  view: CollectionView;
   collectionId: string;
   collectionName: string;
   cards: CollectionCard[];
@@ -42,9 +49,10 @@ export function CollectionGrid({
 }) {
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [dialog, setDialog] = useState<"move" | "remove" | null>(null);
-  // Moved cards leave the page: count only the ones still shown.
-  const chosen = cards.filter((c) => selected.has(c.id));
+  // Moved cards leave the page, and a filter may hide some: count only the ones still shown.
+  const chosen = view === "list" ? cards.filter((c) => selected.has(c.id)) : [];
   const ids = chosen.map((c) => c.id);
+  const allChosen = cards.length > 0 && chosen.length === cards.length;
   const clear = () => setSelected(new Set());
   const toggle = (id: string) =>
     setSelected((current) => {
@@ -54,17 +62,13 @@ export function CollectionGrid({
       return next;
     });
 
-  return (
-    <>
+  if (view === "grid") {
+    return (
       <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
         {cards.map((c) => {
           const game = gameById(c.game);
-          const isSelected = selected.has(c.id);
           return (
-            <li
-              key={c.id}
-              className={cn("space-y-1.5 rounded-lg", isSelected && "ring-primary ring-offset-background ring-2 ring-offset-2")}
-            >
+            <li key={c.id} className="space-y-1.5">
               <OwnedCardTile
                 printingId={c.id}
                 name={c.name}
@@ -77,18 +81,9 @@ export function CollectionGrid({
                 withCollection={false}
               />
               <div className="text-xs leading-tight">
-                <label className="flex cursor-pointer items-center gap-1.5">
-                  <input
-                    type="checkbox"
-                    className="accent-primary size-3.5 shrink-0"
-                    checked={isSelected}
-                    onChange={() => toggle(c.id)}
-                    aria-label={`Seleccionar ${c.name}`}
-                  />
-                  <span className="truncate font-medium" title={c.name}>
-                    {c.name}
-                  </span>
-                </label>
+                <p className="truncate font-medium" title={c.name}>
+                  {c.name}
+                </p>
                 <p className="text-muted-foreground flex justify-between gap-1">
                   <span title={game ? rarityLabel(game, c.rarity) : undefined}>
                     <RarityMark rarity={c.rarity} />
@@ -102,6 +97,32 @@ export function CollectionGrid({
           );
         })}
       </ul>
+    );
+  }
+
+  return (
+    <>
+      <ul className="bg-card divide-y rounded-xl border">
+        <li className="text-muted-foreground flex items-center gap-3 px-3 py-2 text-sm">
+          <input
+            type="checkbox"
+            className="accent-primary size-4"
+            checked={allChosen}
+            onChange={() => setSelected(allChosen ? new Set() : new Set(cards.map((c) => c.id)))}
+            aria-label="Seleccionar todas"
+          />
+          Seleccionar todas ({formatInt(cards.length)})
+        </li>
+        {cards.map((c) => (
+          <ListRow
+            key={c.id}
+            card={c}
+            collectionId={collectionId}
+            selected={selected.has(c.id)}
+            onToggle={() => toggle(c.id)}
+          />
+        ))}
+      </ul>
 
       {chosen.length > 0 && (
         <div
@@ -112,18 +133,6 @@ export function CollectionGrid({
           <span className="text-sm">
             <strong className="tabular-nums">{formatInt(chosen.length)}</strong>{" "}
             {chosen.length === 1 ? "seleccionada" : "seleccionadas"}
-            {chosen.length < cards.length && (
-              <>
-                {" · "}
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-foreground underline underline-offset-2"
-                  onClick={() => setSelected(new Set(cards.map((c) => c.id)))}
-                >
-                  todas las que se ven ({formatInt(cards.length)})
-                </button>
-              </>
-            )}
           </span>
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" onClick={() => setDialog("move")}>
@@ -161,6 +170,60 @@ export function CollectionGrid({
         />
       )}
     </>
+  );
+}
+
+/** One card in the list view: checkbox, thumbnail, name and set, owned of wanted, price, −/+/×. */
+function ListRow({
+  card: c,
+  collectionId,
+  selected,
+  onToggle,
+}: {
+  card: CollectionCard;
+  collectionId: string;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  const game = gameById(c.game);
+  const complete = c.owned >= c.wanted;
+  return (
+    <li className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2", selected && "bg-muted/60")}>
+      <input
+        type="checkbox"
+        className="accent-primary size-4 shrink-0"
+        checked={selected}
+        onChange={onToggle}
+        aria-label={`Seleccionar ${c.name}`}
+      />
+      <Link href={`/cards/${c.id}`} className="shrink-0" tabIndex={-1} aria-hidden>
+        <CardThumb src={c.imageSmall} alt="" size="xs" label={`#${c.collectorNumber}`} />
+      </Link>
+      <div className="min-w-0 flex-1">
+        <Link href={`/cards/${c.id}`} className="block truncate text-sm font-medium hover:underline">
+          {c.name}
+        </Link>
+        <p className="text-muted-foreground truncate text-xs" title={game ? rarityLabel(game, c.rarity) : undefined}>
+          <RarityMark rarity={c.rarity} />
+          {c.setCode.toUpperCase()} #{c.collectorNumber}
+          {c.setName && ` · ${c.setName}`}
+        </p>
+      </div>
+      <span
+        className={cn(
+          "text-xs tabular-nums",
+          complete ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground",
+        )}
+        title="Las que tienes de las que quieres"
+      >
+        {complete && "✓ "}
+        {formatInt(c.owned)}/{formatInt(c.wanted)}
+      </span>
+      <span className="w-16 text-right text-sm tabular-nums">{formatEur(c.priceEur)}</span>
+      <div className="w-full text-xs sm:w-40">
+        <EntryControls collectionId={collectionId} catalogCardId={c.id} wanted={c.wanted} name={c.name} />
+      </div>
+    </li>
   );
 }
 
