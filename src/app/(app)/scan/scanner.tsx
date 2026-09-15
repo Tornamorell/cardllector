@@ -89,6 +89,7 @@ const TICK_MS = 250; // pause between reads
 const VOTES_NEEDED = 2; // a read must repeat this many times…
 const VOTE_WINDOW = 6; // …among the last reads (not necessarily consecutive)
 const EMPTY_READS_TO_RELEASE = 3; // reads without text before the same card can be added again
+const STUCK_MS = 6000; // a card in view this long, recognised by nothing: point at the AI (or «Para luego»)
 const PHOTO_HEIGHT = 560; // px of the «Para luego» photo: enough to read the name and number
 
 const INFO_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/•. ";
@@ -254,6 +255,8 @@ export function Scanner({
   const [lastText, setLastText] = useState("");
   // How long the last read's steps took, for «Ver lo que lee».
   const [timing, setTiming] = useState("");
+  // A card has been in view a while and nothing recognised it (STUCK_MS): the AI lights up.
+  const [stuck, setStuck] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   // The card found in the view (D36), on the stage: its outline, and the box that's read.
   const [found, setFound] = useState<{ points: string; box: Rect } | null>(null);
@@ -301,6 +304,8 @@ export function Scanner({
     stripMisses: 0,
     /** The card just added went unread a while but was kept, still being in view (noRead). */
     heldBack: false,
+    /** When something last happened with the card in view (added, read again, offered): for `stuck`. */
+    progressAt: 0,
     /** The last name read from the title of the card in the guide: the hint for «Para luego». */
     lastTitle: null as string | null,
     cache: new Map<string, ScanMatch[]>(),
@@ -396,6 +401,12 @@ export function Scanner({
   function cardInVideo(): Rect | null {
     const v = view();
     return v && toVideo(placeGuide(v.area, settings.current.place), v.t);
+  }
+
+  /** Something happened with the card in view, or there's none: it isn't stuck (STUCK_MS). */
+  function progress() {
+    readState.current.progressAt = performance.now();
+    setStuck(false);
   }
 
   /** Keeps the strip that reads found cards, for the session; null forgets it («Buscar la carta» off). */
@@ -537,6 +548,7 @@ export function Scanner({
     if (s.holdId === match.id) {
       // Still the card just added. Read again after going unread with the card still in view —
       // when it used to be added twice — say how to add another copy.
+      progress();
       if (s.heldBack) setStatus(`«${match.name}» ya está añadida: si es otra copia, pulsa +.`);
       return;
     }
@@ -625,6 +637,9 @@ export function Scanner({
     const watch = stopwatch();
     const located = video && canvas && workerRef.current ? locateCard() : null;
     if (settings.current.defaults.findCard) watch.lap("buscar");
+    // The «stuck» clock only runs while a card is found in view and no choices are on screen.
+    if (!(foundRef.current && foundRef.current.seen >= 2) || s.choicesKey) progress();
+    else if (performance.now() - s.progressAt > STUCK_MS) setStuck(true);
     // A found card that doesn't read may not be the card: then every other read is of the guide.
     const onCard = located && !(s.empty >= 3 && s.tick % 2 === 1) ? located : null;
     const card = onCard ? quadBounds(onCard) : cardInVideo();
@@ -725,6 +740,7 @@ export function Scanner({
       readState.current.choicesKey = "";
       readState.current.lastTitle = null;
       readState.current.heldBack = false;
+      progress();
       setEntries((list) => {
         const [top, ...rest] = list;
         if (top?.itemId === r.itemId) return [{ ...top, count: top.count + 1 }, ...rest];
@@ -867,6 +883,7 @@ export function Scanner({
   async function identifyWithAi() {
     if (identifying || !cardInVideo()) return;
     setIdentifying(true);
+    progress();
     setChoices(null);
     setStatus("Identificando con IA…");
     try {
@@ -926,6 +943,7 @@ export function Scanner({
   async function saveForLater() {
     if (!cardInVideo()) return;
     setSaving(true);
+    progress();
     try {
       const blob = await guidePhoto();
       if (!blob) throw new Error("No photo");
@@ -1460,6 +1478,7 @@ export function Scanner({
               label={identifying ? "Identificando con IA…" : "Identificar con IA"}
               onClick={identifyWithAi}
               disabled={identifying}
+              highlight={stuck}
             >
               {identifying ? <LoaderCircleIcon className="animate-spin" /> : <SparklesIcon />}
             </ToolButton>
@@ -1469,6 +1488,7 @@ export function Scanner({
             onClick={saveForLater}
             disabled={saving}
             badge={pendingCount}
+            highlight={stuck && !aiEnabled}
           >
             {saving ? <LoaderCircleIcon className="animate-spin" /> : <ClockIcon />}
           </ToolButton>
@@ -1476,6 +1496,16 @@ export function Scanner({
             <SlidersHorizontalIcon />
           </ToolButton>
         </div>
+
+        {/* Stuck on a card: says which of the lit-up tools to try. It never calls the AI itself. */}
+        {stuck && !toolsOpen && !adjusting && (
+          <p
+            role="status"
+            className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.5rem)] right-17 z-10 max-w-48 rounded-xl bg-black/80 px-3 py-2 text-sm backdrop-blur"
+          >
+            {aiEnabled ? "¿No la reconoce? Pruébala con la IA." : "¿No la reconoce? Guárdala para luego."}
+          </p>
+        )}
 
         {toolsOpen && (
           <div className="absolute top-[calc(max(env(safe-area-inset-top),0.75rem)+3.5rem)] right-17 z-10 w-60 space-y-2.5 rounded-2xl bg-black/80 p-3 text-sm backdrop-blur">
@@ -1847,6 +1877,7 @@ function ToolButton({
   disabled,
   pressed,
   badge,
+  highlight,
   children,
 }: {
   label: string;
@@ -1855,6 +1886,8 @@ function ToolButton({
   /** For toggles (torch, settings): whether it's on. */
   pressed?: boolean;
   badge?: number;
+  /** The one to try now (a card the reader is stuck on): ringed in gold, pulsing. */
+  highlight?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -1868,6 +1901,7 @@ function ToolButton({
       className={cn(
         "relative flex size-11 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15 disabled:opacity-50 [&_svg]:size-5",
         pressed && "bg-white/25",
+        highlight && "bg-primary/25 ring-primary ring-2 motion-safe:animate-pulse",
       )}
     >
       {children}

@@ -196,6 +196,14 @@ cámara trasera (getUserMedia, se piden 3840×2160; el móvil da lo que puede)
     - «Ver lo que lee» muestra «foto: a N bits» cuando reconoce una.
   - **Identificar con IA** (D31), en la columna de la derecha, solo si está configurada
     `ANTHROPIC_API_KEY`:
+    - **Se sugiere sola cuando se atasca** (2026-09-15):
+      - Si hay una carta a la vista («Buscar la carta») y nada la reconoce en 6 s (`STUCK_MS`),
+        el botón se rodea de oro, late y al lado aparece «¿No la reconoce? Pruébala con la IA».
+      - Sin IA, se ilumina «Para luego».
+      - No llama a la IA por su cuenta, porque gastaría sin preguntar. En el mazo de 100
+        cartas, el usuario tuvo que pensar en pulsarla en 5 cartas de marco especial.
+      - El reloj vuelve a cero al añadir, al volver a leer la carta ya añadida, al pulsar la IA
+        o «Para luego», y mientras hay candidatas en pantalla o ninguna carta a la vista.
     - Manda la foto del recuadro (JPEG de 560 px) a `POST /api/scan/identify`, que se la pasa a
       Claude Sonnet 5 y le pide un JSON con un formato cerrado (`src/lib/scan/identify.ts`):
       - en los álbumes de fútbol: nombre, equipo, número y serie, elegida de las series del
@@ -338,6 +346,7 @@ En `scanner.tsx`:
 - `TICK_MS` (250).
 - `VOTES_NEEDED` (2) de `VOTE_WINDOW` (6).
 - `EMPTY_READS_TO_RELEASE` (3).
+- `STUCK_MS` (6000): cuánto tiempo sin reconocer una carta a la vista antes de sugerir la IA.
 
 En `geometry.ts`:
 - `INFO_STRIP` y `TITLE_STRIP`.
